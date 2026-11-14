@@ -10,6 +10,7 @@ export function Hornbill() {
   const head = useRef<Group>(null)
   const body = useRef<Group>(null)
   const herring = useSession((s) => s.herringWarning)
+  const atCabinet = useSession((s) => s.beat === 'locker')  // it follows the student to the evidence cabinet
   useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime
     if (head.current) {
@@ -20,7 +21,7 @@ export function Hornbill() {
     if (body.current) body.current.position.y = Math.sin(t * 1.6) * 0.004
   })
   return (
-    <group position={[0.85, 0.78, -2.55]} rotation={[0, -0.5, 0]} scale={0.9}>
+    <group position={atCabinet ? [4.5, 1.6, -0.6] : [0.85, 0.78, -2.55]} rotation={[0, atCabinet ? -Math.PI / 2 : -0.5, 0]} scale={atCabinet ? 1.3 : 0.9}>
       {/* perch */}
       <mesh position={[0, 0.02, 0]}><cylinderGeometry args={[0.07, 0.08, 0.04, 16]} /><meshStandardMaterial color="#4a3322" /></mesh>
       <mesh position={[0, 0.1, 0]}><cylinderGeometry args={[0.012, 0.012, 0.14, 8]} /><meshStandardMaterial color="#4a3322" /></mesh>
