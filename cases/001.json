@@ -1,0 +1,56 @@
+{
+  "id": "001",
+  "title": "The Burning Ground",
+  "type": "fire",
+  "status": "open",
+  "question": "Are fire seasons on northern Sarawak's peat getting worse, or was 2026 one bad year?",
+  "brief": "Detective, we have a case. From late March 2026, fires spread across 11 districts of northern Sarawak, and one near Tatau burned for 11 days. People are asking whether this is the new normal. Before anyone decides, I need you to look at the record. Has the weather that dries out peat been getting worse here over the last 45 years, or was 2026 one bad year?",
+  "sources": [
+    {
+      "title": "Northern Sarawak wildfires persist into third week (The Sun)",
+      "url": "https://thesun.my/news/malaysia-news/northern-sarawak-wildfires-persist-into-third-week",
+      "date": "2026-04-15"
+    }
+  ],
+  "region": {
+    "id": "north-peat",
+    "name": "Northern Sarawak (Bintulu to Miri)",
+    "bbox": [112.8, 2.5, 114.9, 4.7],
+    "centroid": [113.85, 3.6]
+  },
+  "twin_region": {
+    "id": "south-west",
+    "name": "Southern Sarawak (Kuching to Serian)",
+    "bbox": [109.9, 0.8, 111.3, 1.8],
+    "centroid": [110.6, 1.3]
+  },
+  "scene": { "layers": ["rain", "soil"], "from": "2026-02-01", "to": "2026-04-30" },
+  "evidence": ["soil_dry3", "humidity_feb_apr", "rain_feb_apr", "dry_spell", "wind"],
+  "red_herrings": ["wind"],
+  "main_cards": ["soil_dry3", "humidity_feb_apr"],
+  "hints": {
+    "evidence": [
+      "What has to happen to peat before it can burn?",
+      "Look for cards about how wet the ground and the air are.",
+      "Example: for a made-up flood case, a detective would pick heavy-rain days, not air temperature."
+    ],
+    "method": [
+      "Northern Sarawak is wetter in some months than others. Could that fool your ruler?",
+      "Try the season filter first, then the scales. And ask: was El Nino strong in the bad years?",
+      "Example: a made-up record rises only in El Nino years. With the El Nino lamp on, the rise disappears, so the trend wasn't real."
+    ],
+    "verdict": [
+      "Did both tests agree on every main card, with and without the El Nino lamp?",
+      "If the lamp changes the stamp, think about what 'Can't tell' means.",
+      "Example: 'The record can't settle it yet' is a correct verdict when the evidence is mixed."
+    ]
+  },
+  "limits": [
+    "Fire detections from satellites are not in this case yet; it uses the weather that dries peat out.",
+    "Soil wetness and humidity come from a weather model (MERRA-2) checked against observations, not from a sensor in the ground.",
+    "Each value is an average over grid squares about 50 km wide, not one village.",
+    "Rain cards are provisional: they have not yet been cross-checked against GPM IMERG satellite rain.",
+    "A trend in the weather is not proof of what causes fires; people, land use and drainage matter too."
+  ],
+  "data_as_of": "2026-11-10"
+}

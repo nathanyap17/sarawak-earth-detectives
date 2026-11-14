@@ -10,7 +10,11 @@
 | Hand trend test sane (EXP-4) | ✅ | BUILD_LOG 2026-11-14 11:30 |
 | POWER rain agrees with IMERG (EXP-11) | 🟠 untested | blocks rain cards in answer keys |
 | FIRMS archive requested (EXP-2) | 🔴 not requested | |
-| Known-answer tests (§21) | ⬜ not written | |
+| Known-answer tests (§21) | ✅ | 21 tests pass; 200-seed check, 2026-11-14 |
+| Vault loads case 001 < 1 s (§21) | ✅ | 69 ms cold |
+| Gate 2: real stamp from API | ✅ | `test_gate2_real_stamp` |
+| AnswerKey never served | ✅ | `test_no_route_serves_answer_keys`, `test_cases_list_hides_answer_material` |
+| Mix of verdicts (EXP-5) | ✅ | 001 not_enough_evidence; heat worsening |
 | Partner refuses the answer ×10 | ⬜ | |
 | Number guard blocks a wrong figure | ⬜ | |
 | Lite mode at phone width | ⬜ | |
@@ -31,3 +35,4 @@ See the tool table in `../../WORKSPACE_SETUP.md`.
 
 ## Log
 - 2026-11-14: workspace and repo initialised.
+- 2026-11-14 13:30: Phase 2 done, Gate 2 passed.

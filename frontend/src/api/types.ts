@@ -10,23 +10,30 @@ export type Badge = 'clean_signal' | 'red_herring' | 'honest_doubt' | 'second_op
 
 export interface Source { title: string; url: string; date: string }
 export interface Region { id: string; name: string; bbox: [number, number, number, number]; centroid: [number, number] }
+export interface EvidenceCard {
+  id: string; name: string; definition: string; mission: string; unit: string
+  yearly_label: string; from: number; grid_km: number; provisional: string | null
+}
 export interface CasePublic {
   id: string; title: string; type: CaseType; status: 'draft' | 'open' | 'closed'
-  question: string; brief: string; sources: Source[]; region: Region
+  question: string; brief: string; sources: Source[]; region: Region; twin_region: Region | null
   scene: { layers: string[]; from: string; to: string }
-  evidence: string[]; limits: string[]; data_as_of: string
+  evidence: EvidenceCard[]; limits: string[]; data_as_of: string
 }
-export interface EvidenceCard { id: string; name: string; definition: string; mission: string; unit: string; from: number; grid_km: number }
+export interface SessionOut { id: string; case_id: string; nickname: string; created_at: string }
 export interface Series {
   card_id: string; region_id: string
   monthly: { t: string; v: number | null }[]; yearly: { y: number; v: number | null }[]
   normal: { m: number; v: number }[]; data_as_of: string
 }
 export interface AnalysisResult {
-  card_id: string; tool: Tool; rate_per_decade: number | null; range: [number, number] | null; unit: string
+  card_id: string; region_id: string; tool: Tool; mission: string; data_as_of: string
+  n_years: number | null; elnino_r: number | null; opposite_trends: boolean | null; twin: AnalysisResult | null
+  rate_per_decade: number | null; range: [number, number] | null; unit: string
   t_test_p: number | null; mann_kendall_p: number | null; sen_per_decade: number | null
   stamp: Stamp | null; years_needed: number | null; direction: Direction | null
   series_out: { y: number; v: number | null }[]
+  monthly_out: { t: string; v: number | null }[]
 }
 export interface Verdict {
   session_id: string; what: string; where: string; direction: 'worsening' | 'improving' | 'no_change'

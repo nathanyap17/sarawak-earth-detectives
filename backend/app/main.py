@@ -3,7 +3,9 @@ AI-assisted: scaffolded with Claude Code."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes import router
 from app.config import get_settings
+from app.vault.store import load_index
 
 settings = get_settings()
 
@@ -14,6 +16,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(router)
+
+
+@app.get("/vault/health")
+def vault_health() -> dict:
+    """Freshness of every source (rule 6)."""
+    idx = load_index()
+    return {"built_at": idx.get("built_at"), "enso": idx.get("enso"),
+            "regions": {rid: {"data_as_of": next(iter(r["cards"].values()))["data_as_of"],
+                              "land_points": len(r["land_points"]), "cards": list(r["cards"])}
+                        for rid, r in idx.get("regions", {}).items()}}
 
 
 @app.get("/health")

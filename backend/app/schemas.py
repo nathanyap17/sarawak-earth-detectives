@@ -59,20 +59,42 @@ class CasePack(BaseModel):
     evidence: list[str]  # EvidenceCard ids, red herrings included
     red_herrings: list[str]
     main_cards: list[str]  # cards the overall verdict is derived from (§16)
+    twin_region: Region | None = None  # region B for the twin map
     hints: Hints
     limits: list[str]
     data_as_of: str
 
 
 class EvidenceCard(BaseModel):
+    """Public card. Relevance, worse-direction and band stay server-side (vault/cards.py)."""
     id: str
     name: str
     definition: str
     mission: str  # plain-text label, never a logo
     unit: str
+    yearly_label: str  # what one yearly value is, e.g. "Feb-Apr total"
     from_: int = Field(alias="from")
     grid_km: float
-    relevant: bool  # server-side only; stripped before sending to the browser
+    provisional: str | None = None  # caveat shown on the card
+
+    model_config = {"populate_by_name": True}
+
+
+class CasePublic(BaseModel):
+    """What the browser and the Partner may see of a case: no red herrings, no main cards."""
+    id: str
+    title: str
+    type: CaseType
+    status: CaseStatus
+    question: str
+    brief: str
+    sources: list[Source]
+    region: Region
+    twin_region: Region | None = None
+    scene: Scene
+    evidence: list[EvidenceCard]
+    limits: list[str]
+    data_as_of: str
 
     model_config = {"populate_by_name": True}
 
@@ -110,7 +132,14 @@ class AnalysisRequest(BaseModel):
 
 class AnalysisResult(BaseModel):
     card_id: str
+    region_id: str
     tool: Tool
+    mission: str  # rule 6: every number carries its mission and date
+    data_as_of: str
+    n_years: int | None = None
+    elnino_r: float | None = None  # correlation with the El Nino index (elnino tool)
+    opposite_trends: bool | None = None  # twin tool
+    twin: "AnalysisResult | None" = None  # twin tool: the same test on region B
     rate_per_decade: float | None = None
     range: tuple[float, float] | None = None
     unit: str = "per decade"
@@ -121,10 +150,11 @@ class AnalysisResult(BaseModel):
     years_needed: int | None = None  # capped: 51 means "more than 50"
     direction: Direction | None = None
     series_out: list[YearlyPoint] = Field(default_factory=list)
+    monthly_out: list[MonthlyPoint] = Field(default_factory=list)  # season tool
 
 
 class CardKey(BaseModel):
-    direction: Direction
+    direction: Direction | None
     stamp: Stamp
     rate_per_decade: float
     range: tuple[float, float]
@@ -137,6 +167,19 @@ class AnswerKey(BaseModel):
     per_card: dict[str, CardKey]
     overall: Overall
     computed_at: str
+
+
+class SessionCreate(BaseModel):
+    case_id: str
+    nickname: str = Field(min_length=1, max_length=24)
+    class_code: str | None = Field(default=None, max_length=16)
+
+
+class SessionOut(BaseModel):
+    id: str
+    case_id: str
+    nickname: str
+    created_at: str
 
 
 class Verdict(BaseModel):

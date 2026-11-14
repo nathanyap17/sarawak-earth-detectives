@@ -34,7 +34,7 @@
 | EXP-11 IMERG cross-check of POWER rain | Before rain cards enter an answer key |
 | **Gate 1** | NASA data for case 001 is on disk. If POWER fails, stop and fix data access |
 
-### Phase 2 — Analysis + vault for case 001 (Sat 13:00–17:00)
+### Phase 2 — Analysis + vault for case 001 (Sat 13:00–17:00) ✅ done 13:30, Gate 2 passed
 | Task | Exit condition |
 |---|---|
 | `analysis/`: season filter, ruler, scales (OLS + MK Hamed-Rao + Sen), El Niño lamp, years-needed, twin | Known-answer tests pass: rising, falling, flat, noisy, El Niño-only, too-short |

@@ -59,6 +59,7 @@ Full list with right/wrong examples: `.claude/skills/sed-rules/SKILL.md`.
 ## Commands
 ```bash
 cd backend && uv sync                       # install
+cd backend && uv run python -m app.vault.build && uv run python -m app.casework   # build vault + answer keys
 cd backend && uv run uvicorn app.main:app --reload --port 8000
 cd backend && uv run pytest -q              # known-answer tests
 cd frontend && npm install && npm run dev
