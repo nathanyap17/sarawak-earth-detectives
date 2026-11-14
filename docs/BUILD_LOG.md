@@ -11,7 +11,7 @@
 ### Decisions
 - Progress (`reached`) is separate from what is being viewed, so revisiting an earlier object never moves the student back.
 - Labels are plain DOM buttons projected each frame (drei `Html` dropped a label and threw unmount errors).
-- "POS" on the landing page is read as Problem, Opportunity, Solution (Nathan to confirm).
+- "POS" on the landing page means Problem, Opportunity, Solution (confirmed by Nathan).
 - Landing figures are only those the master sheet marks checked; honest limits and AI disclosure are on the page.
 ### Verified
 - Browser, real backend: inbox → folder → sign → map (pin by clicking terrain) → cabinet → corkboard → lab (9 tool runs) → typewriter is the next target; labels and guide text correct at each step.

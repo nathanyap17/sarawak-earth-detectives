@@ -132,13 +132,14 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
   useEffect(() => {
     if (!grade || grade.ending === 'sent_back' || !activeCase) return
     const st = useSession.getState()
-    const tools = [...new Set(Object.values(st.results).flatMap((r) => Object.keys(r ?? {})))]
+    const TOOL: Record<string, string> = { magnifier: 'magnifier', season: 'season filter', ruler: 'ruler', scales: 'scales', elnino: 'El Niño lamp', twin: 'twin map' }
+    const tools = [...new Set(Object.values(st.results).flatMap((r) => Object.keys(r ?? {})))].map((t) => TOOL[t] ?? t)
     saveLearnt({
       id: activeCase.id, title: activeCase.title, score: grade.score,
       ending: grade.ending === 'solved_not_enough' ? 'Solved: not enough evidence yet' : 'Solved',
       date: new Date().toISOString().slice(0, 10),
       variables: activeCase.evidence.filter((e) => st.chosen.includes(e.id)).map((e) => e.name), tools,
-      verdict: st.draft ? `${st.draft.direction.replace('_', ' ')}; is it real: ${st.draft.is_it_real.replace('_', ' ')}` : '',
+      verdict: st.draft ? `${st.draft.direction.replace('_', ' ')}; is it real: ${{ yes: 'yes', no: 'no', cant_tell: "can't tell" }[st.draft.is_it_real]}` : '',
     })
   }, [grade, activeCase])
 

@@ -6,6 +6,8 @@ student may retry and must not learn the answer from the note. Guarded like the 
 AI-assisted: written with Claude Code."""
 from __future__ import annotations
 
+import re
+
 from app.agents import guard
 from app.agents.runtime import run_once
 from app.schemas import Grade, Verdict
@@ -19,8 +21,14 @@ what the correct verdict is. If the case was sent back, encourage one more caref
 
 def build_prompt(g: Grade, v: Verdict, steps: str) -> str:
     p = g.parts
+    ending = {
+        "solved": "SOLVED. The student's verdict is correct. Congratulate them; do not ask for another try.",
+        "solved_not_enough": "SOLVED. The student correctly concluded that the record cannot settle the question yet. "
+                             "That honest doubt IS the right answer. Congratulate them; do not ask for another try.",
+        "sent_back": "SENT BACK. The verdict does not follow the evidence yet. The student may try once more.",
+    }[g.ending]
     return f"""FILE
-Ending: {g.ending.replace("_", " ")}. Score {g.score} of 100 (evidence {p.evidence} of 25, method {p.method} of 25,
+Ending: {ending} Score {g.score} of 100 (evidence {p.evidence} of 25, method {p.method} of 25,
 verdict {p.verdict} of 30, explanation {p.explanation} of 20).
 Grader's notes: {" ".join(g.feedback)}
 Badges: {", ".join(b.replace("_", " ") for b in g.badges) or "none"}
@@ -36,6 +44,7 @@ async def note(g: Grade, v: Verdict, steps: str) -> tuple[str | None, str]:
     text, _, err = await run_once("chief", INSTRUCTION, prompt, timeout=10)
     if text is None:
         return None, err
+    text = re.sub(r"^\s*(the\s+)?chief'?s\s+note\s*:\s*", "", text, flags=re.I).strip()
     allowed = prompt + " 25 30 20 100"
     for chk in (guard.check_numbers(text, allowed),):
         if not chk.ok:

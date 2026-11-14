@@ -50,7 +50,7 @@ export function Inbox() {
                   <div><strong>{name}</strong><small>{what}</small></div></li>
               ))}
             </ol>
-            <button className="primary" onClick={() => setWin(mine ? beat : 'call')}>{mine ? 'Continue the case' : 'Open the case folder'}</button>
+            <button className="primary" onClick={() => setWin(mine ? beat : 'call')}>{mine ? (grade ? "See the Chief's stamp" : 'Continue the case') : 'Open the case folder'}</button>
           </article>
         )
       })}
