@@ -20,7 +20,7 @@ CasePack fields: see `schemas.CasePack`. Students can read only `status == "open
 ## 2 · `sessions` (Firestore)
 | Field | Type | Nullable | Notes |
 |---|---|---|---|
-| id | str (ULID) | | |
+| id | str (uuid4 hex) | | |
 | uid | str | | Firebase anonymous uid |
 | nickname | str | | No real names |
 | class_code | str | ✓ | Optional |
