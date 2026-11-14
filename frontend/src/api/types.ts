@@ -42,4 +42,14 @@ export interface Verdict {
 export interface Grade {
   score: number; parts: { evidence: number; method: number; verdict: number; explanation: number }
   ending: Ending; feedback: string[]; badges: Badge[]; report_url: string | null
+  attempt: number; can_retry: boolean
+}
+export interface ChooseResult { chosen: string[]; partner_asks_why: boolean }
+export interface LogEvent {
+  kind: 'beat' | 'clue' | 'open_card' | 'hint'
+  beat?: string; card_id?: string; lonlat?: [number, number]
+}
+export interface SceneManifest {
+  bbox: [number, number, number, number]; width: number; height: number; base: string
+  base_source: string; fires_source: string; fire_days: string[]; missing_days: string[]
 }

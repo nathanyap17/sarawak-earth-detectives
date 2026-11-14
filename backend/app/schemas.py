@@ -182,14 +182,30 @@ class SessionOut(BaseModel):
     created_at: str
 
 
+class ChooseCards(BaseModel):
+    cards: list[str] = Field(min_length=1, max_length=5)
+
+
+class ChooseResult(BaseModel):
+    chosen: list[str]
+    partner_asks_why: bool  # a red herring was picked: the Partner asks "why this one?"
+
+
+class LogEvent(BaseModel):
+    kind: Literal["beat", "clue", "open_card", "hint"]
+    beat: str | None = None
+    card_id: str | None = None
+    lonlat: tuple[float, float] | None = None
+
+
 class Verdict(BaseModel):
     session_id: str
-    what: str
-    where: str
+    what: str = Field(max_length=400)
+    where: str = Field(max_length=200)
     direction: Literal["worsening", "improving", "no_change"]
-    how_much: str
+    how_much: str = Field(max_length=200)
     is_it_real: IsItReal
-    why_hypothesis: str
+    why_hypothesis: str = Field(max_length=600)
     confidence: Literal[1, 2, 3]
 
 
@@ -207,3 +223,5 @@ class Grade(BaseModel):
     feedback: list[str]
     badges: list[Badge]
     report_url: str | None = None
+    attempt: int = 1
+    can_retry: bool = False

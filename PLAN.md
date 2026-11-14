@@ -42,7 +42,7 @@
 | Answer key for case 001; `cases/001.json` | **Gate 2:** a real stamp comes back from `POST /sessions/{id}/analyse` |
 | **Sat 17:00 check** | Do answer keys give a mix of verdicts? If all "not enough evidence", swap a region/measurement |
 
-### Phase 3 — Lite mode, seven beats (Sat 17:00–22:00)
+### Phase 3 — Lite mode, seven beats (Sat 17:00–22:00) ✅ done 15:00
 | Task | Exit condition |
 |---|---|
 | Routes §9 (cases, sessions, scene, evidence, analyse, verdict) | OpenAPI matches `src/api/types.ts` |

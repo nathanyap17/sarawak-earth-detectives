@@ -17,7 +17,9 @@
 | Mix of verdicts (EXP-5) | ✅ | 001 not_enough_evidence; heat worsening |
 | Partner refuses the answer ×10 | ⬜ | |
 | Number guard blocks a wrong figure | ⬜ | |
-| Lite mode at phone width | ⬜ | |
+| Lite mode at phone width | ✅ | 375 px, no sideways scroll on 6 views, 2026-11-14 |
+| Case 001 solvable end to end (Gate 3 local) | ✅ | browser run 100/100, honest doubt |
+| Scene imagery saved, not live (EXP-10) | ✅ | GIBS, 508 KB, one missing day noted |
 | 3D stations reachable | ⬜ | |
 | Public link, private window, no login | ⬜ | |
 
@@ -36,3 +38,4 @@ See the tool table in `../../WORKSPACE_SETUP.md`.
 ## Log
 - 2026-11-14: workspace and repo initialised.
 - 2026-11-14 13:30: Phase 2 done, Gate 2 passed.
+- 2026-11-14 15:00: Phase 3 done; case 001 solvable in lite mode.

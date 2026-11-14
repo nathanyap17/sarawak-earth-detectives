@@ -1,5 +1,28 @@
 # BUILD_LOG.md
 
+## [2026-11-14 ~15:00 MYT] Phase 3 done: case 001 solvable end to end in lite mode — read this first
+### What changed
+- Backend: `app/grading.py` (rubric 25/25/30/20, endings, badges, deterministic feedback); routes `POST /sessions/{id}/choose`, `/log`, `/verdict` (one retry after "sent back", then 409). `app/vault/gibs.py` saves scene imagery.
+- Frontend: seven beats in `src/beats/` (Call, Scene, Locker, Board, Lab, Deduction, Closed), `src/lite/LiteApp.tsx` with a progress rail, `src/beats/shared.tsx` (mission badge, stamp, ECharts host), Zustand store with the verdict draft, all API calls in `src/api/client.ts`.
+- Scene imagery: `frontend/public/scenes/001/` = GIBS Blue Marble relief base + 88 daily VIIRS SNPP thermal-anomaly frames (Feb 1–Apr 30 2026), 508 KB. GIBS has no frame for 2026-04-29; the manifest records it and the page says so.
+- `.claude/launch.json` in the repo (backend :8000, frontend :5173).
+### Decisions
+- **Grading rules** (code, §16): evidence = 0.4 main cards + 0.2 relevant + 0.4 no red herring. Method = 10 season-before-scales + 10 scales on every main card + 5 lamp on a main card. Verdict = 10 direction + 10 is-it-real + 10 how-much (a number inside a main card's range; or no number when the key is no_change / not_enough). Explanation = 12 hedged + 8 no overclaim (min 15 chars). For not_enough_evidence, any direction that matches the raw lean, or "no change", earns direction marks.
+- The Partner's red-herring prompt is a canned line for now; the ADK Partner arrives in Phase 4.
+- Dropped `echarts-for-react` (its CJS core entry breaks in Vite dev); replaced by a 15-line `EChart` host.
+- The trend line on charts is drawn from the backend's rate through the means (OLS passes through the means), so no new number is invented.
+### Verified
+- `uv run pytest -q`: **25 passed** (grading: ideal honest-doubt run = 100 with 4+ badges; overclaim sent back then solved on retry, third submit 409; red herring costs evidence marks; grade carries no answer-key fields).
+- Browser, end to end (in-app preview, real backend): sign → pin → choose 3 → flip 3 charts → season/scales/lamp on main cards → wrong verdict "SENT BACK" 60/100 → draft kept → honest doubt "SOLVED — NOT ENOUGH EVIDENCE" **100/100**, badges Clean Signal, Red Herring, Honest Doubt, Second Opinion, El Niño Eye. About 14 s scripted.
+- All six tools render a stamped result with "MERRA-2 via NASA POWER · data to 2026-11-10".
+- **Phone width 375 px: no sideways scroll** on Call, Scene, Locker, Board, Lab, Lab twin.
+- Frontend build 843 kB JS / 277 kB gzip.
+### Still broken / unverified
+- Bug fixed during the run: a retry wiped the verdict form; the draft now lives in the store.
+- Deduction and Closed weren't checked at 375 px by script (forms are single-column; low risk).
+- No hint ladder in the UI yet (Phase 4 Partner). No case report PDF (Phase 5).
+- Sessions are in memory; a backend restart mid-case loses the session.
+
 ## [2026-11-14 ~13:30 MYT] Phase 2 done: Gate 2 passed — read this first
 ### What changed
 - `app/analysis/trend.py`: season filter, ruler (OLS + HAC, 2 lags), scales (OLS t-test + Hamed-Rao MK + Sen; both p < 0.05 and same sign → significant), El Niño lamp (RONI, time never an input), years-needed (SE ∝ n^-1.5, capped 51), twin, card outcome, overall verdict.

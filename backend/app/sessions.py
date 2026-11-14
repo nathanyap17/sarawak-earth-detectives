@@ -23,6 +23,10 @@ class Session:
     log: list[dict] = field(default_factory=list)  # {"at", "kind", ...}
     analyses: list[dict] = field(default_factory=list)  # AnalysisResult dumps
     partner_turns: int = 0
+    chosen: list[str] = field(default_factory=list)
+    clue_pins: list[list[float]] = field(default_factory=list)
+    verdicts: list[dict] = field(default_factory=list)
+    grade: dict | None = None
 
     def record(self, kind: str, **data) -> None:
         self.log.append({"at": now(), "kind": kind, **data})
