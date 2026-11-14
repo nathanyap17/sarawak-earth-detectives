@@ -31,6 +31,7 @@ export function ClosedBeat({ onRetry, onShelf }: { onRetry: () => void; onShelf:
         <dt>Verdict</dt><dd>{g.parts.verdict} / 30</dd>
         <dt>Explanation</dt><dd>{g.parts.explanation} / 20</dd>
       </dl>
+      {g.chief_note && <blockquote className="chief-note">{g.chief_note}<span className="ai-tag">Worded by AI from the code's grade</span></blockquote>}
       <h3>The Chief's notes</h3>
       <ul className="feedback">{g.feedback.map((f, i) => <li key={i}>{f}</li>)}</ul>
       {g.badges.length > 0 && (

@@ -1,5 +1,28 @@
 # BUILD_LOG.md
 
+## [2026-11-14 ~18:30 MYT] Phase 4: Partner, Chief, Firestore sessions, deploy files — read this first
+### What changed
+- `app/agents/`: `runtime.py` (one-shot ADK `LlmAgent` + `InMemoryRunner`, hard timeout, warm-up at startup), `guard.py` (number guard + answer guard), `partner.py` (hint ladder per stage, the student's steps without any result, last 3 exchanges), `chief.py` (2–3 sentences wording the code grade).
+- Routes: `POST /sessions/{id}/partner` (30 turns per session, then 429). `/verdict` is async and adds `chief_note`. Every mutating route calls `sessions.save(s, fields…)`.
+- `app/sessions.py`: `FirestoreStore` (collection `sessions`; reads per request; writes only the changed fields and appends the log with ArrayUnion so concurrent requests don't overwrite; clue pins stored as {lon, lat}). `SESSION_BACKEND=memory|firestore`.
+- Frontend: `beats/Partner.tsx` in both modes (nudge → pointer → example buttons, a question box, AI tag), Chief's note on Case Closed, store gains `chat` and `hintRung`.
+- Deploy: root `Dockerfile` (vault and cases baked in), `.gcloudignore`, `.dockerignore`, `infra/DEPLOY.md` with the exact commands. Removed `backend/Dockerfile`.
+### Contract changes
+`Grade.chief_note: str | None`; new `PartnerAsk {beat, rung 1–3, message ≤ 300}` and `PartnerReply {text, rung, source ai|ladder, turns_left}`. Mirrored in `types.ts`.
+### Decisions
+- The Partner never receives stamps, rates, p-values or the key; it only sees which tools were used on which cards.
+- Number guard: every figure must appear in code-supplied text; numbers the student typed don't count, so a guess can't be confirmed. Answer guard: result phrasing is blocked unless it is copied from the approved ladder. On any failure the student gets the approved ladder hint.
+- The Chief gets the code grade, not the answer key, because a sent-back student can retry.
+- Backend is the only Firestore client (Admin credentials); the rules deny all browser access.
+### Verified
+- `uv run pytest -q`: **47 passed** (22 new: guard, prompt contains no results/key, leak → ladder, turn cap, Chief guard).
+- EXP-7 live: 0/10 leaks. Firestore session round trip through `FirestoreStore` OK (0.65 s).
+- Browser: Partner nudge and a "just tell me the answer" question answered in ~1.1 s, no leak. API run: sent back, then solved 100/100 with a Chief note quoting the student's verdict.
+### Still broken / unverified
+- **Not deployed**: Nathan runs `infra/DEPLOY.md`. The Docker image hasn't been built locally (Docker daemon off); Cloud Build will build it.
+- Firebase Anonymous Auth still off; the frontend doesn't sign in yet (no backend check depends on it).
+- Chief takes 3–6 s, so the verdict submit takes that long (10 s timeout, then the code feedback alone).
+
 ## [2026-11-14 ~17:00 MYT] Phase 3.5 first pass: case 001 solvable inside the 3D office — read this first
 ### What changed
 - `frontend/src/office/`: `OfficeApp` (R3F canvas, camera rig, station buttons, beat panel), `Room` (office from primitives: desk, folder, phone, typewriter, lamp, cabinet, corkboard, lab bench with six tools, shelf, window to rainforest, Sarawak flag, rattan rug), `MapTable` (relief + GIBS drape, VIIRS embers, region box, clue pins by clicking the terrain), `Hornbill` (tilts head on a red herring), `stations.ts`, `paint.ts` (canvas textures, no downloads), `capability.ts` (fallback rules).

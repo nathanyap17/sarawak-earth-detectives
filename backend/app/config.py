@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     model_name: str = "gemini-3.5-flash-lite"
     model_timeout_s: float = 8.0
     mock_agents: bool = False
+    session_backend: Literal["memory", "firestore"] = "memory"
 
     # NASA / partner data (ingest jobs only, never at request time)
     firms_map_key: str | None = None

@@ -1,0 +1,20 @@
+# What `gcloud run deploy --source .` uploads to Cloud Build. Written explicitly (not from
+# .gitignore) because the image needs data/vault, which git ignores.
+.gcloudignore
+.git/
+.claude/
+.env
+.env.*
+*.key
+*.pem
+*service-account*.json
+*credentials*.json
+data/raw/
+frontend/
+docs/
+infra/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+backend/tests/
+*.md

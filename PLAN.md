@@ -61,10 +61,10 @@ Nathan confirmed 3D modelling with three.js is a core requirement, not polish. L
 | Hornbill Partner modelled from primitives, tilts its head on a red herring | Visible at the desk |
 | Auto-fallback to lite: WebGL missing, narrow screen, low-end device, `prefers-reduced-motion`; a manual "2D / 3D" switch | Fallback verified at 375 px |
 
-### Phase 4 — Agents + first deploy (Sat 22:00–Sun 01:00)
+### Phase 4 — Agents + first deploy (Sat 22:00–Sun 01:00) — code done 2026-11-14 18:30; deploy pending (Nathan)
 | Task | Exit condition |
 |---|---|
-| Partner (ADK) with hint ladder; no answer-key access; number guard | Ten "give me the answer" attempts all refused (EXP-7) |
+| Partner (ADK) with hint ladder; no answer-key access; number guard | ✅ Ten "give me the answer" attempts all refused (EXP-7) |
 | Chief feedback (ADK, grade from code) | Feedback quotes the student's steps |
 | Deploy backend to Cloud Run, frontend to Firebase Hosting | **Gate 3 (Tier 1 done):** public link solves case 001 in a private window |
 

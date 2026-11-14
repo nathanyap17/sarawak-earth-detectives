@@ -12,6 +12,7 @@ import { ClosedBeat } from '../beats/ClosedBeat'
 import { DeductionBeat } from '../beats/DeductionBeat'
 import { LabBeat } from '../beats/LabBeat'
 import { LockerBeat } from '../beats/LockerBeat'
+import { Partner } from '../beats/Partner'
 import { BEAT_LABEL, BEATS, useSession, type Beat } from '../state/session'
 import { Hornbill } from './Hornbill'
 import { MapTable, useScene } from './MapTable'
@@ -156,6 +157,7 @@ export function OfficeApp({ onLite, note }: { onLite: () => void; note?: string 
         {beat === 'lab' && <LabBeat onDone={() => go('deduction')} />}
         {beat === 'deduction' && <DeductionBeat onDone={() => go('closed')} />}
         {beat === 'closed' && <ClosedBeat onRetry={() => go('deduction')} onShelf={() => { reset(); go('call') }} />}
+        <Partner />
         <p className="source foot-note">Data: NASA POWER (MERRA-2), NASA GIBS (VIIRS), NOAA RONI. Numbers come from statistics code, not AI.</p>
       </aside>
     </div>

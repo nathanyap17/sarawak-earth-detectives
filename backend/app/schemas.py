@@ -225,3 +225,17 @@ class Grade(BaseModel):
     report_url: str | None = None
     attempt: int = 1
     can_retry: bool = False
+    chief_note: str | None = None  # Chief agent's wording of the code grade; None → show feedback only
+
+
+class PartnerAsk(BaseModel):
+    beat: Literal["call", "scene", "locker", "board", "lab", "deduction", "closed"]
+    rung: Literal[1, 2, 3] = 1
+    message: str = Field(default="", max_length=300)
+
+
+class PartnerReply(BaseModel):
+    text: str
+    rung: int
+    source: Literal["ai", "ladder"]
+    turns_left: int

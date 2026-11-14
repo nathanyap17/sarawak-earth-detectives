@@ -1,0 +1,19 @@
+# Same exclusions as .gcloudignore, for local docker builds.
+.gcloudignore
+.git/
+.claude/
+.env
+.env.*
+*.key
+*.pem
+*service-account*.json
+*credentials*.json
+data/raw/
+frontend/
+docs/
+infra/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+backend/tests/
+*.md

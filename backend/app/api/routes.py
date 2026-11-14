@@ -7,9 +7,13 @@ import time
 from fastapi import APIRouter, HTTPException
 
 from app import casework
+from app.agents import chief, partner
+from app.config import get_settings
 from app.grading import Attempt, grade
 from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChooseCards, ChooseResult,
-                         Grade, LogEvent, Series, SessionCreate, SessionOut, Verdict)
+                         Grade, LogEvent, PartnerAsk, PartnerReply, Series, SessionCreate,
+                         SessionOut, Verdict)
+from app.vault.cards import CARDS
 from app.sessions import store as sessions
 from app.vault import store as vault
 
@@ -65,6 +69,7 @@ def create_session(body: SessionCreate):
     _case(body.case_id)
     s = sessions.create(body.case_id, body.nickname.strip(), body.class_code)
     s.record("start")
+    sessions.save(s)
     return SessionOut(id=s.id, case_id=s.case_id, nickname=s.nickname, created_at=s.created_at)
 
 
@@ -89,6 +94,7 @@ def analyse(session_id: str, body: AnalysisRequest):
     s.analyses.append(res.model_dump(exclude={"series_out", "monthly_out", "twin"}))
     s.record("tool", tool=body.tool, card_id=body.card_id, stamp=res.stamp,
              ms=round((time.perf_counter() - t0) * 1000))
+    sessions.save(s, "analyses")
     return res
 
 
@@ -108,6 +114,7 @@ def choose(session_id: str, body: ChooseCards):
         raise HTTPException(400, "card not in this case")
     s.chosen = cards
     s.record("choose", cards=cards)
+    sessions.save(s, "chosen")
     return ChooseResult(chosen=cards, partner_asks_why=bool(set(cards) & set(c.red_herrings)))
 
 
@@ -117,11 +124,47 @@ def log(session_id: str, body: LogEvent):
     if body.kind == "clue" and body.lonlat and len(s.clue_pins) < 3:
         s.clue_pins.append(list(body.lonlat))
     s.record(body.kind, **body.model_dump(exclude={"kind"}, exclude_none=True))
+    sessions.save(s, "clue_pins")
     return {"ok": True}
 
 
+@router.post("/sessions/{session_id}/partner", response_model=PartnerReply)
+async def ask_partner(session_id: str, body: PartnerAsk):
+    """A hint from the hornbill. The Partner never receives the answer key or any test result."""
+    s = _session(session_id)
+    c = _case(s.case_id)
+    cap = get_settings().partner_max_turns_per_session
+    if s.partner_turns >= cap:
+        raise HTTPException(429, "The Partner needs a rest. Use the hints you already have.")
+    cards = {i: CARDS[i] for i in c.evidence}
+    r = await partner.ask(c, cards, body.beat, body.rung, body.message.strip(), s.chosen, s.log,
+                          s.partner_chat)
+    s.partner_turns += 1
+    s.partner_chat.append({"q": body.message.strip()[:300], "a": r.text, "beat": body.beat,
+                           "rung": r.rung, "source": r.source})
+    s.record("partner", beat=body.beat, rung=r.rung, source=r.source, note=r.note,
+             ms=round(r.seconds * 1000))
+    sessions.save(s, "partner_turns", "partner_chat")
+    return PartnerReply(text=r.text, rung=r.rung, source=r.source, turns_left=cap - s.partner_turns)
+
+
+def _steps_summary(s, c) -> str:
+    used: dict[str, list[str]] = {}
+    for e in s.log:
+        if e["kind"] == "tool":
+            used.setdefault(e["card_id"], []).append(e["tool"])
+    name = lambda i: CARDS[i].name if i in CARDS else i  # noqa: E731
+    parts = [f"chose {', '.join(name(i) for i in s.chosen) or 'no cards'}"]
+    label = {"magnifier": "the magnifier", "season": "the season filter", "ruler": "the ruler",
+             "scales": "the scales", "elnino": "the El Nino lamp", "twin": "the twin map"}
+    parts += [f"used {', '.join(label.get(x, x) for x in dict.fromkeys(t))} on {name(cid)}" for cid, t in used.items()]
+    hints = sum(1 for e in s.log if e["kind"] == "partner")
+    parts.append(f"asked the Partner {hints} time(s)")
+    return "; ".join(parts) + "."
+
+
 @router.post("/sessions/{session_id}/verdict", response_model=Grade)
-def submit_verdict(session_id: str, body: Verdict):
+async def submit_verdict(session_id: str, body: Verdict):
     s = _session(session_id)
     if body.session_id != session_id:
         raise HTTPException(400, "session mismatch")
@@ -136,5 +179,10 @@ def submit_verdict(session_id: str, body: Verdict):
     g.can_retry = g.ending == "sent_back" and attempt_no < 2
     s.verdicts.append(body.model_dump())
     s.grade = g.model_dump()
-    s.record("verdict", attempt=attempt_no, ending=g.ending, score=g.score)
+    note, why = await chief.note(g, body, _steps_summary(s, c))
+    g.chief_note = note
+    s.grade = g.model_dump()
+    s.record("verdict", attempt=attempt_no, ending=g.ending, score=g.score,
+             chief="ai" if note else f"code ({why})")
+    sessions.save(s, "verdicts", "grade")
     return g

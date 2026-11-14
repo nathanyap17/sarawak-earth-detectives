@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import type { AnalysisResult, CasePublic, Grade, Series, Verdict } from '../api/types'
 
 export type Draft = Omit<Verdict, 'session_id'>
+export interface ChatLine { q: string; a: string; source: 'ai' | 'ladder'; beat: string }
 
 export const BEATS = ['call', 'scene', 'locker', 'board', 'lab', 'deduction', 'closed'] as const
 export type Beat = (typeof BEATS)[number]
@@ -27,6 +28,9 @@ interface State {
   opened: string[]
   results: Record<string, Partial<Record<AnalysisResult['tool'], AnalysisResult>>>
   grade: Grade | null
+  hintRung: Record<string, number>
+  chat: ChatLine[]
+  addChat: (c: ChatLine, group: string, rung: number) => void
   draft: Draft | null
   setDraft: (d: Draft) => void
   setNickname: (n: string) => void
@@ -44,6 +48,7 @@ interface State {
 const fresh = {
   activeCase: null, sessionId: null, beat: 'call' as Beat, reached: 0, sceneDay: 0, cluePins: [], chosen: [],
   herringWarning: false, series: {}, opened: [], results: {}, grade: null, draft: null as Draft | null,
+  hintRung: {} as Record<string, number>, chat: [] as ChatLine[],
 }
 
 export const useSession = create<State>((set) => ({
@@ -62,5 +67,6 @@ export const useSession = create<State>((set) => ({
   })),
   setGrade: (grade) => set({ grade }),
   setDraft: (draft) => set({ draft }),
+  addChat: (c, group, rung) => set((s) => ({ chat: [...s.chat, c].slice(-8), hintRung: { ...s.hintRung, [group]: Math.max(s.hintRung[group] ?? 0, rung) } })),
   reset: () => set({ ...fresh }),
 }))

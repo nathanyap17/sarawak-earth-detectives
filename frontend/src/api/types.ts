@@ -42,8 +42,9 @@ export interface Verdict {
 export interface Grade {
   score: number; parts: { evidence: number; method: number; verdict: number; explanation: number }
   ending: Ending; feedback: string[]; badges: Badge[]; report_url: string | null
-  attempt: number; can_retry: boolean
+  attempt: number; can_retry: boolean; chief_note: string | null
 }
+export interface PartnerReply { text: string; rung: number; source: 'ai' | 'ladder'; turns_left: number }
 export interface ChooseResult { chosen: string[]; partner_asks_why: boolean }
 export interface LogEvent {
   kind: 'beat' | 'clue' | 'open_card' | 'hint'

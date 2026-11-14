@@ -9,6 +9,7 @@ import { ClosedBeat } from '../beats/ClosedBeat'
 import { DeductionBeat } from '../beats/DeductionBeat'
 import { LabBeat } from '../beats/LabBeat'
 import { LockerBeat } from '../beats/LockerBeat'
+import { Partner } from '../beats/Partner'
 import { SceneBeat } from '../beats/SceneBeat'
 import { BEAT_LABEL, BEATS, useSession, type Beat } from '../state/session'
 
@@ -43,6 +44,7 @@ export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: stri
         {beat === 'lab' && <LabBeat onDone={() => go('deduction')} />}
         {beat === 'deduction' && <DeductionBeat onDone={() => go('closed')} />}
         {beat === 'closed' && <ClosedBeat onRetry={() => go('deduction')} onShelf={() => { reset(); go('call') }} />}
+        <Partner />
       </main>
       <footer className="foot">
         Data: NASA POWER (MERRA-2), NASA GIBS (VIIRS), NOAA RONI. Numbers come from statistics code, not AI.

@@ -1,0 +1,79 @@
+"""Run an ADK LlmAgent once, with a hard timeout (EXP-6: gemini-3.5-flash-lite @ global).
+Each call gets a fresh ADK session; the caller passes all context in the prompt, so the agent
+never holds state the code didn't give it.
+AI-assisted: written with Claude Code."""
+from __future__ import annotations
+
+import asyncio
+import logging
+import os
+import time
+
+from app.config import get_settings
+
+log = logging.getLogger("agents")
+_runners: dict[str, object] = {}
+
+
+def _env() -> None:
+    s = get_settings()
+    os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "TRUE")
+    if s.google_cloud_project:
+        os.environ.setdefault("GOOGLE_CLOUD_PROJECT", s.google_cloud_project)
+    os.environ["GOOGLE_CLOUD_LOCATION"] = s.google_cloud_location  # model endpoint, not the app region
+
+
+def _runner(name: str, instruction: str):
+    if name not in _runners:
+        _env()
+        from google.adk.agents import LlmAgent
+        from google.adk.runners import InMemoryRunner
+        from google.genai import types
+
+        s = get_settings()
+        agent = LlmAgent(
+            name=name, model=s.model_name, instruction=instruction,
+            generate_content_config=types.GenerateContentConfig(
+                max_output_tokens=s.partner_max_output_tokens, temperature=0.4,
+                thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")))
+        _runners[name] = InMemoryRunner(agent=agent, app_name=f"sed-{name}")
+    return _runners[name]
+
+
+async def _run(name: str, instruction: str, prompt: str) -> str:
+    from google.genai import types
+
+    r = _runner(name, instruction)
+    sess = await r.session_service.create_session(app_name=f"sed-{name}", user_id="student")
+    out = ""
+    async for ev in r.run_async(user_id="student", session_id=sess.id,
+                                new_message=types.Content(role="user", parts=[types.Part(text=prompt)])):
+        if ev.content and ev.content.parts:
+            out += "".join(p.text or "" for p in ev.content.parts if not getattr(p, "thought", False))
+    return out.strip()
+
+
+async def run_once(name: str, instruction: str, prompt: str, timeout: float | None = None) -> tuple[str | None, float, str]:
+    """(text or None, seconds, error). None means: use the deterministic fallback."""
+    s = get_settings()
+    if s.mock_agents:
+        return None, 0.0, "mock"
+    t0 = time.perf_counter()
+    try:
+        text = await asyncio.wait_for(_run(name, instruction, prompt), timeout or s.model_timeout_s)
+        dt = time.perf_counter() - t0
+        log.info("agent=%s ok %.2fs chars=%d", name, dt, len(text))
+        return (text or None), dt, "" if text else "empty"
+    except asyncio.TimeoutError:
+        dt = time.perf_counter() - t0
+        log.warning("agent=%s timeout %.2fs", name, dt)
+        return None, dt, "timeout"
+    except Exception as e:  # model or network error: the student still gets a hint
+        dt = time.perf_counter() - t0
+        log.warning("agent=%s error %s: %s", name, type(e).__name__, str(e)[:200])
+        return None, dt, type(e).__name__
+
+
+async def warm(name: str, instruction: str) -> None:
+    """Hide the 10–27 s first-call cold start (EXP-6) by calling once at startup."""
+    await run_once(name, instruction, "Say: ready", timeout=40)
