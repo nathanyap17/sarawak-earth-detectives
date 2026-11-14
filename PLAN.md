@@ -87,7 +87,7 @@ Scout + Case Builder drafting case 004 with admin approval; polish (stamps, horn
 ## Gates / holds
 - No demo or deploy unless known-answer tests pass.
 - No case `open` without the admin review route.
-- Nathan runs every login, deploy and push.
+- Nathan runs every login and approves every deploy and push; Claude may run a push or deploy when Nathan asks for it (2026-11-15).
 
 ## Cut order (cut from the top)
 1. Sound and animation polish

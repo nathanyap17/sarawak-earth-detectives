@@ -46,7 +46,7 @@ Full list with right/wrong examples: `.claude/skills/sed-rules/SKILL.md`.
 - **Times:** store UTC ISO-8601; display MYT (Asia/Kuching). Data dates are `YYYY-MM-DD`.
 - **ADK:** read `.claude/skills/google-adk/SKILL.md` and grep `../adk-python` before writing agent code.
 - **AI disclosure:** AI-assisted source files carry a one-line header note; README lists tools used.
-- **Ownership:** Nathan runs logins, deploys and pushes. Claude prepares the exact command.
+- **Ownership (changed 2026-11-15):** Nathan approves every push and deploy. Claude may run them when Nathan asks for that push or deploy in his message (one request covers that action only, not later ones); otherwise Claude prepares the exact command. Logins, re-auth and 2FA stay with Nathan. Before a deploy Claude runs the tests and afterwards checks `/health` and the live site.
 
 ## Deployment targets
 | | LOCAL | CLOUD |
@@ -70,4 +70,4 @@ cd frontend && npm run build
 The seven beats for case 001, real statistics in code, the student-written verdict, the Partner's "no answers" rule, lite mode.
 
 ## Shipping status
-2026-11-14: deployed (Gate 3 passed). Landing https://ssc-workspace-2026.web.app/ · app https://ssc-workspace-2026.web.app/#/play · API https://sed-api-f7fsjojvgq-as.a.run.app (Cloud Run `sed-api`, asia-southeast1, min 1 instance). Only Nathan deploys or pushes.
+2026-11-14: deployed (Gate 3 passed). Landing https://ssc-workspace-2026.web.app/ · app https://ssc-workspace-2026.web.app/#/play · API https://sed-api-f7fsjojvgq-as.a.run.app (Cloud Run `sed-api`, asia-southeast1, min 1 instance). Pushes and deploys need Nathan's ask (see Ownership).

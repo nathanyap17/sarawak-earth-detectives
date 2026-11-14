@@ -1,6 +1,6 @@
 # DEPLOY.md: first deploy (Phase 4, Gate 3)
 
-Nathan runs every command. Run them from the repository root in Git Bash, with the gcloud configuration `sed` active.
+Nathan approves every deploy; Claude may run these commands when Nathan asks for that deploy (logins stay with Nathan). Run them from the repository root in Git Bash, with the gcloud configuration `sed` active.
 Values here are ids and URLs, not secrets.
 
 ## 0. Before deploying
