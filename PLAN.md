@@ -27,10 +27,11 @@
 ### Phase 1 — Data access (Sat 11:30–13:00) · MASTER_SHEET §22
 | Task | Exit condition |
 |---|---|
-| EXP-1 NASA POWER daily point near Miri, 1981→now | CSV on disk; variable names recorded |
-| EXP-2 FIRMS archive request for Sarawak bbox 2001→now | Request submitted (email pending) |
-| EXP-3 NOAA ONI download | File in `data/raw/` |
-| EXP-4 One hand trend test on Miri | Real numbers in BUILD_LOG |
+| EXP-1 NASA POWER daily point near Miri, 1981→now | ✅ 2026-11-14 (use inland land cells) |
+| EXP-2 FIRMS archive request for Sarawak bbox 2001→now | Request submitted (email pending) — **Nathan** |
+| EXP-3 NOAA ONI download | ✅ 2026-11-14 (RONI chosen) |
+| EXP-4 One hand trend test on Miri | ✅ 2026-11-14 (BUILD_LOG) |
+| EXP-11 IMERG cross-check of POWER rain | Before rain cards enter an answer key |
 | **Gate 1** | NASA data for case 001 is on disk. If POWER fails, stop and fix data access |
 
 ### Phase 2 — Analysis + vault for case 001 (Sat 13:00–17:00)

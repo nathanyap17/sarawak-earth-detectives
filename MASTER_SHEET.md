@@ -163,7 +163,7 @@ Cases must open instantly, so the data can't be fetched on demand. The Data Vaul
 | Measurement | Plain meaning | NASA source | Record from | Freshness | Checked |
 |---|---|---|---|---|---|
 | Active fires | Where satellites see fire | FIRMS (MODIS, VIIRS) | 2000 | Within 3 hours | ✅ |
-| Rainfall | Rain measured from space | GPM IMERG | 2001 (via POWER) | About 4 hours (early), 14 hours (late) | ✅ |
+| Rainfall | Rain measured from space | MERRA-2 bias-corrected, via POWER (1981→); GPM IMERG as cross-check (2001→) | 1981 | POWER: ~3 days; IMERG: about 4 hours (early), 14 hours (late) | ✅ (corrected 14 Nov: POWER rain is MERRA-2, not IMERG) |
 | Air temperature, humidity, wind | Weather near the ground | MERRA-2 via POWER | 1981 | A few days ⚠️ | ✅ span |
 | Smoke and dust | How much particles dim the air | MERRA-2 aerosols | 1980 | A few days to weeks ⚠️ | ✅ exists |
 | Soil wetness (satellite) | How wet the ground is | SMAP Level 4 | 2015 | About 3 days ⚠️ | ✅ span |
@@ -173,7 +173,7 @@ Cases must open instantly, so the data can't be fetched on demand. The Data Vaul
 | Stored water | All water on and under the land | GRACE, GRACE-FO | 2002 | Months ⚠️ | ⚠️ |
 | Terrain | The shape of the land | NASADEM | Fixed | Fixed | ✅ exists |
 | Satellite imagery | What the land looks like | GIBS | 2000 ⚠️ | About a day ⚠️ | ✅ exists |
-| El Niño index | Strength of El Niño | NOAA | 1950 | Monthly | ✅ |
+| El Niño index | Strength of El Niño | NOAA RONI | 1950 | Monthly | ✅ |
 
 Stretch measurements, only if time allows: air pollution gases (OMI), temperature aloft (AIRS), sea level (satellite altimetry).
 
@@ -321,7 +321,7 @@ Confirm every link opens before submitting. Delete any row you did not actually 
 | Link text | URL | Used for | Checked |
 |---|---|---|---|
 | NASA POWER | https://power.larc.nasa.gov/ | Weather and rainfall records by location | ✅ |
-| GPM IMERG | https://gpm.nasa.gov/data/imerg | Rainfall | ✅ |
+| GPM IMERG | https://gpm.nasa.gov/data/imerg | Rainfall cross-check against POWER (EXP-11) | ✅ |
 | MERRA-2 | https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/ | Weather, soil wetness, smoke and dust | ✅ |
 | FIRMS | https://firms.modaps.eosdis.nasa.gov/ | Active fire detections | ✅ The by-country API is currently unavailable; use the area API with a free map key, and the archive download for past years |
 | SMAP Level 4 Soil Moisture | https://nsidc.org/data/spl4smgp/versions/7 | Soil wetness | ✅ (this version is retired; link the current one) |
@@ -341,7 +341,7 @@ Confirm every link opens before submitting. Delete any row you did not actually 
 |---|---|---|---|
 | KNMI Climate Explorer | https://climexp.knmi.nl/ | Cross-checking our trend numbers | ✅ |
 | NOAA Climate Data Online | https://www.ncei.noaa.gov/cdo-web/ | Ground stations, to check satellite records | From the challenge resources |
-| NOAA Oceanic Niño Index | https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php | El Niño index | ✅ (page says it has moved; use the new link it gives) |
+| NOAA Relative Oceanic Niño Index (RONI) | https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/ | El Niño index (official NOAA ENSO index since NWS statement 26-05; removes tropical-mean warming) | ✅ 14 Nov |
 | ESA Climate Detectives | https://education.esa.int/the_climate_detectives_school_project/ | Prior work reviewed | ✅ |
 | Statistical test methods to detect trends in time series data | https://medium.com/@snp.kriss/statistical-test-methods-to-detect-trends-in-time-series-data-b361a0ec530b | Method reference | From the challenge resources |
 | A Comprehensive Guide to Statistical Significance | https://www.statsig.com/perspectives/a-comprehensive-guide-to-statistical-significance | Method reference | From the challenge resources |
@@ -747,4 +747,5 @@ If step 1 fails, stop and solve data access before building anything else.
 ## Change log
 
 - **v1, 14 Nov 2026:** first full sheet. Name set to Sarawak Earth Detectives.
+- **v1.2, 14 Nov 2026 (build session):** POWER tested and works (no login, 1981 to 10 Nov 2026). POWER rain is MERRA-2 bias-corrected, not IMERG; IMERG becomes a cross-check. El Niño index switched to NOAA RONI. Coastal grid cells behave like sea; regions use land cells only. Open checks 2, 5 and 10 closed. Details: `sandbox/EXPERIMENTS.md` EXP-1, 3, 4, 11.
 - **v1.1, 14 Nov 2026:** pre-build review. Added submission rules (30-second demo, public links, AI disclosure, no minors on video), a clock-based schedule in two tracks with three tiers, data contracts, the analysis specification, the hackathon data path, repository layout, the 3D build specification, agent rules, definition of done and a first-hour checklist. Noted that the FIRMS by-country API is unavailable.
