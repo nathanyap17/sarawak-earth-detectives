@@ -165,6 +165,27 @@ button.mode { padding: 4px 10px; font-size: .85rem; }
 @media (prefers-reduced-motion: reduce) {
   .spot-label.next, .office-window, .guide-bird, .guide.nudge .guide-bird, .bird .pupil { animation: none; }
 }
+.guide-note { display: block; margin: 4px 0 0; font-size: .8rem; color: #8a4b00; }
+.guide.thinking .guide-say { color: var(--muted); font-style: italic; }
+.guide.thinking .guide-bird { animation: hop .7s ease-in-out infinite; }
+.guide-log { margin-top: 8px; font-size: .82rem; }
+.guide-log summary { cursor: pointer; color: var(--muted); }
+.guide-log ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; max-height: 22vh; overflow-y: auto; }
+.guide-log strong { display: block; font-size: .75rem; color: var(--muted); font-weight: 600; }
+/* Phone width: the window becomes a bottom sheet and the guide sits above it, small. */
+@media (max-width: 640px) {
+  .office-window { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 60vh; }
+  @keyframes win-in { from { opacity: 0; transform: translateY(40px); } }
+  .office:has(.office-window) .guide { bottom: calc(60vh + 16px); max-width: calc(100vw - 16px); left: 8px; }
+  .office:has(.office-window) .guide-body { max-height: 24vh; }
+  .office:has(.office-window) .guide-min { bottom: calc(60vh + 16px); left: 8px; }
+  .guide { max-width: calc(100vw - 20px); }
+}
+.hint-bad { color: var(--red); }
+.hint-ok { color: var(--ok); }
+.filed { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 16px; }
+.filed dt { font-weight: 600; } .filed dd { margin: 0; }
+.chief-note.writing { color: var(--muted); }
 .guide-min { position: absolute; left: 16px; bottom: 16px; z-index: 35; display: flex; align-items: center; gap: 6px; border-radius: 99px; background: var(--yellow); border-color: #fff; font-weight: 600; }
 
 /* inbox */

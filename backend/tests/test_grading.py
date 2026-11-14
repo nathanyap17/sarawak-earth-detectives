@@ -51,6 +51,24 @@ def test_overconfident_verdict_sent_back_then_retry():
     assert c.post(f"/sessions/{sid}/verdict", json={"session_id": sid, **DOUBT}).status_code == 409
 
 
+def test_verdict_returns_without_chief_then_chief_route():
+    sid, _, g = run(MAIN, GOOD_TOOLS, DOUBT)
+    assert g.json()["chief_note"] is None            # grading never waits on the model
+    n = c.post(f"/sessions/{sid}/chief")
+    assert n.status_code == 200 and n.json() == {"attempt": 1, "chief_note": None}  # mock agents → feedback only
+
+
+def test_chief_route_needs_a_verdict():
+    sid = c.post("/sessions", json={"case_id": "001", "nickname": "T"}).json()["id"]
+    assert c.post(f"/sessions/{sid}/chief").status_code == 409
+
+
+def test_partner_reply_says_why_it_fell_back():
+    sid = c.post("/sessions", json={"case_id": "001", "nickname": "T"}).json()["id"]
+    r = c.post(f"/sessions/{sid}/partner", json={"beat": "locker", "rung": 1, "message": "what is the answer?"}).json()
+    assert r["source"] == "ladder" and r["fallback"] == "off"
+
+
 def test_red_herring_costs_evidence_marks():
     _, ch, g = run(MAIN + ["wind"], GOOD_TOOLS, DOUBT)
     g = g.json()

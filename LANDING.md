@@ -44,7 +44,7 @@ Beside it: Kenyalang the hornbill, with the line "I give hints. I never give the
 ## 4. Tech stack
 Four groups of chips that pop in with a stagger.
 - **Earth data:** NASA POWER (MERRA-2), NASA GIBS (VIIRS fire detections, Blue Marble), NOAA RONI (El Niño index), SRTM-derived terrain.
-- **Statistics in code:** Python, statsmodels (trend test), pymannkendall (Mann-Kendall), pandas, xarray.
+- **Statistics in code:** Python, statsmodels (trend test), pymannkendall (Mann-Kendall), pandas, NumPy.
 - **AI with guard rails:** Gemini on Vertex AI through Google ADK; a number guard and an answer guard in plain code.
 - **App:** React, TypeScript, three.js (React Three Fiber), Apache ECharts, anime.js, FastAPI on Cloud Run, Firebase Hosting, Cloud Firestore.
 

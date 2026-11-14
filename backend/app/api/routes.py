@@ -7,10 +7,10 @@ import time
 from fastapi import APIRouter, HTTPException
 
 from app import casework
-from app.agents import chief, partner
+from app.agents import chief, partner, runtime
 from app.config import get_settings
 from app.grading import Attempt, grade
-from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChooseCards, ChooseResult,
+from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChiefNote, ChooseCards, ChooseResult,
                          Grade, LogEvent, PartnerAsk, PartnerReply, Series, SessionCreate,
                          SessionOut, Verdict)
 from app.vault.cards import CARDS
@@ -65,8 +65,10 @@ def get_series(case_id: str, card_id: str, region_id: str | None = None):
 
 
 @router.post("/sessions", response_model=SessionOut)
-def create_session(body: SessionCreate):
+async def create_session(body: SessionCreate):
     _case(body.case_id)
+    runtime.keep_warm("partner", partner.INSTRUCTION)  # their first question shouldn't hit a cold model
+    runtime.keep_warm("chief", chief.INSTRUCTION)
     s = sessions.create(body.case_id, body.nickname.strip(), body.class_code)
     s.record("start")
     sessions.save(s)
@@ -145,7 +147,11 @@ async def ask_partner(session_id: str, body: PartnerAsk):
     s.record("partner", beat=body.beat, rung=r.rung, source=r.source, note=r.note,
              ms=round(r.seconds * 1000))
     sessions.save(s, "partner_turns", "partner_chat")
-    return PartnerReply(text=r.text, rung=r.rung, source=r.source, turns_left=cap - s.partner_turns)
+    fallback = None
+    if r.source == "ladder":
+        fallback = "guarded" if r.note.startswith("guard") else "busy" if r.note in ("timeout", "empty") or r.note.endswith("Error") else "off"
+    return PartnerReply(text=r.text, rung=r.rung, source=r.source, turns_left=cap - s.partner_turns,
+                        fallback=fallback)
 
 
 def _steps_summary(s, c) -> str:
@@ -179,10 +185,25 @@ async def submit_verdict(session_id: str, body: Verdict):
     g.can_retry = g.ending == "sent_back" and attempt_no < 2
     s.verdicts.append(body.model_dump())
     s.grade = g.model_dump()
-    note, why = await chief.note(g, body, _steps_summary(s, c))
-    g.chief_note = note
-    s.grade = g.model_dump()
-    s.record("verdict", attempt=attempt_no, ending=g.ending, score=g.score,
-             chief="ai" if note else f"code ({why})")
+    s.record("verdict", attempt=attempt_no, ending=g.ending, score=g.score)
     sessions.save(s, "verdicts", "grade")
-    return g
+    return g  # the grade is code; the Chief's wording comes separately (POST …/chief), so nobody waits on the model
+
+
+@router.post("/sessions/{session_id}/chief", response_model=ChiefNote)
+async def chief_note(session_id: str):
+    """The Chief's note on the latest grade, written once and kept. None → the page shows the code's feedback only."""
+    s = _session(session_id)
+    if not s.grade or not s.verdicts:
+        raise HTTPException(409, "no verdict yet")
+    if s.grade.get("chief_note"):
+        return ChiefNote(attempt=s.grade["attempt"], chief_note=s.grade["chief_note"])
+    c = _case(s.case_id)
+    g, v = Grade(**s.grade), Verdict(**s.verdicts[-1])
+    note, why = await chief.note(g, v, _steps_summary(s, c))
+    fresh = sessions.get(session_id) or s   # a retry may have landed while the model was writing
+    if fresh.grade and fresh.grade.get("attempt") == g.attempt and note:
+        fresh.grade["chief_note"] = note
+    fresh.record("chief", attempt=g.attempt, source="ai" if note else f"code ({why})")
+    sessions.save(fresh, "grade")
+    return ChiefNote(attempt=g.attempt, chief_note=note)

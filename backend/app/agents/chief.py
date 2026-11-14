@@ -28,8 +28,8 @@ def build_prompt(g: Grade, v: Verdict, steps: str) -> str:
         "sent_back": "SENT BACK. The verdict does not follow the evidence yet. The student may try once more.",
     }[g.ending]
     return f"""FILE
-Ending: {ending} Score {g.score} of 100 (evidence {p.evidence} of 25, method {p.method} of 25,
-verdict {p.verdict} of 30, explanation {p.explanation} of 20).
+Ending: {ending} Score {g.score:g} of 100 (evidence {p.evidence:g} of 25, method {p.method:g} of 25,
+verdict {p.verdict:g} of 30, explanation {p.explanation:g} of 20).
 Grader's notes: {" ".join(g.feedback)}
 Badges: {", ".join(b.replace("_", " ") for b in g.badges) or "none"}
 Student's steps: {steps}
@@ -41,7 +41,7 @@ Write the Chief's note."""
 
 async def note(g: Grade, v: Verdict, steps: str) -> tuple[str | None, str]:
     prompt = build_prompt(g, v, steps)
-    text, _, err = await run_once("chief", INSTRUCTION, prompt, timeout=10)
+    text, _, err = await run_once("chief", INSTRUCTION, prompt, timeout=15)  # off the verdict path, so it may take longer
     if text is None:
         return None, err
     text = re.sub(r"^\s*(the\s+)?chief'?s\s+note\s*:\s*", "", text, flags=re.I).strip()

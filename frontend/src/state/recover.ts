@@ -1,6 +1,9 @@
 // When the backend no longer knows the session (it restarted, or this tab is old), open a new
-// session for the same case and replay what the student already did (cards chosen, tools run),
-// so their work and their method marks are kept. Registered once from main.tsx.
+// session for the same case and replay what the student already did (clue pins, cards chosen,
+// tools run), so their work and their method marks are kept. Hint use is not replayed (the new
+// session simply starts with a fresh hint allowance). In the cloud sessions live in Firestore
+// (SESSION_BACKEND=firestore, set in the Dockerfile), so this is mainly for local restarts and
+// very old tabs. Registered once from main.tsx.
 // AI-assisted: written with Claude Code.
 import { api, onSessionLost } from '../api/client'
 import type { ChooseResult, SessionOut, Tool } from '../api/types'
@@ -14,6 +17,9 @@ async function recover(oldId: string): Promise<string | null> {
   if (s.sessionId && s.sessionId !== oldId) return s.sessionId   // another call already recovered
   const fresh = await api.raw.post<SessionOut>('/sessions', { case_id: s.activeCase.id, nickname: s.nickname.trim() || 'Detective' })
   s.setSessionId(fresh.id)
+  for (const lonlat of s.cluePins) {
+    await api.raw.post(`/sessions/${fresh.id}/log`, { kind: 'clue', lonlat }).catch(() => undefined)
+  }
   if (s.chosen.length) await api.raw.post<ChooseResult>(`/sessions/${fresh.id}/choose`, { cards: s.chosen })
   for (const [cardId, byTool] of Object.entries(s.results)) {
     for (const tool of Object.keys(byTool ?? {}) as Tool[]) {

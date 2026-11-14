@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type { AnalysisResult, CasePublic, Grade, Series, Verdict } from '../api/types'
 
 export type Draft = Omit<Verdict, 'session_id'>
-export interface ChatLine { q: string; a: string; source: 'ai' | 'ladder'; beat: string }
+export interface ChatLine { q: string; a: string; source: 'ai' | 'ladder'; beat: string; note?: string }
 
 export const BEATS = ['call', 'scene', 'locker', 'board', 'lab', 'deduction', 'closed'] as const
 export type Beat = (typeof BEATS)[number]
@@ -45,6 +45,14 @@ interface State {
   setGrade: (g: Grade) => void
   reset: () => void
 }
+
+/** Index of the step the student should do now. After a verdict is sent back with a retry left,
+ *  that is the typewriter again, even though the case shelf was reached. */
+export function frontier(s: { reached: number; grade: Grade | null }): number {
+  return s.grade?.can_retry ? BEATS.indexOf('deduction') : s.reached
+}
+/** The verdict is final: no more submissions. */
+export const caseFiled = (g: Grade | null) => !!g && !g.can_retry
 
 const fresh = {
   activeCase: null, sessionId: null, beat: 'call' as Beat, reached: 0, sceneDay: 0, cluePins: [], chosen: [],

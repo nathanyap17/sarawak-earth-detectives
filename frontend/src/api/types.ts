@@ -44,7 +44,12 @@ export interface Grade {
   ending: Ending; feedback: string[]; badges: Badge[]; report_url: string | null
   attempt: number; can_retry: boolean; chief_note: string | null
 }
-export interface PartnerReply { text: string; rung: number; source: 'ai' | 'ladder'; turns_left: number }
+export interface PartnerReply {
+  text: string; rung: number; source: 'ai' | 'ladder'; turns_left: number
+  /** why the approved hint replaced an AI reply; null when source is 'ai' */
+  fallback?: 'guarded' | 'busy' | 'off' | null
+}
+export interface ChiefNote { attempt: number; chief_note: string | null }
 export interface ChooseResult { chosen: string[]; partner_asks_why: boolean }
 export interface LogEvent {
   kind: 'beat' | 'clue' | 'open_card' | 'hint'

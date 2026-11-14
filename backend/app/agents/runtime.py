@@ -63,6 +63,7 @@ async def run_once(name: str, instruction: str, prompt: str, timeout: float | No
         text = await asyncio.wait_for(_run(name, instruction, prompt), timeout or s.model_timeout_s)
         dt = time.perf_counter() - t0
         log.info("agent=%s ok %.2fs chars=%d", name, dt, len(text))
+        _last_ok[name] = time.monotonic()
         return (text or None), dt, "" if text else "empty"
     except asyncio.TimeoutError:
         dt = time.perf_counter() - t0
@@ -76,4 +77,21 @@ async def run_once(name: str, instruction: str, prompt: str, timeout: float | No
 
 async def warm(name: str, instruction: str) -> None:
     """Hide the 10–27 s first-call cold start (EXP-6) by calling once at startup."""
-    await run_once(name, instruction, "Say: ready", timeout=40)
+    _last_ok[name] = time.monotonic()
+    text, _, _ = await run_once(name, instruction, "Say: ready", timeout=40)
+    if text is None:
+        _last_ok.pop(name, None)
+
+
+_last_ok: dict[str, float] = {}
+_tasks: set[asyncio.Task] = set()
+
+
+def keep_warm(name: str, instruction: str, idle_s: float = 240) -> None:
+    """Called when a student starts a case: if the agent has been idle a while, warm it in the
+    background so their first question doesn't pay the model's cold start. Never blocks."""
+    if get_settings().mock_agents or time.monotonic() - _last_ok.get(name, -1e9) < idle_s:
+        return
+    t = asyncio.get_running_loop().create_task(warm(name, instruction))
+    _tasks.add(t)
+    t.add_done_callback(_tasks.discard)

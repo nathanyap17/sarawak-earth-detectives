@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { CasePublic } from '../api/types'
-import { useSession } from '../state/session'
+import { BEATS, frontier, useSession } from '../state/session'
 import { stampedCount } from './script'
 import { loadLearnt } from './learnt'
 import { useUI } from './ui'
@@ -17,8 +17,9 @@ const STEPS = [
 ] as const
 
 export function Inbox() {
-  const { activeCase, chosen, opened, results, grade, beat } = useSession()
+  const { activeCase, chosen, opened, results, grade, reached, setBeat } = useSession()
   const setWin = useUI((u) => u.setWin)
+  const now = BEATS[frontier({ reached, grade })]
   const [cases, setCases] = useState<CasePublic[] | null>(null)
   const [err, setErr] = useState('')
   const learnt = loadLearnt()
@@ -40,7 +41,7 @@ export function Inbox() {
             <header>
               <span className="mail-type">{c.type}</span>
               <strong>Case {c.id}: {c.title}</strong>
-              <span className={`mail-state ${mine ? 'now' : solved ? 'ok' : 'new'}`}>{mine ? (grade ? 'Filed' : 'In progress') : solved ? 'Solved' : 'New'}</span>
+              <span className={`mail-state ${mine ? 'now' : solved ? 'ok' : 'new'}`}>{mine ? (grade?.can_retry ? 'Sent back' : grade ? 'Filed' : 'In progress') : solved ? 'Solved' : 'New'}</span>
             </header>
             <p className="mail-q">{c.question}</p>
             {c.sources[0] && <p className="source">In the news: {c.sources[0].title} ({c.sources[0].date})</p>}
@@ -50,7 +51,8 @@ export function Inbox() {
                   <div><strong>{name}</strong><small>{what}</small></div></li>
               ))}
             </ol>
-            <button className="primary" onClick={() => setWin(mine ? beat : 'call')}>{mine ? (grade ? "See the Chief's stamp" : 'Continue the case') : 'Open the case folder'}</button>
+            <button className="primary" onClick={() => { if (mine) setBeat(now); setWin(mine ? now : 'call') }}>
+              {mine ? (grade?.can_retry ? 'Revise your verdict' : grade ? "See the Chief's stamp" : 'Continue the case') : 'Open the case folder'}</button>
           </article>
         )
       })}

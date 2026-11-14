@@ -1,5 +1,25 @@
 # BUILD_LOG.md
 
+## [2026-11-14 ~23:30 MYT] Review fixes: verdict flow, Chief off the critical path, guide asks, built-vs-planned docs — read this first
+### What changed
+- **Contract** (`schemas.py`, `types.ts`): `POST /sessions/{id}/verdict` returns the code grade at once with `chief_note: null`. New `POST /sessions/{id}/chief` → `ChiefNote {attempt, chief_note}` writes the Chief's note once per attempt and keeps it (409 before any verdict). `PartnerReply` gains `fallback: "guarded" | "busy" | "off" | null`, saying why an approved hint replaced the AI reply.
+- **Typewriter** (`DeductionBeat.tsx`): a real form (Enter submits); says what is missing, with a 15-character counter for "Why"; read-only once the case is filed, so no 409 resubmits.
+- **Retry after "sent back"** (`state/session.ts` `frontier()`, `OfficeApp`, `Inbox`, `useGuideState`): the step to do now is the typewriter while a retry is left, so closing a window, the inbox ("Revise your verdict") and finishing an earlier step no longer jump to the case shelf.
+- **Case Closed** (`ClosedBeat.tsx`): shows the grade at once and "The Chief is writing you a note…", then the note (one request per attempt, one quiet retry).
+- **Kenyalang** (`Guide.tsx`, `beats/partnerNote.ts`): thinking state in the bubble; a note when the reply is the approved hint ("That one is yours to work out…", "I took too long…"); replies survive pins, cards and stamps changing (only moving to another object or step resets the bubble); "Earlier answers" list; a repeated reply types out again; set-state-in-effect warning gone. Lite Partner box gets the same note and a thinking line.
+- **Timeouts**: browser calls abort after 15 s (25 s for the Partner and Chief) with a clear message; `MODEL_TIMEOUT_S` 8 → 12 s; Chief 15 s. Starting a case re-warms an agent idle for over 4 min (`runtime.keep_warm`).
+- **Recovery** also replays clue pins.
+- **Phone width** (≤640 px): the window is a bottom sheet and the guide sits above it; no camera side-shift.
+- **Docs**: MASTER_SHEET §5.7 and §5.9 mark built vs planned (Scout, Case Builder, Reporter, embeddings, ML models, Firebase Auth, Cloud Storage vault and scheduled jobs are planned, not built). CLAUDE.md stack and the landing tech chips match the code (xarray → NumPy). DEPLOY.md no longer asks to enable Anonymous sign-in (the app has no Firebase Auth code).
+### Verified
+- Browser, real backend and model: empty submit lists what's missing; overconfident verdict graded in 0.11 s (was up to 10 s), "Revise my verdict" → Esc returns to the typewriter, the guide and inbox point to it, finishing the lab returns to it; second verdict "solved — not enough evidence", Chief's note arrives and congratulates; the typewriter is then read-only.
+- Guide: "Thinking…" while waiting; the reply stays after the store changes; a second hint retypes; "Earlier answers (1)".
+- 390×800: guide and bottom sheet don't overlap; no sideways scroll.
+- Backend 50 tests pass (new: verdict without Chief, Chief route, fallback reason).
+### Still broken / unverified
+- Right after a local backend start the first model calls hung (warm-up timed out at 40 s, then two Chief timeouts); a minute later calls took 1–3 s. Cloud Run `--min-instances 1` plus the re-warm should hide this; check on the deployed service.
+- `pyproject.toml` still declares unused scikit-learn, ruptures, xarray (and optional xgboost).
+
 ## [2026-11-14 ~21:30 MYT] Guided full-screen office, inbox, landing page, session recovery — read this first
 ### What changed
 - **Session recovery** (`state/recover.ts`, `api/client.ts`): on `404 session not found` the client opens a new session for the same case, replays the chosen cards and the tools already run, then retries the call once. Cause of Nathan's report: sessions were in memory and the backend had been restarted under an open tab.

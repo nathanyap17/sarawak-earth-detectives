@@ -8,7 +8,7 @@ Values here are ids and URLs, not secrets.
 cd backend && uv run pytest -q && cd ..        # rule 8: known-answer tests must pass
 ls data/vault/index.json data/vault/answer_keys # the vault is baked into the image
 ```
-Firebase console → Authentication → Get started → Sign-in method → **Anonymous: Enable** (still off as of 2026-11-14).
+No Firebase sign-in step: the app uses nicknames only and has no Firebase Auth code, so the public link opens with no login as it is. (Corrected 2026-11-14; an earlier version asked to enable Anonymous sign-in.)
 
 ## 1. A service account for the API (once)
 ```bash

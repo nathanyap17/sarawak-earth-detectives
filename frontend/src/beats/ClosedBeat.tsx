@@ -1,6 +1,8 @@
 // Beat 7, Case Closed: the Chief's stamp, the grade, badges and feedback.
 // AI-assisted: written with Claude Code.
-import type { Badge } from '../api/types'
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
+import type { Badge, ChiefNote } from '../api/types'
 import { useSession } from '../state/session'
 
 const BADGES: Record<Badge, [string, string]> = {
@@ -17,8 +19,40 @@ const ENDING = {
   sent_back: 'Sent back by the Chief',
 }
 
+/** One request per attempt, even if the component mounts twice; one quiet retry if the first comes back empty. */
+const asked = new Map<string, Promise<ChiefNote | null>>()
+function fetchNote(sid: string, attempt: number) {
+  const k = `${sid}:${attempt}`
+  if (!asked.has(k)) {
+    const once = () => api.chief(sid).catch(() => null)
+    asked.set(k, once().then((n) => n?.chief_note ? n : new Promise<ChiefNote | null>((ok) => setTimeout(() => once().then(ok), 3000))))
+  }
+  return asked.get(k)!
+}
+
+/** The grade arrives at once (it is code); the Chief's wording follows when the model is done. */
+function useChiefNote() {
+  const { grade: g, sessionId, setGrade } = useSession()
+  const [done, setDone] = useState<number | null>(null)   // attempt whose note has been asked for
+  const attempt = g?.attempt ?? null
+  const want = !!g && !g.chief_note && !!sessionId && done !== attempt
+  useEffect(() => {
+    if (!want || attempt === null) return
+    let live = true
+    fetchNote(sessionId!, attempt)
+      .then((n) => {
+        const cur = useSession.getState().grade
+        if (live && n?.chief_note && cur && cur.attempt === n.attempt) setGrade({ ...cur, chief_note: n.chief_note })
+      })                                                   // no note: the code's feedback still shows
+      .finally(() => { if (live) setDone(attempt) })
+    return () => { live = false }
+  }, [want, attempt, sessionId, setGrade])
+  return want   // true while the Chief is still writing
+}
+
 export function ClosedBeat({ onRetry, onShelf }: { onRetry: () => void; onShelf: () => void }) {
   const { grade: g, activeCase: c } = useSession()
+  const writing = useChiefNote()
   if (!g) return null
   return (
     <section className="beat">
@@ -31,6 +65,7 @@ export function ClosedBeat({ onRetry, onShelf }: { onRetry: () => void; onShelf:
         <dt>Verdict</dt><dd>{g.parts.verdict} / 30</dd>
         <dt>Explanation</dt><dd>{g.parts.explanation} / 20</dd>
       </dl>
+      {!g.chief_note && writing && <p className="chief-note writing" role="status">The Chief is writing you a note…</p>}
       {g.chief_note && <blockquote className="chief-note">{g.chief_note}<span className="ai-tag">Worded by AI from the code's grade</span></blockquote>}
       <h3>The Chief's notes</h3>
       <ul className="feedback">{g.feedback.map((f, i) => <li key={i}>{f}</li>)}</ul>

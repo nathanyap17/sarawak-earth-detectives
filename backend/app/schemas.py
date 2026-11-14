@@ -239,3 +239,11 @@ class PartnerReply(BaseModel):
     rung: int
     source: Literal["ai", "ladder"]
     turns_left: int
+    # why the approved hint was used instead of an AI reply: the reply broke a rule ("guarded"),
+    # the model was slow or failed ("busy"), or AI is switched off ("off"). None when source is "ai".
+    fallback: Literal["guarded", "busy", "off"] | None = None
+
+
+class ChiefNote(BaseModel):
+    attempt: int
+    chief_note: str | None  # None → the page shows the code's feedback only

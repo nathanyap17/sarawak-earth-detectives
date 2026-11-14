@@ -13,7 +13,7 @@ import { ClosedBeat } from '../beats/ClosedBeat'
 import { DeductionBeat } from '../beats/DeductionBeat'
 import { LabBeat } from '../beats/LabBeat'
 import { LockerBeat } from '../beats/LockerBeat'
-import { BEATS, useSession, type Beat } from '../state/session'
+import { BEATS, frontier, useSession, type Beat } from '../state/session'
 import { Guide } from './Guide'
 import { SPOT } from './script'
 import { Hornbill } from './Hornbill'
@@ -26,7 +26,7 @@ import { OVERVIEW, STATIONS } from './stations'
 import { useUI } from './ui'
 
 /** Pixel width the window covers on the right (matches .office-window in index.css). */
-function windowPx(w: number) { return Math.min(540, 0.46 * w) + 24 }
+function windowPx(w: number) { return w <= 640 ? 0 : Math.min(540, 0.46 * w) + 24 }   // ≤640 px: bottom sheet, no side shift
 
 function CameraRig() {
   const win = useUI((u) => u.win)
@@ -116,11 +116,13 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
   useEffect(() => { logQuiet(sessionId, { kind: 'beat', beat }) }, [beat, sessionId])
 
   // a beat finished: step to the next one and return to the whole office, where its object glows
+  // revisiting an earlier object never moves you back; after a sent-back verdict the front is the typewriter
+  const front = frontier({ reached, grade })
   const finish = (next: Beat) => {
-    const frontier = BEATS[Math.max(reached, BEATS.indexOf(next))]   // revisiting an earlier object never moves you back
-    setBeat(frontier); setWin(frontier === 'closed' ? 'closed' : null)
+    const to = BEATS[Math.max(front, BEATS.indexOf(next))]
+    setBeat(to); setWin(to === 'closed' ? 'closed' : null)
   }
-  const close = () => { if (activeCase) setBeat(BEATS[reached]); setWin(null) }
+  const close = () => { if (activeCase) setBeat(BEATS[front]); setWin(null) }
   // signing the folder starts the session (CallBeat sets the beat to 'scene'): back to the office
   const hadCase = useRef(!!activeCase)
   useEffect(() => {
@@ -155,7 +157,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { close(); return }
-      if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return
+      if ((e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable]')) return
       if (e.key.toLowerCase() === 'i') { setWin('inbox'); return }
       const i = Number(e.key) - 1
       if (i >= 0 && i < BEATS.length && (i === 0 || (activeCase && i <= reached))) { setBeat(BEATS[i]); setWin(BEATS[i]) }

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     google_cloud_project: str | None = None
     google_cloud_location: str = "global"  # model endpoint (EXP-6); Cloud Run itself is asia-southeast1
     model_name: str = "gemini-3.5-flash-lite"
-    model_timeout_s: float = 8.0
+    model_timeout_s: float = 12.0  # the guide shows "thinking" meanwhile; the browser gives up at 20 s
     mock_agents: bool = False
     session_backend: Literal["memory", "firestore"] = "memory"
 

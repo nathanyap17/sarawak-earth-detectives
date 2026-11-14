@@ -14,10 +14,10 @@ The student does the science — chooses evidence, removes seasons, tests the tr
 | Layer | Technology |
 |---|---|
 | Frontend | React + TypeScript + Vite; three.js via React Three Fiber + drei; Apache ECharts; Zustand |
-| Hosting / auth / db | Firebase Hosting; Firebase Auth (anonymous); Cloud Firestore |
+| Hosting / db | Firebase Hosting; Cloud Firestore (sessions). No sign-in: nickname only (Firebase Auth planned, not built) |
 | Backend | Python 3.12, FastAPI, on Cloud Run (`uv` for env and deps) |
-| Data | xarray, pandas; files in `data/vault` locally, Cloud Storage in cloud |
-| Statistics | statsmodels, pymannkendall, SciPy (pure functions in `backend/app/analysis`) |
+| Data | pandas, NumPy; files in `data/vault`, baked into the container in cloud (Cloud Storage planned) |
+| Statistics | statsmodels, pymannkendall (pure functions in `backend/app/analysis`). scikit-learn, ruptures, xarray and xgboost are declared in `pyproject.toml` but unused; built vs planned: MASTER_SHEET §5.9 |
 | AI | Gemini on Vertex AI via Google ADK (version pinned in `backend/pyproject.toml`) |
 
 ## Architecture

@@ -1,9 +1,12 @@
 // Kenyalang, the hornbill Partner, as a live guide: it says what to do now (scripted, typed out
 // letter by letter), explains words from a vetted glossary, and passes hints and questions to
 // the backend Partner, whose replies are guarded so they never give the answer.
+// While the Partner thinks, the bubble says so; if a reply had to be swapped for an approved hint
+// (it broke a rule, or the model was slow), the bubble says that too, so no question vanishes.
 // AI-assisted: written with Claude Code.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { partnerNote } from '../beats/partnerNote'
 import { useSession } from '../state/session'
 import { GLOSSARY, say } from './script'
 import { useGuideState } from './useGuideState'
@@ -14,47 +17,64 @@ const GROUP: Record<string, string> = {
 }
 const RUNG = ['Give me a nudge', 'Point me somewhere', 'Show me an example']
 
-function useTyped(text: string) {
-  const [n, setN] = useState(0)
+interface Bubble { id: number; title: string; text: string; ai?: boolean; note?: string }
+
+/** Types `text` out two letters at a time. A new `id` restarts it, even for the same words. */
+function useTyped(text: string, id: string) {
+  const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [st, setSt] = useState({ id, n: reduce ? text.length : 0 })
+  if (st.id !== id) setSt({ id, n: reduce ? text.length : 0 })   // reset during render, not in an effect
   useEffect(() => {
-    setN(0)
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setN(text.length); return }
-    const t = setInterval(() => setN((k) => { if (k >= text.length) { clearInterval(t); return k } return k + 2 }), 18)
+    if (reduce) return
+    const t = setInterval(() => setSt((s) => (s.n >= text.length ? (clearInterval(t), s) : { ...s, n: s.n + 2 })), 18)
     return () => clearInterval(t)
-  }, [text])
-  return text.slice(0, n)
+  }, [id, text, reduce])
+  return text.slice(0, st.id === id ? st.n : 0)
 }
+
+let seq = 1
 
 export function Guide() {
   const gs = useGuideState()
   const idle = useUI((u) => u.idle)
-  const { sessionId, beat, hintRung, addChat } = useSession()
+  const { sessionId, beat, hintRung, addChat, chat, grade } = useSession()
   const script = say(gs)
-  const [extra, setExtra] = useState<{ title: string; text: string; ai?: boolean } | null>(null)
+  const [extra, setExtra] = useState<Bubble | null>(null)
   const [q, setQ] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)   // the question being thought about
   const [small, setSmall] = useState(false)
-  const last = useRef(script.text)
-  useEffect(() => { if (last.current !== script.text) { last.current = script.text; setExtra(null) } }, [script.text])
+  const [scriptId, setScriptId] = useState(0)
 
-  const shown = extra ? extra.text : script.text
-  const typed = useTyped(shown)
+  // Moving to another object or step shows that step's line; pins, cards and stamps don't wipe a reply.
+  const place = `${gs.win}|${gs.beat}`
+  const [lastPlace, setLastPlace] = useState(place)
+  if (lastPlace !== place) { setLastPlace(place); setExtra(null); setScriptId((n) => n + 1) }
+
+  const thinking: Bubble | null = busy ? { id: -1, title: busy, text: 'Hmm, let me think about that…' } : null
+  const bubble = thinking ?? extra
+  const shown = bubble ? bubble.text : script.text
+  const typed = useTyped(shown, bubble ? `b${bubble.id}` : `s${scriptId}:${script.text}`)
   const group = GROUP[beat]
   const used = hintRung[group] ?? 0
-  const canAsk = !!sessionId && beat !== 'call' && beat !== 'closed'
+  const canAsk = !!sessionId && beat !== 'call' && (beat !== 'closed' || !!grade?.can_retry)
+  const answers = chat.filter((c) => c.a).slice(0, -1).reverse()   // the latest one is in the bubble
 
   async function ask(rung: number, message: string) {
-    if (!sessionId) return
-    setBusy(true)
+    if (!sessionId || busy) return
+    const title = message || RUNG[rung - 1]
+    setBusy(title)
     try {
       const r = await api.partner(sessionId, beat, rung, message)
-      addChat({ q: message || RUNG[rung - 1], a: r.text, source: r.source, beat }, group, message ? used : rung)
-      setExtra({ title: message || RUNG[rung - 1], text: r.text, ai: r.source === 'ai' })
+      const note = partnerNote(r, !!message)
+      addChat({ q: title, a: r.text, source: r.source, beat, note }, group, message ? used : rung)
+      setExtra({ id: seq++, title, text: r.text, ai: r.source === 'ai', note })
       setQ('')
     } catch (e) {
-      setExtra({ title: 'Hmm', text: e instanceof Error ? e.message : 'I lost my train of thought. Try again.' })
+      const why = e instanceof Error ? e.message : 'I lost my train of thought.'
+      setExtra({ id: seq++, title, text: `${why} ${message ? 'Your question is still in the box, so you can send it again.' : 'Press the hint button again.'}` })
+    } finally {
+      setBusy(null)
     }
-    setBusy(false)
   }
 
   if (small) {
@@ -62,27 +82,36 @@ export function Guide() {
   }
   const next = Math.min(3, used + 1)
   return (
-    <aside className={`guide ${idle && gs.win === null ? 'nudge' : ''}`} aria-label="Kenyalang, your guide">
+    <aside className={`guide ${idle && gs.win === null ? 'nudge' : ''} ${busy ? 'thinking' : ''}`} aria-label="Kenyalang, your guide" aria-busy={!!busy}>
       <div className="guide-bird"><Bird size={56} /></div>
       <div className="guide-body">
         <header>
           <strong>Kenyalang</strong><span className="muted"> · your partner</span>
           <button className="guide-x" onClick={() => setSmall(true)} aria-label="Hide the guide">–</button>
         </header>
-        {extra && <p className="guide-q">{extra.title}</p>}
-        <p className="guide-say" aria-live="polite">{typed}{extra?.ai && typed.length >= shown.length && <span className="ai-tag">AI</span>}</p>
+        {bubble && <p className="guide-q">{bubble.title}</p>}
+        {bubble?.note && <p className="guide-note">{bubble.note}</p>}
+        <p className="guide-say" aria-live="polite">{typed}{bubble?.ai && typed.length >= shown.length && <span className="ai-tag">AI</span>}</p>
         <div className="guide-row">
-          {extra && <button onClick={() => setExtra(null)}>↩ What do I do now?</button>}
+          {extra && !busy && <button onClick={() => { setExtra(null); setScriptId((n) => n + 1) }}>↩ What do I do now?</button>}
           {script.words.map((w) => (
-            <button key={w} className="chip" onClick={() => setExtra({ title: `What does “${w}” mean?`, text: GLOSSARY[w] })}>{w}?</button>
+            <button key={w} className="chip" onClick={() => setExtra({ id: seq++, title: `What does “${w}” mean?`, text: GLOSSARY[w] })}>{w}?</button>
           ))}
-          {canAsk && <button disabled={busy || used >= 3} onClick={() => ask(next, '')}>{used >= 3 ? 'No more hints here' : `💡 ${RUNG[next - 1]} (${next}/3)`}</button>}
+          {canAsk && <button disabled={!!busy || used >= 3} onClick={() => ask(next, '')}>{used >= 3 ? 'No more hints here' : `💡 ${RUNG[next - 1]} (${next}/3)`}</button>}
         </div>
         {canAsk && (
           <form className="guide-row" onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(Math.max(1, used), q.trim()) }}>
             <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask me anything about this case…" aria-label="Ask Kenyalang" />
-            <button disabled={busy || !q.trim()}>{busy ? '…' : 'Ask'}</button>
+            <button disabled={!!busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
           </form>
+        )}
+        {answers.length > 0 && (
+          <details className="guide-log">
+            <summary>Earlier answers ({answers.length})</summary>
+            <ul>{answers.map((c, i) => (
+              <li key={i}><strong>{c.q}</strong> {c.a}{c.source === 'ai' && <span className="ai-tag">AI</span>}</li>
+            ))}</ul>
+          </details>
         )}
       </div>
     </aside>

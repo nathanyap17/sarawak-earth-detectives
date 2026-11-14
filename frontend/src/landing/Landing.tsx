@@ -48,7 +48,7 @@ const ASKS = [
 
 const STACK: [string, string[]][] = [
   ['Earth data', ['NASA POWER (MERRA-2)', 'NASA GIBS: VIIRS fire detections', 'NASA GIBS: Blue Marble', 'NOAA RONI (El Niño)', 'SRTM-derived terrain']],
-  ['Statistics in code', ['Python', 'statsmodels', 'pymannkendall', 'pandas', 'xarray']],
+  ['Statistics in code', ['Python', 'statsmodels', 'pymannkendall', 'pandas', 'NumPy']],
   ['AI with guard rails', ['Gemini on Vertex AI', 'Google ADK', 'Number guard', 'Answer guard']],
   ['App', ['React', 'TypeScript', 'three.js', 'Apache ECharts', 'anime.js', 'FastAPI', 'Cloud Run', 'Firebase Hosting', 'Cloud Firestore']],
 ]

@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import { useSession, type Beat } from '../state/session'
+import { partnerNote } from './partnerNote'
 
 const GROUP: Record<Beat, string> = {
   call: 'evidence', scene: 'evidence', locker: 'evidence', board: 'method', lab: 'method', deduction: 'verdict', closed: 'verdict',
@@ -25,7 +26,7 @@ export function Partner() {
     setBusy(true); setErr('')
     try {
       const r = await api.partner(sessionId!, beat, rung, message)
-      addChat({ q: message || RUNG_LABEL[rung - 1], a: r.text, source: r.source, beat }, group, rung)
+      addChat({ q: message || RUNG_LABEL[rung - 1], a: r.text, source: r.source, beat, note: partnerNote(r, !!message) }, group, rung)
       setQ('')
     } catch (e) { setErr(e instanceof Error ? e.message : 'The Partner is busy.') }
     setBusy(false)
@@ -39,7 +40,7 @@ export function Partner() {
       {lines.length > 0 && (
         <ul className="partner-chat" aria-live="polite">
           {lines.map((c, i) => (
-            <li key={i}><em>{c.q}</em><p>{c.a}{c.source === 'ai' && <span className="ai-tag">AI</span>}</p></li>
+            <li key={i}><em>{c.q}</em>{c.note && <small className="guide-note">{c.note}</small>}<p>{c.a}{c.source === 'ai' && <span className="ai-tag">AI</span>}</p></li>
           ))}
         </ul>
       )}
@@ -50,8 +51,9 @@ export function Partner() {
       </div>
       <form className="partner-row" onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(Math.max(1, used), q.trim()) }}>
         <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask about this case…" aria-label="Ask the Partner" />
-        <button disabled={busy || !q.trim()}>{busy ? '…' : 'Ask'}</button>
+        <button disabled={busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
       </form>
+      {busy && <p className="muted" role="status">Your Partner is thinking…</p>}
       {err && <p className="error">{err}</p>}
     </aside>
   )

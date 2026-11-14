@@ -183,6 +183,8 @@ Stretch measurements, only if time allows: air pollution gases (OMI), temperatur
 
 ### 5.7 How a case is made (the Client's loop)
 
+> **Correction 2026-11-14.** This loop is the design. In the hackathon build the team did SCOUT, QUALIFY and REVIEW by hand for case 001; BUILD's answer key is computed by code (`app.casework`). See the status column in §5.9.
+
 ```
 SCOUT     each day: read news feeds; check the vault for unusual readings
 QUALIFY   run the checklist below; drop anything that fails
@@ -225,35 +227,37 @@ Evidence behind the need:
 
 ### 5.9 Tools, languages and software
 
-| Layer | Choice | Why |
-|---|---|---|
-| **Frontend** | React, TypeScript, Vite | Fast to build |
-| **3D** | three.js with React Three Fiber and drei | The office, the terrain and the board in one scene |
-| **Charts** | Apache ECharts, drawn onto board cards | Time series with bands and markers |
-| **State** | Zustand | Simple session state |
-| **Hosting (frontend)** | Firebase Hosting | Team standard |
-| **Sign-in** | Firebase Authentication (anonymous nickname, optional class code) | No personal data needed from students |
-| **Database** | Cloud Firestore | Cases, sessions, progress, approvals |
-| **Files** | Cloud Storage | Vault files, terrain, reports |
-| **Backend** | Python, FastAPI, on Cloud Run | Same language as the analysis |
-| **Scheduled jobs** | Cloud Scheduler triggering Cloud Run jobs | Vault ingest and the Client's daily loop |
-| **Data handling** | xarray, pandas, geopandas | Grids and regions |
-| **Statistics** | statsmodels, pymannkendall, SciPy | Trend line, t-test, Mann-Kendall, Sen's slope |
-| **Machine learning** | scikit-learn, XGBoost, ruptures | El Niño removal, unusual-reading detection, change-points |
-| **AI models** | Gemini on Vertex AI | Team standard |
-| **Agents** | Google Agent Development Kit (ADK) | Client, Partner, Chief, case builder, report writer |
-| **Retrieval** | Vertex AI embeddings over the glossary, the measurement catalogue and the playbooks | The Partner explains terms from our own vetted text |
-| **Reports** | HTML to PDF in the backend | The case report |
+> **Correction 2026-11-14 (built vs planned).** The status column says what the hackathon build actually contains. ✅ built and running; 🔜 designed, not built yet. Where the build differs from the plan, the "Built as" text says how.
+
+| Layer | Choice | Why | Status |
+|---|---|---|---|
+| **Frontend** | React, TypeScript, Vite | Fast to build | ✅ |
+| **3D** | three.js with React Three Fiber and drei | The office, the terrain and the board in one scene | ✅ |
+| **Charts** | Apache ECharts, drawn onto board cards | Time series with bands and markers | ✅ |
+| **State** | Zustand | Simple session state | ✅ |
+| **Hosting (frontend)** | Firebase Hosting | Team standard | ✅ |
+| **Sign-in** | Firebase Authentication (anonymous nickname, optional class code) | No personal data needed from students | 🔜 Built as: a nickname only, no sign-in at all; the backend holds the session |
+| **Database** | Cloud Firestore | Cases, sessions, progress, approvals | ✅ sessions (cases are approved JSON files) |
+| **Files** | Cloud Storage | Vault files, terrain, reports | 🔜 Built as: the vault is baked into the backend container |
+| **Backend** | Python, FastAPI, on Cloud Run | Same language as the analysis | ✅ |
+| **Scheduled jobs** | Cloud Scheduler triggering Cloud Run jobs | Vault ingest and the Client's daily loop | 🔜 Built as: ingest scripts run by hand before deploy |
+| **Data handling** | pandas, NumPy | Monthly records and regions (land cells, fill values, complete years, provisional months) | ✅ |
+| **Statistics** | statsmodels (OLS with HAC errors), pymannkendall (Hamed-Rao Mann-Kendall, Sen's slope) | Season filter, trend test, El Niño removal by regression on RONI | ✅ |
+| **Machine learning** | scikit-learn, XGBoost, ruptures | Unusual-reading detection, change-points | 🔜 Not used: the build's statistics are classical and fully explained |
+| **AI models** | Gemini on Vertex AI (gemini-3.5-flash-lite) | Team standard | ✅ |
+| **Agents** | Google Agent Development Kit (ADK) | Client, Partner, Chief, case builder, report writer | ✅ Partner and Chief; 🔜 the others |
+| **Retrieval** | Vertex AI embeddings over the glossary, the measurement catalogue and the playbooks | The Partner explains terms from our own vetted text | 🔜 Built as: a fixed, vetted glossary in the app |
+| **Reports** | HTML to PDF in the backend | The case report | 🔜 Built as: the Case Closed page and the Learnt-cases record |
 
 **Agents in ADK.**
 
-| Agent | Type | Tools it can call |
-|---|---|---|
-| **Scout** (the Client) | Scheduled workflow | News search, vault query, unusual-reading check |
-| **Case Builder** | Sequential workflow | Region lookup, playbook lookup, series fetch, trend test, El Niño removal, answer-key writer |
-| **Partner** | Conversational, with session state | Glossary search, "what has the student done" lookup, hint ladder. No access to the answer key's verdict |
-| **Chief** | Single-shot grader | Answer key, rubric, student's session log |
-| **Reporter** | Single-shot | Chart renderer, report template |
+| Agent | Type | Tools it can call | Status |
+|---|---|---|---|
+| **Scout** (the Client) | Scheduled workflow | News search, vault query, unusual-reading check | 🔜 Built as: case 001 written by the team from news sources, answer key computed in code |
+| **Case Builder** | Sequential workflow | Region lookup, playbook lookup, series fetch, trend test, El Niño removal, answer-key writer | 🔜 Built as: `app.casework` (plain code) computes the answer key |
+| **Partner** | Conversational, with session state | Glossary search, "what has the student done" lookup, hint ladder. No access to the answer key's verdict | ✅ Built as: one ADK LlmAgent; code passes it the case, the student's steps and the unlocked hints in the prompt (no tool calls); every reply is guarded |
+| **Chief** | Single-shot grader | Answer key, rubric, student's session log | ✅ Built as: code grades; an ADK LlmAgent only words the code's grade, guarded |
+| **Reporter** | Single-shot | Chart renderer, report template | 🔜 |
 
 **Harness rules.**
 1. **The AI never does the maths.** Every number shown comes from the analysis code. A checker blocks any text containing a figure the code didn't produce.
@@ -746,6 +750,7 @@ If step 1 fails, stop and solve data access before building anything else.
 
 ## Change log
 
+- **v1.3, 14 Nov 2026 (build review):** §5.7 and §5.9 now mark what is built and what is planned. Not built for the hackathon: Scout, Case Builder and Reporter agents, embeddings retrieval, ML models (scikit-learn, XGBoost, ruptures), Firebase sign-in, Cloud Storage vault, scheduled jobs. Built: Partner and Chief (ADK, guarded), statistics in code (statsmodels, pymannkendall), Firestore sessions.
 - **v1, 14 Nov 2026:** first full sheet. Name set to Sarawak Earth Detectives.
 - **v1.2, 14 Nov 2026 (build session):** POWER tested and works (no login, 1981 to 10 Nov 2026). POWER rain is MERRA-2 bias-corrected, not IMERG; IMERG becomes a cross-check. El Niño index switched to NOAA RONI. Coastal grid cells behave like sea; regions use land cells only. Open checks 2, 5 and 10 closed. Details: `sandbox/EXPERIMENTS.md` EXP-1, 3, 4, 11.
 - **v1.1, 14 Nov 2026:** pre-build review. Added submission rules (30-second demo, public links, AI disclosure, no minors on video), a clock-based schedule in two tracks with three tiers, data contracts, the analysis specification, the hackathon data path, repository layout, the 3D build specification, agent rules, definition of done and a first-hour checklist. Noted that the FIRMS by-country API is unavailable.
