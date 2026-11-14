@@ -1,5 +1,24 @@
 # BUILD_LOG.md
 
+## [2026-11-14 ~17:00 MYT] Phase 3.5 first pass: case 001 solvable inside the 3D office — read this first
+### What changed
+- `frontend/src/office/`: `OfficeApp` (R3F canvas, camera rig, station buttons, beat panel), `Room` (office from primitives: desk, folder, phone, typewriter, lamp, cabinet, corkboard, lab bench with six tools, shelf, window to rainforest, Sarawak flag, rattan rug), `MapTable` (relief + GIBS drape, VIIRS embers, region box, clue pins by clicking the terrain), `Hornbill` (tilts head on a red herring), `stations.ts`, `paint.ts` (canvas textures, no downloads), `capability.ts` (fallback rules).
+- `App.tsx` picks 3D or lite; the office is code-split (lite never loads three). 2D/3D switch both ways, remembered per browser. Store gains `reached`, `sceneDay`.
+- `backend/app/vault/terrain.py` (build-time only): 256×256 heights from AWS Terrain Tiles (SRTM-derived, public, no login) and 2,976 fire points from the saved VIIRS frames (one per 0.03° blob). Pillow added to the dev group.
+### Decisions
+- Beat controls live on a paper panel to the right; the projection is shifted (`setViewOffset`) so each station's object sits in the free area. Camera steps back on narrow screens.
+- Keys 1–7 jump to any beat already reached. Revisiting the Locker re-posts `/choose`, which the backend accepts.
+- Terrain uses SRTM-derived tiles until NASADEM via Earthdata is available (needs Nathan's login). Labelled on the page.
+- FPS probe offers 2D after 8 s under 20 fps, ignoring hidden/throttled tabs and the first 6 s.
+### Verified
+- Browser (in-app, real backend): sign → 3 pins on the 3D terrain → choose 3 incl. red herring → board notes appear on the corkboard → season/scales/lamp → verdict → "SOLVED — NOT ENOUGH EVIDENCE" 88.3/100, shelf shows the SOLVED stamp. Key "2" returns to the map table.
+- 375 px: starts in lite with a note, no sideways scroll, OfficeApp chunk not loaded. 2D ↔ 3D switch works.
+- ~139 fps in the dev pane. Build: lite 268 kB gzip + office 250 kB gzip; dist 2.4 MB total (< 5 MB).
+### Still broken / unverified
+- Hornbill only sits at the desk, so its head tilt isn't on screen during the Locker beat.
+- Not yet checked on a mid laptop or with `prefers-reduced-motion` emulated.
+- No ECharts-on-corkboard textures; charts stay in the panel.
+
 ## [2026-11-14 ~16:00 MYT] Cloud connections verified; 3D added to scope — read this first
 ### What changed
 - `.firebaserc` → `ssc-workspace-2026`. `.env`/`.env.example`: `GOOGLE_CLOUD_LOCATION=global`, `MODEL_NAME=gemini-3.5-flash-lite`. `config.py` gains `model_timeout_s=8`.

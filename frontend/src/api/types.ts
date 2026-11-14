@@ -52,4 +52,6 @@ export interface LogEvent {
 export interface SceneManifest {
   bbox: [number, number, number, number]; width: number; height: number; base: string
   base_source: string; fires_source: string; fire_days: string[]; missing_days: string[]
+  terrain?: { file: string; size: number; max_m: number; source: string }
+  fire_points?: { file: string; count: number }
 }

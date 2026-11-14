@@ -104,3 +104,21 @@ fieldset.field { border: 1px solid var(--line); border-radius: 8px; }
 .badges li { background: var(--black); color: #fff; border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; border-bottom: 3px solid var(--yellow); }
 .badges li span { font-size: .8rem; opacity: .85; }
 .foot { margin-top: 32px; font-size: .78rem; color: var(--muted); }
+
+/* 3D office (PLAN Phase 3.5) */
+.top-right { display: flex; gap: 8px; align-items: center; }
+button.mode { padding: 4px 10px; font-size: .85rem; }
+.lite-note { font-size: .85rem; margin: 6px 0 0; }
+.office { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) min(500px, 42vw); grid-template-rows: auto auto 1fr; background: #1d1612; }
+.office .stage { position: absolute; inset: 0; }
+.office-top { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: #f4ead8; z-index: 1; pointer-events: none; }
+.office-top > * { pointer-events: auto; }
+.office-top h1 { font-size: 1.2rem; margin: 0; text-shadow: 0 1px 3px #000; }
+.stations { grid-column: 1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px; z-index: 1; align-self: start; }
+.stations button { display: flex; gap: 6px; align-items: center; font-size: .8rem; padding: 4px 10px; border-radius: 99px; background: rgba(255, 250, 240, .9); }
+.stations button span { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--yellow); color: var(--black); font-size: .75rem; }
+.stations button.on { background: var(--black); color: #fff; }
+.office-note { grid-column: 1; grid-row: 3; align-self: end; margin: 16px; padding: 8px 12px; background: rgba(255, 250, 240, .92); border-radius: 8px; z-index: 1; justify-self: start; }
+.office-note button { margin-left: 8px; }
+.office-panel { grid-column: 2; grid-row: 1 / -1; z-index: 1; overflow-y: auto; margin: 12px; padding: 4px 18px 16px; background: var(--paper); border-radius: 10px; box-shadow: 0 8px 30px rgba(0, 0, 0, .5); border-top: 5px solid; border-image: linear-gradient(90deg, var(--yellow) 0 33%, var(--red) 33% 66%, var(--black) 66%) 1; }
+.foot-note { margin-top: 18px; font-size: .75rem; }

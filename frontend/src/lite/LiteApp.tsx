@@ -12,7 +12,7 @@ import { LockerBeat } from '../beats/LockerBeat'
 import { SceneBeat } from '../beats/SceneBeat'
 import { BEAT_LABEL, BEATS, useSession, type Beat } from '../state/session'
 
-export function LiteApp() {
+export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: string | null } = {}) {
   const { beat, setBeat, sessionId, activeCase, reset } = useSession()
   const go = (b: Beat) => { setBeat(b); window.scrollTo({ top: 0 }) }
   useEffect(() => { logQuiet(sessionId, { kind: 'beat', beat }) }, [beat, sessionId])
@@ -22,8 +22,12 @@ export function LiteApp() {
     <div className="lite">
       <header className="top">
         <h1>Sarawak Earth Detectives</h1>
-        {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
+        <span className="top-right">
+          {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
+          {onOffice && <button className="mode" onClick={onOffice} aria-label="Switch to the 3D office">3D office</button>}
+        </span>
       </header>
+      {note && <p className="muted lite-note">{note}{onOffice && ' You can still try the 3D office.'}</p>}
       <nav className="beats" aria-label="Investigation progress">
         <ol>{BEATS.map((b, i) => (
           <li key={b} className={i < idx ? 'done' : i === idx ? 'now' : ''} aria-current={i === idx ? 'step' : undefined}>

@@ -17,6 +17,9 @@ interface State {
   activeCase: CasePublic | null
   sessionId: string | null
   beat: Beat
+  reached: number
+  sceneDay: number
+  setSceneDay: (d: number) => void
   cluePins: [number, number][]
   chosen: string[]
   herringWarning: boolean
@@ -39,7 +42,7 @@ interface State {
 }
 
 const fresh = {
-  activeCase: null, sessionId: null, beat: 'call' as Beat, cluePins: [], chosen: [],
+  activeCase: null, sessionId: null, beat: 'call' as Beat, reached: 0, sceneDay: 0, cluePins: [], chosen: [],
   herringWarning: false, series: {}, opened: [], results: {}, grade: null, draft: null as Draft | null,
 }
 
@@ -47,8 +50,9 @@ export const useSession = create<State>((set) => ({
   nickname: `Detective-${Math.floor(1000 + Math.random() * 9000)}`,
   ...fresh,
   setNickname: (nickname) => set({ nickname }),
-  begin: (activeCase, sessionId) => set({ ...fresh, activeCase, sessionId, beat: 'scene' }),
-  setBeat: (beat) => set({ beat }),
+  begin: (activeCase, sessionId) => set({ ...fresh, activeCase, sessionId, beat: 'scene', reached: 1 }),
+  setBeat: (beat) => set((s) => ({ beat, reached: Math.max(s.reached, BEATS.indexOf(beat)) })),
+  setSceneDay: (sceneDay) => set({ sceneDay }),
   addPin: (p) => set((s) => (s.cluePins.length >= 3 ? s : { cluePins: [...s.cluePins, p] })),
   setChosen: (chosen, herringWarning) => set({ chosen, herringWarning }),
   putSeries: (x) => set((s) => ({ series: { ...s.series, [x.card_id]: x } })),

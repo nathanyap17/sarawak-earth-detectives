@@ -102,5 +102,15 @@
  ],
  "missing_days": [
   "2026-04-29"
- ]
+ ],
+ "terrain": {
+  "file": "height.bin",
+  "size": 256,
+  "max_m": 2071,
+  "source": "SRTM-derived heights (AWS Terrain Tiles, terrarium)"
+ },
+ "fire_points": {
+  "file": "fires.json",
+  "count": 2976
+ }
 }
