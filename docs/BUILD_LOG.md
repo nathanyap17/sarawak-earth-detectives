@@ -1,5 +1,18 @@
 # BUILD_LOG.md
 
+## [2026-11-14 ~16:00 MYT] Cloud connections verified; 3D added to scope — read this first
+### What changed
+- `.firebaserc` → `ssc-workspace-2026`. `.env`/`.env.example`: `GOOGLE_CLOUD_LOCATION=global`, `MODEL_NAME=gemini-3.5-flash-lite`. `config.py` gains `model_timeout_s=8`.
+- `frontend/.env.local` holds the Firebase web config (untracked, no measurementId: Analytics stays off).
+- PLAN.md: new Phase 3.5, the 3D office in three.js (R3F + drei), with the lite mode as automatic fallback.
+### Verified
+- gcloud config `sed`: account, project, region asia-southeast1; ADC quota project set; billing on.
+- 10 APIs enabled (aiplatform, run, cloudbuild, artifactregistry, storage, firestore, secretmanager, firebase, identitytoolkit, cloudscheduler).
+- Firestore native DB in asia-southeast1; write/read/delete 0.54 s.
+- Gemini via ADK 2.14.1 works; see EXP-6 for model access and latency. `gemini-2.5-flash` is not available to this project.
+### Still broken / unverified
+- **Firebase Authentication not initialised** (CONFIGURATION_NOT_FOUND). Nathan: console → Authentication → Get started → enable Anonymous.
+
 ## [2026-11-14 ~15:00 MYT] Phase 3 done: case 001 solvable end to end in lite mode — read this first
 ### What changed
 - Backend: `app/grading.py` (rubric 25/25/30/20, endings, badges, deterministic feedback); routes `POST /sessions/{id}/choose`, `/log`, `/verdict` (one retry after "sent back", then 409). `app/vault/gibs.py` saves scene imagery.

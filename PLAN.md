@@ -49,6 +49,18 @@
 | Lite UI: Call → Scene (2D map) → Locker → Board (ECharts) → Lab → Deduction → Closed | Case 001 solvable end to end at phone width |
 | Grading (code) per §16 | Grade + badges returned |
 
+### Phase 3.5 — 3D office with three.js (moved forward 2026-11-14 15:30; Sat 15:30–22:00)
+Nathan confirmed 3D modelling with three.js is a core requirement, not polish. Lite mode stays as the fallback and the accessibility path (§19).
+| Task | Exit condition |
+|---|---|
+| Office scene (R3F + drei), built from primitives in code: desk, corkboard, map table, evidence cabinet, typewriter, shelf, window to rainforest; dusk lighting; rattan + Sarawak flag accents | Loads < 5 MB; 50+ fps on a mid laptop |
+| Six camera stations, smooth glide, no free roaming; keyboard reachable (Tab / 1–7) | Every beat reachable by keyboard |
+| Beats rendered on the objects: case folder on the desk, evidence cards in the cabinet, charts pinned on the corkboard (ECharts canvas → texture or `Html` panels), tool objects on the desk, typewriter form, stamps | Case 001 solvable fully inside the 3D office |
+| **3D map table:** relief model of Sarawak from NASA elevation (NASADEM via Earthdata, or SRTM-derived fallback), GIBS imagery draped on it, 256×256 mesh with exaggerated height | Terrain recognisable; region box and clue pins on it |
+| Data on the terrain: VIIRS fire detections as rising embers, time slider; region glow | Fires animate across Feb–Apr 2026 |
+| Hornbill Partner modelled from primitives, tilts its head on a red herring | Visible at the desk |
+| Auto-fallback to lite: WebGL missing, narrow screen, low-end device, `prefers-reduced-motion`; a manual "2D / 3D" switch | Fallback verified at 375 px |
+
 ### Phase 4 — Agents + first deploy (Sat 22:00–Sun 01:00)
 | Task | Exit condition |
 |---|---|
@@ -62,7 +74,7 @@
 | Task | Exit condition |
 |---|---|
 | Cases 002 and 003 (vault + answer keys) | Both solvable |
-| 3D office: stations, camera glide, map table with NASADEM terrain | All six stations reachable; lite fallback on weak devices |
+| 3D polish (moved most of this to Phase 3.5) | — |
 | Case report (HTML → PDF) | Report downloads |
 | **Gate 4** | Three cases + 3D map table; hand build to Zoe/Malcolm for recording |
 
@@ -83,7 +95,7 @@ Scout + Case Builder drafting case 004 with admin approval; polish (stamps, horn
 3. Reopened cases
 4. Terrain data layers beyond fires and rain
 5. Case 003
-6. Full 3D office → lite mode plus one 3D map table
+6. Full 3D office → lite mode plus one 3D map table (last resort only: 3D is a core requirement)
 
 **Never cut:** seven beats for case 001, real statistics in code, student-written verdict, Partner "no answers" rule, lite mode.
 

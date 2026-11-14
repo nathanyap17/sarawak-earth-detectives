@@ -23,8 +23,9 @@ class Settings(BaseSettings):
 
     # Google Cloud / Vertex AI (ADK reads GOOGLE_* vars directly)
     google_cloud_project: str | None = None
-    google_cloud_location: str = "asia-southeast1"
-    model_name: str = "gemini-2.5-flash"
+    google_cloud_location: str = "global"  # model endpoint (EXP-6); Cloud Run itself is asia-southeast1
+    model_name: str = "gemini-3.5-flash-lite"
+    model_timeout_s: float = 8.0
     mock_agents: bool = False
 
     # NASA / partner data (ingest jobs only, never at request time)

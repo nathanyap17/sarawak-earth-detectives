@@ -9,8 +9,8 @@
 | GCS_BUCKET | backend | Cloud Run env | Vault bucket name |
 | GOOGLE_GENAI_USE_VERTEXAI | ADK | `.env` / Cloud Run env | TRUE |
 | GOOGLE_CLOUD_PROJECT | ADK, Firestore | `.env` / Cloud Run env | GCP project id |
-| GOOGLE_CLOUD_LOCATION | ADK | `.env` / Cloud Run env | asia-southeast1 (confirm model availability, EXP-6) |
-| MODEL_NAME | agents | `.env` / Cloud Run env | A Gemini model enabled in the project |
+| GOOGLE_CLOUD_LOCATION | ADK | `.env` / Cloud Run env | `global` (model endpoint; EXP-6). Cloud Run, Firestore stay in asia-southeast1 |
+| MODEL_NAME | agents | `.env` / Cloud Run env | `gemini-3.5-flash-lite` (EXP-6). Fallback `gemini-3.5-flash` |
 | MOCK_AGENTS | agents | `.env` | 1 = canned replies, no Vertex calls |
 | FIRMS_MAP_KEY | ingest only | `.env`; Secret Manager if ingest runs in the cloud | Free key from FIRMS |
 | EARTHDATA_TOKEN | ingest only | `.env`; Secret Manager if needed | NASA Earthdata login token |
@@ -21,8 +21,8 @@
 ## Accounts needed
 | Account | Owner | Status |
 |---|---|---|
-| Google Cloud project with billing and Vertex AI | Nathan | TODO |
-| Firebase project (Hosting, anonymous Auth, Firestore) linked to the GCP project | Nathan | TODO |
+| Google Cloud project `ssc-workspace-2026` (number 1054650249606), billing on, account nyjd80511 | Nathan | ✅ 2026-11-14 |
+| Firebase on `ssc-workspace-2026`: web app `1:1054650249606:web:5eb68b42cf434b480b7c07`, Hosting site `ssc-workspace-2026`, Firestore (native, asia-southeast1) | Nathan | ✅ 2026-11-14 · **Auth not initialised: anonymous sign-in still off** |
 | NASA Earthdata login | Nathan | TODO |
 | FIRMS map key | Nathan | TODO |
 | GitHub repository | Nathan | See WORKSPACE_SETUP |
@@ -30,7 +30,7 @@
 ## Deployed URLs
 | Environment | URL | Notes |
 |---|---|---|
-| Frontend (Firebase Hosting) | TODO | Must open with no login |
+| Frontend (Firebase Hosting) | https://ssc-workspace-2026.web.app (not yet deployed) | Must open with no login |
 | Backend (Cloud Run) | TODO | `--allow-unauthenticated`; CORS limited to the Hosting origin |
 
 ## Post-deploy checklist
