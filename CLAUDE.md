@@ -70,4 +70,4 @@ cd frontend && npm run build
 The seven beats for case 001, real statistics in code, the student-written verdict, the Partner's "no answers" rule, lite mode.
 
 ## Shipping status
-2026-11-14: repository initialised; nothing deployed. Only Nathan deploys or pushes.
+2026-11-14: deployed (Gate 3 passed). Landing https://ssc-workspace-2026.web.app/ · app https://ssc-workspace-2026.web.app/#/play · API https://sed-api-f7fsjojvgq-as.a.run.app (Cloud Run `sed-api`, asia-southeast1, min 1 instance). Only Nathan deploys or pushes.

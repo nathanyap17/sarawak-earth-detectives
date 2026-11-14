@@ -1,5 +1,17 @@
 # BUILD_LOG.md
 
+## [2026-11-15 ~00:30 MYT] First deploy verified (Gate 3) — read this first
+### What changed
+- Nathan pushed `e3b30b7` to `origin/main`, deployed the backend to Cloud Run (`sed-api`, revision `sed-api-00001-98k`, service account `sed-api@…`, min 1 instance) and the frontend to Firebase Hosting.
+- README: live links (landing, app, API health); data, AI and Case Closed lines now match what is built.
+### Verified
+- `/health`: env cloud, sessions firestore, mock_agents false. The deployed bundle calls the Cloud Run URL (no localhost).
+- Live site, private run: landing renders all sections; "Enter the office" → `/#/play` opens the 3D office. Case 001 played through (2D mode, because the browser pane was hidden and the 3D canvas could not size): clue pin, 3 cards, 3 charts, 9 tool runs with real stamps, Partner answered by AI in 1.0 s, verdict graded in 0.22 s ("solved — not enough evidence", 100/100, 5 badges), Chief's note in 1.3 s.
+- Firestore `sessions`: two documents (the two checks), each with a nickname and investigation data only.
+### Still to do
+- Budget alert (Billing → Budgets & alerts, RM 50). Make the GitHub repo public. Demo video link in the README.
+- 3D office not yet clicked through on the live site with a visible window (the run above used 2D).
+
 ## [2026-11-14 ~23:30 MYT] Review fixes: verdict flow, Chief off the critical path, guide asks, built-vs-planned docs — read this first
 ### What changed
 - **Contract** (`schemas.py`, `types.ts`): `POST /sessions/{id}/verdict` returns the code grade at once with `chief_note: null`. New `POST /sessions/{id}/chief` → `ChiefNote {attempt, chief_note}` writes the Chief's note once per attempt and keeps it (409 before any verdict). `PartnerReply` gains `fallback: "guarded" | "busy" | "off" | null`, saying why an approved hint replaced the AI reply.
