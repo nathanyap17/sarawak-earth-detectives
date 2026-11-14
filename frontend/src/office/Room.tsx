@@ -4,14 +4,11 @@
 // AI-assisted: written with Claude Code.
 import { useMemo } from 'react'
 import type { Tool } from '../api/types'
-import { useSession, type Beat } from '../state/session'
+import { useSession } from '../state/session'
 import { flagTexture, noteTexture, stampTexture, windowViewTexture } from './paint'
+import { Spot } from './Spot'
 
 const WOOD = '#7a5536', DARK = '#4a3322', BRASS = '#c8a24a'
-
-function Glow({ on, children }: { on: boolean; children: React.ReactNode }) {
-  return <group>{children}{on && <pointLight intensity={0.6} distance={1.6} color="#ffd27a" position={[0, 0.5, 0.3]} />}</group>
-}
 
 function Box({ p, s, c, r = 0.8 }: { p: [number, number, number]; s: [number, number, number]; c: string; r?: number }) {
   return <mesh position={p} castShadow receiveShadow><boxGeometry args={s} /><meshStandardMaterial color={c} roughness={r} /></mesh>
@@ -33,7 +30,7 @@ function Shell() {
       <Box p={[0, 1.95, -3.97]} s={[2.6, 0.05, 0.04]} c={DARK} />
       <Box p={[0, 1.22, -3.93]} s={[2.8, 0.06, 0.14]} c={DARK} />
       {/* Sarawak flag */}
-      <mesh position={[2.6, 2.1, -3.98]}><planeGeometry args={[0.9, 0.6]} /><meshStandardMaterial map={flag} /></mesh>
+      <mesh position={[2.2, 2.2, -3.98]}><planeGeometry args={[0.9, 0.6]} /><meshStandardMaterial map={flag} /></mesh>
       {/* rattan rug */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0.2]}><circleGeometry args={[2.1, 48]} /><meshStandardMaterial color="#b88a4e" roughness={1} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0.2]}><ringGeometry args={[1.85, 1.95, 48]} /><meshStandardMaterial color="#7a3b1f" /></mesh>
@@ -41,27 +38,27 @@ function Shell() {
   )
 }
 
-function Desk({ beat }: { beat: Beat }) {
+function Desk() {
   return (
     <group position={[0, 0, -2.8]}>
       <Box p={[0, 0.75, 0]} s={[2.2, 0.06, 0.9]} c={WOOD} />
       <Box p={[-0.85, 0.37, 0]} s={[0.45, 0.72, 0.85]} c={DARK} />
       <Box p={[0.85, 0.37, 0]} s={[0.45, 0.72, 0.85]} c={DARK} />
       {/* case folder */}
-      <Glow on={beat === 'call'}>
+      <Spot id="call" at={[0.75, 0.85, 0.05]}>
         <group position={[0.15, 0.79, 0.05]} rotation={[0, 0.12, 0]}>
           <Box p={[0, 0, 0]} s={[0.42, 0.015, 0.3]} c="#e0bf7a" />
           <Box p={[-0.12, 0.009, -0.16]} s={[0.14, 0.012, 0.03]} c="#c9a86a" />
           <Box p={[0.02, 0.012, 0.02]} s={[0.3, 0.003, 0.2]} c="#fffaf0" />
         </group>
-      </Glow>
+      </Spot>
       {/* rotary phone */}
       <group position={[0.7, 0.8, -0.15]}>
         <Box p={[0, 0.03, 0]} s={[0.2, 0.08, 0.16]} c="#1a1a1a" r={0.4} />
         <Box p={[0, 0.09, 0]} s={[0.24, 0.035, 0.05]} c="#1a1a1a" r={0.4} />
       </group>
       {/* typewriter */}
-      <Glow on={beat === 'deduction'}>
+      <Spot id="deduction" at={[-0.95, 0.4, 0.05]}>
         <group position={[-0.75, 0.78, 0.05]}>
           <Box p={[0, 0.05, 0]} s={[0.42, 0.1, 0.3]} c="#2f3a33" r={0.5} />
           <Box p={[0, 0.12, -0.08]} s={[0.46, 0.05, 0.08]} c="#1f2622" r={0.4} />
@@ -72,7 +69,7 @@ function Desk({ beat }: { beat: Beat }) {
             </mesh>
           ))}
         </group>
-      </Glow>
+      </Spot>
       {/* desk lamp */}
       <group position={[-0.25, 0.78, -0.3]}>
         <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.01, 0.01, 0.4, 6]} /><meshStandardMaterial color={BRASS} metalness={0.6} roughness={0.3} /></mesh>
@@ -83,12 +80,12 @@ function Desk({ beat }: { beat: Beat }) {
   )
 }
 
-function Cabinet({ beat }: { beat: Beat }) {
+function Cabinet() {
   const { activeCase: c, chosen } = useSession()
   const n = c?.evidence.length ?? 5
   return (
-    <Glow on={beat === 'locker'}>
-      <group position={[4.55, 0, -0.6]}>
+    <Spot id="locker" at={[4.3, 1.95, -1.2]}>
+      <group position={[4.55, 0, -1.2]}>
         <Box p={[0, 0.8, 0]} s={[0.6, 1.6, 1.0]} c="#556b5c" r={0.5} />
         {Array.from({ length: Math.min(n, 6) }).map((_, i) => {
           const id = c?.evidence[i]?.id
@@ -101,11 +98,11 @@ function Cabinet({ beat }: { beat: Beat }) {
           )
         })}
       </group>
-    </Glow>
+    </Spot>
   )
 }
 
-function Corkboard({ beat }: { beat: Beat }) {
+function Corkboard() {
   const { activeCase: c, chosen, results } = useSession()
   const notes = useMemo(() => chosen.map((id) => {
     const card = c?.evidence.find((e) => e.id === id)
@@ -113,7 +110,7 @@ function Corkboard({ beat }: { beat: Beat }) {
     return { id, tex: noteTexture(card?.name ?? id, st ? st.replace(/_/g, ' ') : card?.mission ?? '') }
   }), [chosen, c, results])
   return (
-    <Glow on={beat === 'board'}>
+    <Spot id="board" at={[-2.4, 2.5, -3.9]}>
       <group position={[-2.4, 1.65, -3.97]}>
         <Box p={[0, 0, 0]} s={[2.0, 1.3, 0.04]} c="#c79a6b" r={1} />
         <Box p={[0, 0, -0.005]} s={[2.1, 1.4, 0.03]} c={DARK} />
@@ -124,7 +121,7 @@ function Corkboard({ beat }: { beat: Beat }) {
           </group>
         ))}
       </group>
-    </Glow>
+    </Spot>
   )
 }
 
@@ -132,13 +129,13 @@ const TOOL_COLOUR: Record<Tool, string> = {
   magnifier: '#c8a24a', season: '#2e7d32', ruler: '#e8e0cc', scales: '#b08d57', elnino: '#1f6f8b', twin: '#8e5ea2',
 }
 
-function LabBench({ beat }: { beat: Beat }) {
+function LabBench() {
   const { results } = useSession()
   const used = new Set(Object.values(results).flatMap((r) => Object.keys(r ?? {})))
   const tools = Object.keys(TOOL_COLOUR) as Tool[]
   return (
-    <Glow on={beat === 'lab'}>
-      <group position={[-4.45, 0, 0.4]} rotation={[0, Math.PI / 2, 0]}>
+    <Spot id="lab" at={[-4.2, 1.35, -1.0]}>
+      <group position={[-4.45, 0, -1.0]} rotation={[0, Math.PI / 2, 0]}>
         <Box p={[0, 0.85, 0]} s={[2.0, 0.06, 0.8]} c={WOOD} />
         <Box p={[-0.9, 0.42, 0]} s={[0.08, 0.84, 0.7]} c={DARK} />
         <Box p={[0.9, 0.42, 0]} s={[0.08, 0.84, 0.7]} c={DARK} />
@@ -156,17 +153,17 @@ function LabBench({ beat }: { beat: Beat }) {
           </group>
         ))}
       </group>
-    </Glow>
+    </Spot>
   )
 }
 
-function Shelf({ beat }: { beat: Beat }) {
+function Shelf() {
   const { grade } = useSession()
   const stamp = useMemo(() => grade && stampTexture(grade.ending === 'sent_back' ? 'Sent back' : 'Solved',
     grade.ending === 'sent_back' ? '#b26a00' : '#2e7d32'), [grade])
   return (
-    <Glow on={beat === 'closed'}>
-      <group position={[4.75, 0, 1.9]} rotation={[0, -Math.PI / 2, 0]}>
+    <Spot id="closed" at={[3.9, 2.25, -3.6]}>
+      <group position={[3.9, 0, -3.75]}>
         {[0.4, 1.0, 1.6].map((y) => <Box key={y} p={[0, y, 0]} s={[1.6, 0.04, 0.4]} c={WOOD} />)}
         <Box p={[-0.8, 1.0, 0]} s={[0.04, 2.0, 0.4]} c={DARK} />
         <Box p={[0.8, 1.0, 0]} s={[0.04, 2.0, 0.4]} c={DARK} />
@@ -175,20 +172,44 @@ function Shelf({ beat }: { beat: Beat }) {
         ))}
         {stamp && <mesh position={[0, 0.65, 0.21]}><planeGeometry args={[0.6, 0.225]} /><meshBasicMaterial map={stamp} transparent /></mesh>}
       </group>
-    </Glow>
+    </Spot>
+  )
+}
+
+function InboxStand() {
+  const { activeCase, grade } = useSession()
+  const unread = !activeCase || !!grade
+  return (
+    <Spot id="inbox" at={[2.7, 1.3, 1.5]}>
+      <group position={[2.7, 0, 1.5]} rotation={[0, -0.5, 0]}>
+        <mesh position={[0, 0.4, 0]} castShadow><cylinderGeometry args={[0.06, 0.16, 0.8, 12]} /><meshStandardMaterial color={DARK} /></mesh>
+        <Box p={[0, 0.82, 0]} s={[0.62, 0.04, 0.46]} c={WOOD} />
+        <Box p={[0, 0.9, -0.21]} s={[0.62, 0.14, 0.03]} c={WOOD} />
+        <Box p={[-0.3, 0.9, 0]} s={[0.03, 0.14, 0.46]} c={WOOD} />
+        <Box p={[0.3, 0.9, 0]} s={[0.03, 0.14, 0.46]} c={WOOD} />
+        {[0, 1, 2].map((i) => (
+          <group key={i} position={[-0.04 + i * 0.03, 0.86 + i * 0.012, 0.02 - i * 0.03]} rotation={[0, (i - 1) * 0.18, 0]}>
+            <Box p={[0, 0, 0]} s={[0.42, 0.008, 0.28]} c="#fffaf0" />
+          </group>
+        ))}
+        {unread && (
+          <mesh position={[0.22, 0.93, 0.12]}><sphereGeometry args={[0.045, 12, 12]} /><meshStandardMaterial color="#c8102e" emissive="#c8102e" emissiveIntensity={0.9} /></mesh>
+        )}
+      </group>
+    </Spot>
   )
 }
 
 export function Room() {
-  const beat = useSession((s) => s.beat)
   return (
     <group>
       <Shell />
-      <Desk beat={beat} />
-      <Cabinet beat={beat} />
-      <Corkboard beat={beat} />
-      <LabBench beat={beat} />
-      <Shelf beat={beat} />
+      <InboxStand />
+      <Desk />
+      <Cabinet />
+      <Corkboard />
+      <LabBench />
+      <Shelf />
     </group>
   )
 }

@@ -8,6 +8,8 @@ import { BoxGeometry, BufferAttribute, Color, InstancedMesh, Object3D, PlaneGeom
 import { logQuiet } from '../api/client'
 import type { SceneManifest } from '../api/types'
 import { useSession } from '../state/session'
+import { Spot } from './Spot'
+import { useUI } from './ui'
 
 export const TABLE_W = 2.4
 const LIFT = 0.92          // tabletop height
@@ -39,7 +41,8 @@ export function useScene(caseId: string | undefined) {
 
 export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
   const { m, heights, fires, base } = scene
-  const { activeCase: c, beat, sceneDay, cluePins, addPin, sessionId } = useSession()
+  const { activeCase: c, sceneDay, cluePins, addPin, sessionId } = useSession()
+  const win = useUI((u) => u.win)
   const D = m ? TABLE_W * (m.bbox[3] - m.bbox[1]) / (m.bbox[2] - m.bbox[0]) : TABLE_W * 0.7
   const size = m?.terrain?.size ?? 2
   const maxM = m?.terrain?.max_m ?? 1
@@ -98,7 +101,7 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
   })
 
   function drop(e: ThreeEvent<MouseEvent>) {
-    if (beat !== 'scene' || !m || !e.uv || cluePins.length >= 3) return
+    if (win !== 'scene' || !m || !e.uv || cluePins.length >= 3) return
     e.stopPropagation()
     const [W, S, E, N] = m.bbox
     const p: [number, number] = [+(W + e.uv.x * (E - W)).toFixed(3), +(S + e.uv.y * (N - S)).toFixed(3)]
@@ -113,6 +116,7 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
   })() : null
 
   return (
+    <Spot id="scene" at={[0, 1.02, 1.1]} clickThrough>
     <group position={[0, 0, 0.15]}>
       {/* table: rattan-brown frame on four legs */}
       <mesh position={[0, LIFT - 0.05, 0]} castShadow receiveShadow>
@@ -128,8 +132,7 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
       <spotLight position={[0, 2.6, 0.4]} angle={0.75} penumbra={0.6} intensity={9} distance={4} color="#fff1dc" />
       <group position={[0, LIFT, 0]}>
         <mesh geometry={geom} onClick={drop} receiveShadow
-          onPointerOver={() => { if (beat === 'scene') document.body.style.cursor = 'crosshair' }}
-          onPointerOut={() => { document.body.style.cursor = '' }}>
+          onPointerMove={() => { if (win === 'scene') document.body.style.cursor = 'crosshair' }}>
           <meshStandardMaterial map={base ?? undefined} emissiveMap={base ?? undefined} emissive={base ? '#ffffff' : '#000000'} emissiveIntensity={0.45}
             color={base ? '#ffffff' : '#3d6b4f'} roughness={0.9} />
         </mesh>
@@ -160,5 +163,6 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
         })}
       </group>
     </group>
+    </Spot>
   )
 }

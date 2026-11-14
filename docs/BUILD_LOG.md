@@ -1,5 +1,28 @@
 # BUILD_LOG.md
 
+## [2026-11-14 ~21:30 MYT] Guided full-screen office, inbox, landing page, session recovery — read this first
+### What changed
+- **Session recovery** (`state/recover.ts`, `api/client.ts`): on `404 session not found` the client opens a new session for the same case, replays the chosen cards and the tools already run, then retries the call once. Cause of Nathan's report: sessions were in memory and the backend had been restarted under an open tab.
+- **Office redesign** (Nathan's feedback: split screen felt dull): the 3D office fills the screen, seen through the missing fourth wall. Objects are clickable (`office/Spot.tsx`): hover shows a label, the next object has a pulsing label and a bouncing marker, and after 7 s idle every label appears. Clicking opens that object's window and glides the camera in; closing returns to the whole room. Finishing a step closes the window and lights the next object.
+- **Kenyalang the guide** (`office/Guide.tsx`, `office/script.ts`): a hornbill bubble that types out what to do now (scripted per state), explains 18 vetted glossary words, and passes hints and questions to the backend Partner. Replaces the Partner box in the office (lite keeps it).
+- **Inbox** (`office/Inbox.tsx`, `office/learnt.ts`, an inbox stand in the room): Happenings (open cases with the news source and the challenge's four verbs as a checklist) and Learnt cases (solved cases with variables, tools and verdict, kept in localStorage only).
+- **Landing page** (`LANDING.md`, `landing/Landing.tsx`, `landing.css`, anime.js 4.5): opening film from space to Sarawak, then Problem / Opportunity / Solution, How it works, Tech stack, Impact, CTA, footer. `/` is the landing page; `/#/play` is the app. `public/landing/earth.jpg` is a saved GIBS Blue Marble image.
+- Layout: shelf moved to the back wall, cabinet and lab bench moved back, so the overview shows everything.
+### Decisions
+- Progress (`reached`) is separate from what is being viewed, so revisiting an earlier object never moves the student back.
+- Labels are plain DOM buttons projected each frame (drei `Html` dropped a label and threw unmount errors).
+- "POS" on the landing page is read as Problem, Opportunity, Solution (Nathan to confirm).
+- Landing figures are only those the master sheet marks checked; honest limits and AI disclosure are on the page.
+### Verified
+- Browser, real backend: inbox → folder → sign → map (pin by clicking terrain) → cabinet → corkboard → lab (9 tool runs) → typewriter is the next target; labels and guide text correct at each step.
+- Session recovery: with a fake session id in the store, a hint request recovered silently and answered.
+- Landing: film plays to the final state; all sections render; 375 px has no sideways scroll; "Enter the office" opens `/#/play` (lite at phone width).
+- `tsc` clean; build: landing 19 kB gzip, app 269 kB, office 256 kB; backend 47 tests pass.
+### Still broken / unverified
+- Verdict and Case Closed weren't re-run in the new office (their components are unchanged).
+- At about 800 px wide the guide bubble covers part of the scene; it can be minimised.
+- Not checked on a mid laptop or with reduced motion emulated.
+
 ## [2026-11-14 ~18:30 MYT] Phase 4: Partner, Chief, Firestore sessions, deploy files — read this first
 ### What changed
 - `app/agents/`: `runtime.py` (one-shot ADK `LlmAgent` + `InMemoryRunner`, hard timeout, warm-up at startup), `guard.py` (number guard + answer guard), `partner.py` (hint ladder per stage, the student's steps without any result, last 3 exchanges), `chief.py` (2–3 sentences wording the code grade).

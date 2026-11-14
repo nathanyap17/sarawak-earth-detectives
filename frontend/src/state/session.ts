@@ -33,6 +33,7 @@ interface State {
   addChat: (c: ChatLine, group: string, rung: number) => void
   draft: Draft | null
   setDraft: (d: Draft) => void
+  setSessionId: (id: string) => void
   setNickname: (n: string) => void
   begin: (c: CasePublic, sessionId: string) => void
   setBeat: (b: Beat) => void
@@ -67,6 +68,7 @@ export const useSession = create<State>((set) => ({
   })),
   setGrade: (grade) => set({ grade }),
   setDraft: (draft) => set({ draft }),
+  setSessionId: (sessionId) => set({ sessionId }),
   addChat: (c, group, rung) => set((s) => ({ chat: [...s.chat, c].slice(-8), hintRung: { ...s.hintRung, [group]: Math.max(s.hintRung[group] ?? 0, rung) } })),
   reset: () => set({ ...fresh }),
 }))

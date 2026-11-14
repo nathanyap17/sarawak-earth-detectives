@@ -21,7 +21,7 @@ The student does the science — chooses evidence, removes seasons, tests the tr
 | AI | Gemini on Vertex AI via Google ADK (version pinned in `backend/pyproject.toml`) |
 
 ## Architecture
-- `frontend/` — one React app. `src/beats/` holds the seven beats, shared by `src/lite/` (2D, built first) and `src/office/` (3D). `src/api/` is the only module that calls the backend.
+- `frontend/` — one React app. `/` is the landing page (`src/landing/`, spec in `LANDING.md`); `/#/play` is the app. `src/beats/` holds the seven beats, shared by `src/lite/` (2D, built first) and `src/office/` (3D). `src/api/` is the only module that calls the backend.
 - `backend/app/api/` routes · `analysis/` statistics (no I/O) · `vault/` ingest + region averaging · `agents/` ADK agents and tools · `reports/` case report.
 - `cases/` approved CasePack JSON · `data/` downloaded data (never committed) · `infra/` deploy scripts.
 - Diagram and routes: `MASTER_SHEET.md` §9.
