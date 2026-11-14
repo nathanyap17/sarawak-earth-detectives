@@ -1,0 +1,34 @@
+# Secrets — never committed
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*service-account*.json
+*credentials*.json
+.netrc
+_netrc
+
+# Data (downloaded NASA data, vault files)
+data/raw/*
+data/vault/*
+!data/**/.gitkeep
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node / builds
+node_modules/
+frontend/dist/
+.firebase/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

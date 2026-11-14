@@ -1,0 +1,16 @@
+rules_version = '2';
+// Students read open cases and write only their own session (MASTER_SHEET §18).
+// Answer keys live only on the backend (Cloud Storage / server-only collection).
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /cases/{caseId} {
+      allow read: if request.auth != null && resource.data.status == 'open';
+      allow write: if false;
+    }
+    match /sessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
