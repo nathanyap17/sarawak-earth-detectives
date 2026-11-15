@@ -22,7 +22,7 @@
 ### Still broken / unverified
 - Landing diagram animations could not be watched (the preview pane throttles animation while hidden); their end state was checked by measurement only.
 - Phone-width check of the new lab panels and diagrams not done (diagrams scroll sideways inside their own box below about 760 px).
-- Not deployed yet.
+- Deployed 2026-11-15 ~11:05 MYT at Nathan's request: pushed acb3ea1, Cloud Run revision sed-api-00002-sj2, Firebase Hosting. Live checks: /health cloud + firestore; /myline and /shuffle answer; Partner 1.0 s; landing shows 8 sections, 3 diagrams, 3 fonts; live 2D run: pin report, lay-your-own-line 44/100 for a flat line, Ruler, Scales, shuffle 23 of 1000. Live 3D office and phone width not clicked through.
 
 ## [2026-11-15 ~00:30 MYT] First deploy verified (Gate 3) — read this first
 ### What changed
