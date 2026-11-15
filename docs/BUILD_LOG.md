@@ -1,6 +1,6 @@
 # BUILD_LOG.md
 
-## [2026-11-15 ~12:00 MYT] Upgrades: hands-on lab, pin clue reports, simpler words, real lab bench, landing diagrams — read this first
+## [2026-11-15 ~10:50 MYT] Upgrades: hands-on lab, pin clue reports, simpler words, real lab bench, landing diagrams — read this first
 ### What changed (Nathan's three upgrade points)
 - **More doing, less clicking**
   - Lab, Ruler: the student first lays their own trend line with Tilt and Height sliders; `POST /sessions/{id}/myline` scores it against the best-fit line (`analysis.trend.my_line`), then the best line is revealed.
