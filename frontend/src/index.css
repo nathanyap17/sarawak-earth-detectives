@@ -4,7 +4,7 @@
   --ink: #2b211b; --muted: #6b5d52; --paper: #f4ead8; --card: #fffaf0; --cork: #c79a6b;
   --line: #d9c7aa; --red: #c8102e; --yellow: #f6c700; --black: #1a1a1a; --teal: #1f6f8b;
   --ok: #2e7d32; --warn: #b26a00;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--ink); background: var(--paper); line-height: 1.45;
 }
 * { box-sizing: border-box; }
@@ -140,8 +140,8 @@ fieldset.field { border: 1px solid var(--line); border-radius: 8px; }
 .stamp-needs_more_years { color: var(--warn); }
 .stamp-record_too_short { color: var(--muted); }
 
-.typewriter { background: var(--card); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line); font-family: "Courier New", ui-monospace, monospace; }
-.typewriter .field { font-family: system-ui, sans-serif; }
+.typewriter { background: var(--card); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line); font-family: "Special Elite", "Courier New", ui-monospace, monospace; }
+.typewriter .field { font-family: "Atkinson Hyperlegible", system-ui, sans-serif; }
 
 .chief-stamp { display: inline-block; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; border: 4px double; padding: 6px 14px; rotate: -4deg; }
 .chief-stamp.solved, .chief-stamp.solved_not_enough { color: var(--ok); }
@@ -271,3 +271,7 @@ button.mode { padding: 4px 10px; font-size: .85rem; }
 .ai-tag { display: inline-block; margin-left: 6px; padding: 0 6px; font-size: .7rem; border-radius: 99px; background: var(--teal); color: #fff; vertical-align: middle; }
 .chief-note { margin: 12px 0; padding: 10px 14px; border-left: 4px solid var(--red); background: var(--card); font-style: italic; }
 .chief-note .ai-tag { font-style: normal; }
+
+/* display type, shared with the landing page */
+h1, h2, h3, .win-bar strong, .brand, .spot-label strong { font-family: "Fraunces Variable", Georgia, serif; }
+.stamp, .chief-stamp, .folder-tab { font-family: "Special Elite", "Courier New", monospace; }

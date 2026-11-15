@@ -64,3 +64,10 @@ Data credits in words; the sources for each figure; "Built for NASA Space Apps 2
 - The film plays once, can be skipped, and is absent under reduced motion.
 - All six sections render at 375 px and 1280 px without sideways scrolling.
 - "Enter the office" opens the office with no login.
+
+
+## Added 2026-11-15
+- **Under the hood** (between How it works and Tech stack): three animated SVG diagrams. System architecture; the two AI agents with the number guard, the answer guard and the locked answer key; the statistics engine (season filter, regression line and range, t-test plus Mann-Kendall, El Nino lamp, stamp). Only what is built is drawn.
+- **The detective path**: the seven steps on one drawn path, plus four hands-on cards (pin the map, lay your own line, shuffle the years, write the verdict).
+- **Type**: Fraunces (headings), Atkinson Hyperlegible (reading text), Special Elite (typewriter accents), self-hosted with @fontsource.
+- We say regression and rank tests, not machine learning: no ML model is built.

@@ -1,5 +1,29 @@
 # BUILD_LOG.md
 
+## [2026-11-15 ~12:00 MYT] Upgrades: hands-on lab, pin clue reports, simpler words, real lab bench, landing diagrams — read this first
+### What changed (Nathan's three upgrade points)
+- **More doing, less clicking**
+  - Lab, Ruler: the student first lays their own trend line with Tilt and Height sliders; `POST /sessions/{id}/myline` scores it against the best-fit line (`analysis.trend.my_line`), then the best line is revealed.
+  - Lab, Scales: "Shuffle the years 1,000 times" (`POST /sessions/{id}/shuffle`, `analysis.trend.shuffle_test`, fixed seed) draws a histogram of shuffled tilts with the real tilt marked: a picture of what chance alone does.
+  - Both are learning tools: logged as `workbench`, never graded, and every number comes from `analysis/` (rule 1).
+  - Every tool result now has a step-by-step "Kenyalang explains" box (`beats/explain.ts`: words only, numbers passed in from the backend result) and made-up sample charts beside it (`beats/Samples.tsx`), with the sample matching the stamp highlighted.
+  - Map: each clue pin gives a report (`beats/PinReport.tsx`): nearest town, VIIRS detections within 25 km, number of days, busiest day (with a jump button), a day-by-day bar strip, inside or outside the case region, ground height (3D), and a detective question chosen from what was found. Counted in the browser from the saved `fires.json`; nothing is fetched from NASA.
+- **Simpler words**: tool cards say what each tool is, what it is like and when to use it; 19 new word-book entries (Mann-Kendall, t-test, p-value, regression, wobble, range, peat, VIIRS, MERRA-2 …), a full word book in the guide, and a "What is this?" card at the top of every station window. Written for a ten-year-old.
+- **UI**: the 3D lab bench is a real workbench (`office/LabBench.tsx`): brass balance that tips once used, desk lamp that lights, orange lens on a retort stand, ruler across a chart sheet, magnifier on a notebook, twin maps, pegboard sign, drawers, stool; name tags while the lab is open. The map table shows town names, numbered pins and a "Case region" tag; the 2D map shows town labels and a key.
+- **Landing**: three animated "under the hood" sections (`landing/UnderTheHood.tsx`, `hood.css`): system architecture, the two agents with their guards and the locked answer key, and the statistics engine (dots, regression line, range, stamp). A "detective's path" through the seven steps and four "you do it" cards. Fonts are self-hosted: Fraunces (headings), Atkinson Hyperlegible (reading), Special Elite (typewriter accents), used in the app too.
+### Decisions
+- The landing page says regression and rank tests, not machine learning, because no ML model is built (MASTER_SHEET §5.9 correction stands).
+- `my_line` scores the gap to the best line against the wobble (half a standard deviation = 0), because comparing misses alone gave a flat, untouched line 96/100.
+- Pin reports count detections in the browser (pure counting of a vault file); statistics stay in the backend.
+### Verified
+- Backend 51 tests pass (new: my_line, shuffle repeatable, bad card 400). `tsc` clean.
+- Browser, local backend: two pins gave correct reports (16 detections on 5 days near Bintulu; none near Kuching); lay-your-own-line scored and explained; Ruler, Scales, shuffle (23 of 1000), El Niño lamp ("significant" → "needs more years") all explained; screenshots of the new bench and the labelled map table.
+- Landing: all eight sections present, three fonts loaded, no text outside any diagram box, no sideways page scroll at 1280 px.
+### Still broken / unverified
+- Landing diagram animations could not be watched (the preview pane throttles animation while hidden); their end state was checked by measurement only.
+- Phone-width check of the new lab panels and diagrams not done (diagrams scroll sideways inside their own box below about 760 px).
+- Not deployed yet.
+
 ## [2026-11-15 ~00:30 MYT] First deploy verified (Gate 3) — read this first
 ### What changed
 - Nathan pushed `e3b30b7` to `origin/main`, deployed the backend to Cloud Run (`sed-api`, revision `sed-api-00001-98k`, service account `sed-api@…`, min 1 instance) and the frontend to Firebase Hosting.

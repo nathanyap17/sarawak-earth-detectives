@@ -6,6 +6,8 @@
 import { animate, createTimeline, stagger } from 'animejs'
 import { useEffect, useRef, useState } from 'react'
 import './landing.css'
+import './hood.css'
+import { UnderTheHood } from './UnderTheHood'
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -159,7 +161,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
       <section className="band dark reveal" id="how">
         <h2>How it works</h2>
-        <p className="lead">Seven steps in a 3D detective office. Together they are exactly the four things the challenge asks.</p>
+        <p className="lead">Seven steps in a 3D detective office. Together they are exactly the four things the challenge asks, and the student does each one with their own hands.</p>
         <div className="asks">
           {ASKS.map(([k, name]) => (
             <div key={k} className={`ask pop k-${k}`}>
@@ -170,6 +172,24 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             </div>
           ))}
         </div>
+        <div className="journey pop">
+          <svg viewBox="0 0 1000 130" role="img" aria-label="Seven stops joined by one path: the Call, the Scene, the Evidence Locker, the Board, the Lab, the Deduction and Case Closed.">
+            <path id="jpath" className="path-line" pathLength={1} d="M60 70 C130 10 200 10 205 70 S280 130 350 70 S430 10 495 70 S570 130 640 70 S720 10 785 70 S860 130 935 70" />
+            {STEPS.map(([n, title], i) => (
+              <g key={n} className="stop" style={{ '--i': i } as React.CSSProperties}>
+                <circle cx={60 + i * 145.8} cy={70} r={17} /><text className="num" x={60 + i * 145.8} y={75.5} textAnchor="middle">{n}</text>
+                <text x={60 + i * 145.8} y={i % 2 ? 22 : 122} textAnchor="middle">{title}</text>
+              </g>
+            ))}
+            {!reduced() && <circle r={7} className="walker"><animateMotion dur="9s" repeatCount="indefinite" begin="2.6s"><mpath href="#jpath" /></animateMotion></circle>}
+          </svg>
+        </div>
+        <div className="doing">
+          <div className="pop"><strong>Pin the map</strong><span>Drop a clue pin and the satellite log answers: how many fires were seen here, on how many days.</span></div>
+          <div className="pop"><strong>Lay your own line</strong><span>Tilt a trend line through real NASA dots by hand, then see how close you got to the best fit.</span></div>
+          <div className="pop"><strong>Shuffle the years</strong><span>Mix up the record 1,000 times to see what luck alone can do. That is what "significant" means.</span></div>
+          <div className="pop"><strong>Write the verdict</strong><span>In your own words. The Chief checks it against the evidence, and honest doubt can win.</span></div>
+        </div>
         <div className="bird-line pop">
           <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
             <circle cx="26" cy="36" r="17" fill="#141414" stroke="#f6c700" strokeWidth="2" /><path d="M36 30 Q58 30 62 44 Q48 42 38 42 Z" fill="#f1e3b5" />
@@ -179,7 +199,9 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
         </div>
       </section>
 
-      <section className="band reveal" id="stack">
+      <UnderTheHood />
+
+      <section className="band mid reveal" id="stack">
         <h2>Tech stack</h2>
         <div className="stack">
           {STACK.map(([group, items]) => (
