@@ -14,7 +14,7 @@ export const STATIONS: Record<SpotId, Station> = {
   scene:     { pos: [0, 3.55, 1.95],     look: [0, 0.9, 0.2] },
   locker:    { pos: [2.0, 1.55, -1.2],   look: [4.4, 0.95, -1.2] },
   board:     { pos: [-2.4, 1.65, -1.7],  look: [-2.4, 1.6, -3.95] },
-  lab:       { pos: [-2.0, 1.6, -1.0],   look: [-4.3, 0.95, -1.0] },
+  lab:       { pos: [-1.75, 1.8, -1.0], look: [-4.4, 1.15, -1.0] },
   deduction: { pos: [-0.75, 1.35, -1.75], look: [-0.75, 0.82, -2.75] },
   closed:    { pos: [3.9, 1.5, -1.3],    look: [3.9, 1.1, -3.75] },
 }

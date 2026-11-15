@@ -3,9 +3,9 @@
 // with the six tools, case shelf, rattan rug, Sarawak flag. Highlights follow the current beat.
 // AI-assisted: written with Claude Code.
 import { useMemo } from 'react'
-import type { Tool } from '../api/types'
 import { useSession } from '../state/session'
 import { flagTexture, noteTexture, stampTexture, windowViewTexture } from './paint'
+import { LabBench } from './LabBench'
 import { Spot } from './Spot'
 
 const WOOD = '#7a5536', DARK = '#4a3322', BRASS = '#c8a24a'
@@ -118,38 +118,6 @@ function Corkboard() {
           <group key={n.id} position={[-0.7 + (i % 3) * 0.7, 0.3 - Math.floor(i / 3) * 0.6, 0.03]} rotation={[0, 0, ((i * 7) % 5 - 2) * 0.03]}>
             <mesh><planeGeometry args={[0.55, 0.41]} /><meshStandardMaterial map={n.tex} /></mesh>
             <mesh position={[0, 0.18, 0.01]}><sphereGeometry args={[0.018, 10, 10]} /><meshStandardMaterial color="#c8102e" /></mesh>
-          </group>
-        ))}
-      </group>
-    </Spot>
-  )
-}
-
-const TOOL_COLOUR: Record<Tool, string> = {
-  magnifier: '#c8a24a', season: '#2e7d32', ruler: '#e8e0cc', scales: '#b08d57', elnino: '#1f6f8b', twin: '#8e5ea2',
-}
-
-function LabBench() {
-  const { results } = useSession()
-  const used = new Set(Object.values(results).flatMap((r) => Object.keys(r ?? {})))
-  const tools = Object.keys(TOOL_COLOUR) as Tool[]
-  return (
-    <Spot id="lab" at={[-4.2, 1.35, -1.0]}>
-      <group position={[-4.45, 0, -1.0]} rotation={[0, Math.PI / 2, 0]}>
-        <Box p={[0, 0.85, 0]} s={[2.0, 0.06, 0.8]} c={WOOD} />
-        <Box p={[-0.9, 0.42, 0]} s={[0.08, 0.84, 0.7]} c={DARK} />
-        <Box p={[0.9, 0.42, 0]} s={[0.08, 0.84, 0.7]} c={DARK} />
-        {tools.map((t, i) => (
-          <group key={t} position={[-0.75 + i * 0.3, 0.88, 0.05]}>
-            <mesh position={[0, 0.06, 0]} castShadow>
-              {t === 'magnifier' ? <torusGeometry args={[0.06, 0.012, 8, 20]} />
-                : t === 'scales' ? <coneGeometry args={[0.07, 0.12, 4]} />
-                  : t === 'elnino' ? <sphereGeometry args={[0.06, 16, 16]} />
-                    : t === 'ruler' ? <boxGeometry args={[0.2, 0.01, 0.04]} />
-                      : t === 'twin' ? <octahedronGeometry args={[0.06]} />
-                        : <cylinderGeometry args={[0.05, 0.05, 0.1, 12]} />}
-              <meshStandardMaterial color={TOOL_COLOUR[t]} emissive={used.has(t) ? TOOL_COLOUR[t] : '#000'} emissiveIntensity={used.has(t) ? 0.5 : 0} metalness={0.3} roughness={0.5} />
-            </mesh>
           </group>
         ))}
       </group>

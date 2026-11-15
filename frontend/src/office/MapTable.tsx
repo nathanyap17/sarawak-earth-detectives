@@ -30,7 +30,7 @@ function textTexture(text: string, bg: string, fg: string) {
   return { t, aspect: c.width / c.height }
 }
 
-function Tag({ text, at, h = 0.045, bg = 'rgba(20,16,12,.82)', fg = '#fff', lift = 0.05 }: {
+export function Tag({ text, at, h = 0.045, bg = 'rgba(20,16,12,.82)', fg = '#fff', lift = 0.05 }: {
   text: string; at: [number, number, number]; h?: number; bg?: string; fg?: string; lift?: number
 }) {
   const { t, aspect } = useMemo(() => textTexture(text, bg, fg), [text, bg, fg])
