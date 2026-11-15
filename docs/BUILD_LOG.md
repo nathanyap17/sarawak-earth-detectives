@@ -10,7 +10,9 @@
 
 **Verified:** 70 backend tests pass (new `test_casefile.py`: locked until closed, no key leaks, summary kept, invented number falls back). Headless Edge: case 001 played to closed in lite mode, both buttons, case study (3 A4 pages) and summary (1 page, Reporter AI, passed the guard) printed to PDF, no console errors. Real Gemini: Partner explains Mann-Kendall with a rhetorical hint in 1-3 s when warm.
 
-**Not verified / open:** hold-to-talk needs a real microphone (not testable headless). Not pushed or deployed yet.
+**Deployed** ~19:45 MYT: Cloud Run sed-api-00005-wmx (ADMIN_TOKEN kept) and Firebase Hosting. Live checks: /health ok, casefile 409 before close, Partner explains Mann-Kendall with a rhetorical question (source ai), headless run on the live site to a closed case with both reports (summary by the Reporter AI), no console errors.
+
+**Not verified / open:** hold-to-talk needs a real microphone (not testable headless). Lesson: run `gcloud run deploy --source .` from the repo root; from `backend/` it skips the Dockerfile and buildpacks fail on Python 3.12.
 
 ## [2026-11-15 ~17:30 MYT] Fix: glitch while /#/play loads
 - **Cause:** found by filming the load (a screenshot every ~0.4 s plus main-thread long tasks).
