@@ -1,5 +1,18 @@
 # BUILD_LOG.md
 
+## [2026-11-15 ~17:30 MYT] Fix: glitch while /#/play loads
+- **Cause:** found by filming the load (a screenshot every ~0.4 s plus main-thread long tasks).
+  - The 17:00 change switched the post effects off when the frame rate fell.
+  - It also flipped the renderer's tone mapping, which recompiled every material: a 2.1 s freeze about 14 s in, then a visible jump in the look.
+  - The speed check also counted the first-frame GPU upload, a 3.5 s long task in software rendering, so even a fast laptop could be judged slow.
+- **Fix** (`office/Grade.tsx`, `OfficeApp.tsx`, `index.css`):
+  - The effect chain is always on, so materials compile once.
+  - A slow device drops only ambient occlusion, bloom and multisampling. No material recompiles and the colours stay the same.
+  - The speed check starts 2.5 s after the room is ready.
+  - The canvas and labels stay hidden behind "Opening the office…" until 4 frames are drawn, then fade in over 0.7 s.
+  - The post vignette was removed, as the stage already has a CSS vignette.
+- **Verified (headless, software rendering):** clean boot card, then the room fades in. The downgrade costs one effect-shader compile (1.5 s in software; expected to be small on a GPU) and gives the same colours. No console errors; 58 tests pass; build ok.
+
 ## [2026-11-15 ~17:00 MYT] Office: film look, detailed textures, overlaps fixed
 - **Overlaps fixed:**
   - Corkboard moved from x −2.4 to −3.6, clear of the window frame and curtain; its camera station was moved with it.

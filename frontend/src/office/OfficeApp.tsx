@@ -65,6 +65,13 @@ function CameraRig() {
   return null
 }
 
+/** Counts a few drawn frames, so the room fades in only once its shaders and textures are on the GPU. */
+function FirstFrames({ onReady }: { onReady: () => void }) {
+  const n = useRef(0)
+  useFrame(() => { if (++n.current === 4) onReady() })
+  return null
+}
+
 function FpsProbe({ onLow }: { onLow: () => void }) {
   const acc = useRef({ t: 0, n: 0, bad: 0, skip: 3 })
   useFrame((_, dt) => {
@@ -130,6 +137,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
   const { win, setWin, setIdle } = useUI()
   const scene = useScene(activeCase?.id)
   const [slow, setSlow] = useState(false)
+  const [ready, setReady] = useState(false)
   // a link can open straight at the inbox or the wire desk: /#/play?at=agency
   useEffect(() => {
     const at = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('at')
@@ -191,7 +199,8 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
 
   return (
     <div className="office">
-      <div className="stage cinema">
+      <div className={`stage cinema ${ready ? 'ready' : ''}`}>
+        {!ready && <p className="stage-boot" role="status">Opening the office…</p>}
         <Canvas shadows="soft" dpr={[1, 1.5]} camera={{ fov: 52, position: OVERVIEW.pos, near: 0.05, far: 60 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}>
           <color attach="background" args={['#0d0907']} />
@@ -199,7 +208,8 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
           <Hornbill />
           <MapTable scene={scene} />
           <CameraRig />
-          <Grade />
+          <Grade armed={ready} />
+          <FirstFrames onReady={() => setReady(true)} />
           <FpsProbe onLow={() => setSlow(true)} />
         </Canvas>
       </div>

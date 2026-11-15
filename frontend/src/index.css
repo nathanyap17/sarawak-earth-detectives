@@ -353,3 +353,9 @@ button.on, .seg button.on { background: var(--green); border-color: var(--green)
 .wire-panel { margin: 12px 0; padding: 4px 16px 12px; background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 10px; }
 .review .top a { font-size: .9rem; }
 .review label { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 220px; }
+
+/* the room fades in once its first frames are drawn, so the GPU upload stutter is not seen */
+.stage canvas { opacity: 0; transition: opacity .7s ease; }
+.stage.ready canvas { opacity: 1; }
+.stage-boot { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #e9d9b8; font-family: var(--mono); font-size: .9rem; letter-spacing: .04em; z-index: 1; }
+.office:has(.stage:not(.ready)) .labels { visibility: hidden; }

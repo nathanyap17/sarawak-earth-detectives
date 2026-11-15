@@ -1,14 +1,17 @@
 // The film look for the office: reflections from a light rig built in code (no HDR download),
-// ambient occlusion in corners and under objects, a soft glow on lamps, film tone curve,
-// vignette and a little grain. It switches itself off on slow devices, so a school laptop
-// gets the plain room at a usable frame rate instead of a slideshow.
+// ambient occlusion in corners and under objects, a soft glow on lamps, film tone curve and a
+// little grain. The vignette is CSS on the stage (index.css).
+//
+// The effect chain is always on, so every material is compiled once, for one render path. On a
+// slow device only the costly parts (ambient occlusion, glow, multisampling) are dropped: that
+// changes no material shader, so there is no freeze and the colours do not jump. The speed check
+// starts only after the room has loaded (`armed`), so the first-frame upload is not mistaken for
+// a slow device.
 // AI-assisted: written with Claude Code.
 import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
-import { Bloom, EffectComposer, N8AO, Noise, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { Bloom, EffectComposer, N8AO, Noise, ToneMapping } from '@react-three/postprocessing'
 import { BlendFunction, ToneMappingMode } from 'postprocessing'
 import { useEffect, useState } from 'react'
-import { ACESFilmicToneMapping, NoToneMapping } from 'three'
 
 /** Reflections only: a warm window, a lamp-lit ceiling and dark walls, rendered once. */
 function Reflections() {
@@ -23,32 +26,40 @@ function Reflections() {
   )
 }
 
-/** Post effects. The composer applies the tone curve itself, so the renderer's is turned off. */
-function Film() {
-  const gl = useThree((s) => s.gl)
-  useEffect(() => {
-    gl.toneMapping = NoToneMapping
-    return () => { gl.toneMapping = ACESFilmicToneMapping }
-  }, [gl])
+function Rich() {
   return (
     <EffectComposer multisampling={4}>
       <N8AO aoRadius={0.55} distanceFalloff={0.6} intensity={2.4} halfRes color="#120a05" />
       <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.2} intensity={0.75} radius={0.7} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-      <Vignette offset={0.28} darkness={0.62} />
       <Noise opacity={0.045} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
     </EffectComposer>
   )
 }
 
-export function Grade() {
-  const [fx, setFx] = useState(true)
-  const forced = (() => { try { return localStorage.getItem('sed-fx') === 'on' } catch { return false } })()   // for screenshots on slow test machines
+function Light() {
+  return (
+    <EffectComposer multisampling={0}>
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <Noise opacity={0.045} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
+    </EffectComposer>
+  )
+}
+
+export function Grade({ armed }: { armed: boolean }) {
+  const forced = (() => { try { return localStorage.getItem('sed-fx') === 'on' } catch { return false } })()   // screenshots on slow test machines
+  const [rich, setRich] = useState(true)
+  const [watching, setWatching] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setWatching(true), 2500)      // let the first uploads settle
+    return () => clearTimeout(t)
+  }, [armed])
   return (
     <>
       <Reflections />
-      <PerformanceMonitor bounds={() => [28, 60]} flipflops={2} onDecline={() => setFx(false)} onFallback={() => setFx(false)} />
-      {(fx || forced) && <Film />}
+      {watching && !forced && <PerformanceMonitor bounds={() => [26, 60]} onDecline={() => setRich(false)} onFallback={() => setRich(false)} />}
+      {rich || forced ? <Rich /> : <Light />}
     </>
   )
 }
