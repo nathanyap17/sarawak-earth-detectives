@@ -20,7 +20,7 @@ gcloud projects add-iam-policy-binding ssc-workspace-2026 --member="serviceAccou
 ## 2. Backend → Cloud Run
 `^@^` makes `@` the separator, so the comma inside ALLOWED_ORIGINS survives.
 ```bash
-gcloud run deploy sed-api --source . --region asia-southeast1 --service-account sed-api@ssc-workspace-2026.iam.gserviceaccount.com --allow-unauthenticated --memory 1Gi --cpu 1 --cpu-boost --min-instances 1 --max-instances 3 --concurrency 40 --timeout 60 --set-env-vars "^@^APP_ENV=cloud@SESSION_BACKEND=firestore@GOOGLE_GENAI_USE_VERTEXAI=TRUE@GOOGLE_CLOUD_PROJECT=ssc-workspace-2026@GOOGLE_CLOUD_LOCATION=global@MODEL_NAME=gemini-3.5-flash-lite@ALLOWED_ORIGINS=https://ssc-workspace-2026.web.app,https://ssc-workspace-2026.firebaseapp.com"
+gcloud run deploy sed-api --source . --region asia-southeast1 --service-account sed-api@ssc-workspace-2026.iam.gserviceaccount.com --allow-unauthenticated --memory 1Gi --cpu 1 --cpu-boost --min-instances 1 --max-instances 3 --concurrency 40 --timeout 300 --set-env-vars "^@^APP_ENV=cloud@SESSION_BACKEND=firestore@GOOGLE_GENAI_USE_VERTEXAI=TRUE@GOOGLE_CLOUD_PROJECT=ssc-workspace-2026@GOOGLE_CLOUD_LOCATION=global@MODEL_NAME=gemini-3.5-flash-lite@ALLOWED_ORIGINS=https://ssc-workspace-2026.web.app,https://ssc-workspace-2026.firebaseapp.com"
 ```
 - If it asks to create an Artifact Registry repository `cloud-run-source-deploy`, answer **Y**.
 - If the build fails with a permission error for the Compute Engine default service account, run this, then deploy again:
@@ -61,6 +61,9 @@ gcloud run services update sed-api --region asia-southeast1 --update-env-vars "A
 gcloud services enable cloudscheduler.googleapis.com
 gcloud scheduler jobs create http sed-scout-weekly --location asia-southeast1 --schedule "0 6 * * 1" --time-zone "Asia/Kuching" --uri "https://sed-api-f7fsjojvgq-as.a.run.app/admin/scout/run" --http-method POST --headers "X-Admin-Token=$key" --attempt-deadline 300s
 ```
+- **Done 2026-11-15 ~16:13 MYT:** key set (revision sed-api-00003), request timeout raised to 300 s (sed-api-00004; the Scout can take longer than 60 s when the model is slow), job `sed-scout-weekly` created with `--message-body "{}"` and `Content-Type=application/json` (a POST without a body gets 411 from Google's front end), run once by hand → 200.
+- Redeploy with `--timeout 300`, not 60, or the weekly run can be cut off.
+- From Cloud Run the Borneo Post feed does not answer (it blocks data-centre addresses); Dayak Daily works. The run continues with the feeds that answer.
 - **Important:** `--set-env-vars` in the deploy command of section 2 replaces every variable, so it would remove `ADMIN_TOKEN`. Redeploy with `--update-env-vars` instead (same list), or set the key again afterwards.
 - First run without waiting for Monday: open `https://ssc-workspace-2026.web.app/#/review`, type the key, press **Run the Scout now**, then approve or reject the drafts.
 - Run it once by hand from the scheduler: `gcloud scheduler jobs run sed-scout-weekly --location asia-southeast1`.
