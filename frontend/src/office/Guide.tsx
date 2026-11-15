@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { partnerNote } from '../beats/partnerNote'
 import { useSession } from '../state/session'
+import { HoldToTalk } from '../beats/HoldToTalk'
 import { GLOSSARY, say } from './script'
 import { useGuideState } from './useGuideState'
 import { useUI } from './ui'
@@ -103,6 +104,7 @@ export function Guide() {
           <form className="guide-row" onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(Math.max(1, used), q.trim()) }}>
             <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask me anything about this case…" aria-label="Ask Kenyalang" />
             <button disabled={!!busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
+            <HoldToTalk disabled={!!busy} onText={setQ} onDone={(t) => ask(Math.max(1, used), t)} />
           </form>
         )}
         <details className="guide-log">

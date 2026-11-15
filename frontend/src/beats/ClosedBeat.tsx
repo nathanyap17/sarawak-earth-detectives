@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { Badge, ChiefNote } from '../api/types'
 import { useSession } from '../state/session'
+import { CaseReport, type ReportKind } from './CaseReport'
 
 const BADGES: Record<Badge, [string, string]> = {
   clean_signal: ['Clean Signal', 'Removed the seasons before testing'],
@@ -51,8 +52,9 @@ function useChiefNote() {
 }
 
 export function ClosedBeat({ onRetry, onShelf }: { onRetry: () => void; onShelf: () => void }) {
-  const { grade: g, activeCase: c } = useSession()
+  const { grade: g, activeCase: c, sessionId } = useSession()
   const writing = useChiefNote()
+  const [report, setReport] = useState<ReportKind | null>(null)
   if (!g) return null
   return (
     <section className="beat">
@@ -79,6 +81,14 @@ export function ClosedBeat({ onRetry, onShelf }: { onRetry: () => void; onShelf:
       )}
       <h3>Limits of this case</h3>
       <ul className="limits">{c!.limits.map((l) => <li key={l}>{l}</li>)}</ul>
+      {!g.can_retry && sessionId && (
+        <div className="report-actions">
+          <h3>Keep your work</h3>
+          <button onClick={() => setReport('study')}>🗂 My case study (print or PDF)</button>
+          <button onClick={() => setReport('summary')}>📄 Executive summary</button>
+        </div>
+      )}
+      {report && sessionId && <CaseReport sid={sessionId} kind={report} onClose={() => setReport(null)} />}
       {g.can_retry
         ? <button className="primary" onClick={onRetry}>Revise my verdict</button>
         : <button className="primary" onClick={onShelf}>File it on the shelf</button>}

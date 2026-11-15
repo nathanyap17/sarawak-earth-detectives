@@ -82,3 +82,29 @@ export interface ShuffleResult {
   card_id: string; mission: string; data_as_of: string; unit: string
   real_rate_per_decade: number; n: number; as_steep: number; edges: number[]; counts: number[]
 }
+
+/** The printable case study (GET /sessions/{id}/casefile). Built by code from the session; never the answer key. */
+export interface CaseFileTest {
+  card: string; tool: string; mission: string | null; data_as_of: string | null; n_years: number | null
+  rate: string | null; unit: string | null; range: [string, string] | null
+  t_test_p: string | null; mann_kendall_p: string | null; stamp: string | null; direction: string | null
+  years_needed: number | string | null; elnino_r: string | null
+}
+export interface ExecSummary {
+  sections: { purpose: string; method: string; findings: string; conclusion: string; limitations: string }
+  source: 'ai' | 'code'
+}
+export interface CaseFile {
+  case: { id: string; title: string; question: string; brief: string; region: string; twin_region: string | null
+          sources: { title: string; url?: string; date?: string }[]; limits: string[] }
+  detective: string; started: string; finished: string
+  evidence: { name: string; definition: string; mission: string }[]
+  pins: number
+  steps: { at: string; stage: string; what: string }[]
+  tests: CaseFileTest[]
+  partner: { q: string; a: string; by: string }[]
+  verdict: { what: string; where: string; direction: string; how_much: string; is_it_real: string; why_hypothesis: string; confidence: number } | null
+  attempts: number
+  grade: { score: number; parts: Grade["parts"]; ending: string; feedback: string[]; badges: string[]; chief_note: string | null }
+  summary: ExecSummary | null
+}

@@ -132,6 +132,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
         <p className="film-line l3">Sarawak, Borneo · 2.5° N, 113° E</p>
         <div className="hero-copy">
           <p className="kicker">NASA Space Apps 2026 · Be an Earth System Trend Detective</p>
+          <img className="hero-logo" src="/brand/logo-512.webp" width="112" height="112" alt="Sarawak Earth Detectives badge: a rhinoceros hornbill over a globe and magnifying glass" />
           <h1>Sarawak Earth Detectives</h1>
           <p className="tag">Real events. Real NASA data. <strong>You're the detective.</strong></p>
           <p className="sub">A detective agency for students. A client brings you real cases about Sarawak's fires, haze and floods, and you solve them with decades of satellite data.</p>

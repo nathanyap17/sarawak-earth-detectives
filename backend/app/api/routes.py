@@ -3,13 +3,15 @@ AI-assisted: written with Claude Code."""
 from __future__ import annotations
 
 import hmac
+import logging
 import time
 
 from fastapi import APIRouter, Header, HTTPException
 
 from app import casework
 from app import docs
-from app.agents import activity, chief, partner, runtime, scout
+from app.agents import activity, chief, partner, reporter, runtime, scout
+from app.reports import casefile
 from app.config import get_settings
 from app.grading import Attempt, grade
 from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChiefNote, ChooseCards, ChooseResult,
@@ -252,13 +254,50 @@ async def chief_note(session_id: str):
     return ChiefNote(attempt=g.attempt, chief_note=note)
 
 
+def _closed_case(session_id: str):
+    s = _session(session_id)
+    if not casefile.closed(s):
+        raise HTTPException(409, "the case file opens once the case is closed")
+    return s, _case(s.case_id)
+
+
+@router.get("/sessions/{session_id}/casefile")
+def case_file(session_id: str):
+    """Everything the student did, in order, with the code's numbers: the printable case study.
+    Built from the session only (never the answer key), and only after the case is closed."""
+    s, c = _closed_case(session_id)
+    cf = casefile.build(s, c)
+    cf["summary"] = (s.grade or {}).get("exec_summary")
+    return cf
+
+
+@router.post("/sessions/{session_id}/summary")
+async def exec_summary(session_id: str):
+    """The Reporter's executive summary of a closed case, written once and kept."""
+    s, c = _closed_case(session_id)
+    if s.grade.get("exec_summary"):
+        return s.grade["exec_summary"]
+    cf = casefile.build(s, c)
+    sections, source, note = await reporter.summarise(cf, casefile.facts(cf))
+    out = {"sections": sections, "source": source}
+    s.grade["exec_summary"] = out
+    s.record("summary", source=source, note=note)
+    sessions.save(s, "grade")
+    if note:
+        logging.getLogger("agents").info("reporter fell back to the template: %s", note)
+    activity.record("Reporter", "ai" if source == "ai" else "code",
+                    "Wrote an executive summary of a closed case from the code's facts sheet. It passed the number guard."
+                    if source == "ai" else "Wrote an executive summary from the code template (the model's draft was not used).", "summary")
+    return out
+
+
 # ---------------------------------------------------------------- the agency at work (public)
 STEPS = [
     {"name": "Scout", "by": "code + AI", "does": "Reads the news feeds and watches the NASA records for unusual readings."},
     {"name": "Checklist", "by": "code", "does": "Keeps only real weather and land events in a region we hold checked records for."},
     {"name": "Case Builder", "by": "AI + code", "does": "AI writes the brief from the headline. Code guards it, picks the evidence cards and computes the answer key."},
     {"name": "Editor", "by": "human", "does": "A person reads every draft. Nothing reaches students without approval."},
-    {"name": "Partner and Chief", "by": "AI + code", "does": "Hints and feedback, checked by the number guard and the answer guard."},
+    {"name": "Partner, Chief and Reporter", "by": "AI + code", "does": "Hints, feedback and case summaries, checked by the number guard (and the answer guard for hints)."},
 ]
 
 

@@ -247,7 +247,7 @@ Evidence behind the need:
 | **Statistics** | statsmodels (OLS with HAC errors), pymannkendall (Hamed-Rao Mann-Kendall, Sen's slope) | Season filter, trend test, El Niño removal by regression on RONI | ✅ |
 | **Machine learning** | scikit-learn, XGBoost, ruptures | Unusual-reading detection, change-points | 🔜 Not used: the build's statistics are classical and fully explained |
 | **AI models** | Gemini on Vertex AI (gemini-3.5-flash-lite) | Team standard | ✅ |
-| **Agents** | Google Agent Development Kit (ADK) | Client, Partner, Chief, case builder, report writer | ✅ Partner and Chief; 🔜 the others |
+| **Agents** | Google Agent Development Kit (ADK) | Client, Partner, Chief, case builder, report writer | ✅ Partner, Chief, Scout, Case Builder, Reporter (15 Nov) |
 | **Retrieval** | Vertex AI embeddings over the glossary, the measurement catalogue and the playbooks | The Partner explains terms from our own vetted text | 🔜 Built as: a fixed, vetted glossary in the app |
 | **Reports** | HTML to PDF in the backend | The case report | 🔜 Built as: the Case Closed page and the Learnt-cases record |
 
@@ -438,6 +438,8 @@ flowchart TB
 | `POST /sessions/{id}/analyse` | Run a desk tool on a record; returns the stamp |
 | `POST /sessions/{id}/partner` | Ask the Partner |
 | `POST /sessions/{id}/verdict` | Submit the verdict; returns the grade and report link |
+| `GET /sessions/{id}/casefile` | The student's full case study (brief, evidence, step-by-step trail, tests, Kenyalang Q&A, verdict, grade); 409 until the case is closed |
+| `POST /sessions/{id}/summary` | The Reporter's executive summary (purpose, method, findings, conclusion, limitations), guarded, written once and kept in `grade.exec_summary` |
 | `GET /vault/health` | Freshness of every source |
 | `POST /admin/cases/{id}/review` | Approve, edit or reject a drafted case |
 

@@ -1,5 +1,17 @@
 # BUILD_LOG.md
 
+## [2026-11-15 ~19:15 MYT] Kenyalang explains, hold-to-talk, logo, case study and executive summary
+
+**What changed**
+- **Kenyalang (Partner) is useful now.** The old answer guard blocked the word "significant" anywhere, so every Mann-Kendall or p-value question fell back to "a detective finds the clue themselves". New `agents/concepts.py`: a method sheet (Mann-Kendall, t-test, p-value, 95% range, significance, record length, seasons, El Niño, twin map, red herrings, verdict). The Partner explains the method, then asks one rhetorical question that points at the answer ("If the scales tipped, would you still call it one bad year?"). Guard rewritten (`guard.py`): direct statements of a result are still blocked; result words are allowed only inside a question or an "if/whether" sentence, and bare "significant" in method talk. The Partner still gets no stamps, rates or p-values (test enforces it). If the model is cold or blocked, the code answers from the method sheet.
+- **Hold to talk.** `beats/HoldToTalk.tsx`: hold the mic button (or Space/Enter) to speak a question to Kenyalang; Web Speech API, shown only where the browser supports it. Audio goes to the browser maker's speech service; we get text only.
+- **Logo and banner.** From `pitch-and-design/`: `frontend/public/brand/` (logo 512/128 png+webp, icons 16-512, apple-touch), `favicon.ico`, `favicon.svg`, og tags; logo in the 3D crest, lite header and landing hero. `docs/img/banner.jpg` at the top of the README. The banner's "10+ REAL CASE FILES" chip was not true and now says "REAL NASA RECORDS"; an "AI-assisted artwork" mark was added (watermark rule).
+- **Case study and executive summary.** When a case is closed (no retry left) the Closed beat shows two buttons. "My case study" opens a printable document (`beats/CaseReport.tsx`, A4 print CSS, browser Save as PDF): brief, evidence, every step with times, the test table with mission and data date, Kenyalang Q&A, verdict, Chief's stamp, badges, limits and sources. Built by code (`reports/casefile.py`) from the session only, never the answer key; `GET /sessions/{id}/casefile` returns 409 until the case is closed. "Executive summary" calls `POST /sessions/{id}/summary`: **new Reporter agent** (`agents/reporter.py`), a different reader and format from the Chief, so a new agent; JSON sections purpose/method/findings/conclusion/limitations; its only source is the code's facts sheet; number guard; code template fallback; kept in `grade.exec_summary`.
+
+**Verified:** 70 backend tests pass (new `test_casefile.py`: locked until closed, no key leaks, summary kept, invented number falls back). Headless Edge: case 001 played to closed in lite mode, both buttons, case study (3 A4 pages) and summary (1 page, Reporter AI, passed the guard) printed to PDF, no console errors. Real Gemini: Partner explains Mann-Kendall with a rhetorical hint in 1-3 s when warm.
+
+**Not verified / open:** hold-to-talk needs a real microphone (not testable headless). Not pushed or deployed yet.
+
 ## [2026-11-15 ~17:30 MYT] Fix: glitch while /#/play loads
 - **Cause:** found by filming the load (a screenshot every ~0.4 s plus main-thread long tasks).
   - The 17:00 change switched the post effects off when the frame rate fell.

@@ -5,6 +5,7 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import { useSession, type Beat } from '../state/session'
+import { HoldToTalk } from './HoldToTalk'
 import { partnerNote } from './partnerNote'
 
 const GROUP: Record<Beat, string> = {
@@ -52,6 +53,7 @@ export function Partner() {
       <form className="partner-row" onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(Math.max(1, used), q.trim()) }}>
         <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask about this case…" aria-label="Ask the Partner" />
         <button disabled={busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
+        <HoldToTalk disabled={busy} onText={setQ} onDone={(t) => ask(Math.max(1, used), t)} />
       </form>
       {busy && <p className="muted" role="status">Your Partner is thinking…</p>}
       {err && <p className="error">{err}</p>}

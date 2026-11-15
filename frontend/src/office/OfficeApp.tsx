@@ -215,9 +215,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
       </div>
       <Labels />
       <header className="office-top">
-        <svg className="crest" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#1f3a2c" stroke="#d2a94e" strokeWidth="2" />
-          <ellipse cx="18" cy="24" rx="6" ry="8" fill="#111" transform="rotate(-20 18 24)" /><circle cx="22" cy="15" r="4.5" fill="#111" />
-          <path d="M25 14 Q34 15 35 21 Q30 18 25 18z" fill="#f6c700" /><path d="M24 12 Q30 8 33 13 Q28 12 25 14z" fill="#e8641b" /><circle cx="23" cy="14.5" r="1" fill="#fff" /></svg>
+        <img className="crest" src="/brand/logo-128.webp" width="34" height="34" alt="" />
         {onHome ? <button className="brand" onClick={onHome} title="Back to the front page">Sarawak Earth Detectives</button> : <h1>Sarawak Earth Detectives</h1>}
         {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
         <button className="mode" onClick={() => setWin(win === 'inbox' ? null : 'inbox')}>✉ Inbox</button>

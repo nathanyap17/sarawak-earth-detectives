@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.agents import guard
+from app.agents import concepts, guard
 from app.agents.runtime import run_once
 from app.schemas import CasePack
 
@@ -18,20 +18,28 @@ LADDER_FOR_BEAT = {"call": "evidence", "scene": "evidence", "locker": "evidence"
 RUNG_NAME = {1: "a nudge, asked as a question", 2: "a pointer to a tool or a card",
              3: "a worked example on a different, made-up record"}
 
-INSTRUCTION = """You are the Partner in Sarawak Earth Detectives: a rhinoceros hornbill who helps a
-school student investigate a case with NASA data. You give hints. You never give answers.
+INSTRUCTION = """You are Kenyalang, the Partner in Sarawak Earth Detectives: a witty rhinoceros
+hornbill who helps a school student investigate a case with NASA data. You are a brilliant
+detective's partner, not a gatekeeper: be genuinely useful, curious and a little playful.
+
+How to help:
+- If the student asks what something means (Mann-Kendall, t-test, p-value, the 95% range,
+  significant, El Nino, seasons, red herring...), EXPLAIN it clearly and properly, using the METHOD
+  SHEET, with a quick everyday comparison. Never answer an explanation question with a riddle.
+- Then add one rhetorical, intriguing question that points the student toward what their own
+  results mean, e.g. "If your Scales stamp says 'needs more years', would a careful detective sign
+  'worsening'?" or "When the ruler and the rank test disagree, who do you trust?"
+- If they are stuck, tell them exactly which tool or card to try next and what to look at on it.
 
 Hard rules:
-1. Never say whether the case's data is rising, falling, flat, worsening, improving, significant,
-   real, random, or caused by El Nino. Never say what the verdict is or which option to pick.
-2. Never write a number unless it appears in the CASE text below. Never repeat or confirm a number
-   the student wrote. Never do any calculation.
-3. Only if the student asks for the answer, say kindly (once) that detectives find it themselves, then give the hint.
-   Otherwise go straight to the hint.
-4. Stay on this case and on how to investigate it. Anything else: decline in one short line.
-5. At most three short sentences, plain words for a 13-year-old. No lists, no markdown.
-6. Base the hint on the APPROVED HINTS for the current level. You may rephrase them to fit the
-   student's question, but do not go beyond the highest level given.
+1. Never STATE whether this case's data is rising, falling, flat, worsening, improving,
+   significant, real, random, or caused by El Nino, and never state the verdict or which option to
+   pick. You may raise those words only inside a question or an "if ..." sentence.
+2. Never write a number unless it appears in the CASE text or the METHOD SHEET. Never repeat or
+   confirm a number the student wrote. Never do any calculation.
+3. Stay on this case and on how to investigate it. Anything else: decline in one short line.
+4. At most four short sentences, plain words for a 13-year-old. No lists, no markdown.
+5. Never say "a detective finds the clue themselves" and never refuse to explain a method.
 """
 
 
@@ -82,6 +90,9 @@ Evidence cards in the locker: {"; ".join(f"{c.name} ({c.definition})" for c in c
 WHERE THE STUDENT IS
 Beat: {beat}. {_steps(chosen, log, cards)}
 
+METHOD SHEET (explain these freely; they are about methods, not this case's data)
+{concepts.sheet()}
+
 APPROVED HINTS (current level {rung}: {RUNG_NAME[rung]})
 {chr(10).join(f"Level {i + 1}: {h}" for i, h in enumerate(ladder))}
 
@@ -91,23 +102,26 @@ RECENT CHAT
 STUDENT SAYS
 {message or "Can I have a hint?"}
 
-Reply as the Partner, following every hard rule."""
+Reply as Kenyalang, following every hard rule."""
 
 
 async def ask(case: CasePack, cards: dict, beat: str, rung: int, message: str,
               chosen: list[str], log: list[dict], history: list[dict]) -> Reply:
     rung = max(1, min(3, rung))
     ladder = _ladder(case, beat)
-    fallback = ladder[rung - 1] if len(ladder) >= rung else "Look again at the question, then pick one record to test."
+    hint = ladder[rung - 1] if len(ladder) >= rung else "Look again at the question, then pick one record to test."
+    explained = concepts.match(message)   # a method question gets a real explanation, even without the model
+    fallback = f"{explained} {hint}" if explained else hint
     text, dt, err = await run_once("partner", INSTRUCTION,
                                    build_prompt(case, cards, beat, rung, message, chosen, log, history))
     if text is None:
         return Reply(fallback, rung, "ladder", err, dt)
     approved = approved_text(case, cards)
-    for chk in (guard.check_numbers(text, approved), guard.check_answer(text, approved)):
+    # the method sheet may supply numbers (0.05, 95), but its general words never exempt a result statement
+    for chk in (guard.check_numbers(text, approved + " " + concepts.sheet()), guard.check_answer(text, approved)):
         if not chk.ok:
             return Reply(fallback, rung, "ladder", f"guard: {chk.reason}", dt)
     sentences = [s for s in text.replace("\n", " ").split(". ") if s.strip()]
-    if len(sentences) > 3:
-        text = ". ".join(sentences[:3]).rstrip(".") + "."
+    if len(sentences) > 4:
+        text = ". ".join(sentences[:4]).rstrip(".") + "."
     return Reply(text, rung, "ai", "", dt)

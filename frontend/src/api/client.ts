@@ -1,6 +1,6 @@
 // The ONLY module that calls the backend. AI-assisted: written with Claude Code.
 import type {
-  Agency, AnalysisResult, CasePublic, DraftRow, ChiefNote, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
+  Agency, AnalysisResult, CaseFile, CasePublic, DraftRow, ChiefNote, ExecSummary, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
@@ -72,6 +72,8 @@ export const api = {
     scout: (key: string) => call<{ drafted: { id: string }[]; headlines: number }>('POST', '/admin/scout/run', undefined, true, 180_000, { 'X-Admin-Token': key }),
   },
   chief: (sid: string) => call<ChiefNote>('POST', `/sessions/${sid}/chief`, undefined, false, SLOW_MS),
+  casefile: (sid: string) => call<CaseFile>('GET', `/sessions/${sid}/casefile`, undefined, true),
+  summary: (sid: string) => call<ExecSummary>('POST', `/sessions/${sid}/summary`, undefined, true, 40_000),
 }
 
 /** Fire-and-forget logging: a failed log must never block a student. */

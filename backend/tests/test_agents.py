@@ -52,6 +52,30 @@ def test_answer_guard_blocks_results(text):
 
 
 @pytest.mark.parametrize("text", [
+    "Both cards came out significant.",
+    "The soil is getting drier.",
+    "Not enough evidence.",
+])
+def test_answer_guard_blocks_plain_result_statements(text):
+    assert not guard.check_answer(text, APPROVED).ok
+
+
+@pytest.mark.parametrize("text", [
+    "The Mann-Kendall test checks whether a trend is significant.",
+    "Significant means the change is unlikely to be luck.",
+    "If your scales say needs more years, would not enough evidence be the honest call?",
+    "Is the trend really rising, or did one dry year fool the ruler?",
+])
+def test_answer_guard_lets_explanations_and_rhetorical_hints_through(text):
+    assert guard.check_answer(text, APPROVED).ok
+
+
+def test_partner_explains_a_method_even_without_the_model():
+    r = asyncio.run(partner.ask(CASE, CARDS1, "lab", 1, "what is mann-kendall?", [], [], []))
+    assert r.source == "ladder" and "every pair of years" in r.text
+
+
+@pytest.mark.parametrize("text", [
     "What has to happen to peat before it can burn?",
     "Try the season filter first, then the scales.",
     "Did both tests agree on every main card?",
@@ -82,9 +106,11 @@ def test_partner_prompt_never_contains_results_or_key():
     prompt = partner.build_prompt(CASE, CARDS1, "deduction", 3, "what's the answer?", s.chosen, s.log, [])
     key = vault.load_answer_key("001")
     for a in s.analyses:  # no stamp, rate or p-value the student computed
-        for k in ("stamp", "rate_per_decade", "t_test_p", "mann_kendall_p"):
+        for k in ("rate_per_decade", "t_test_p", "mann_kendall_p"):
             if a.get(k) is not None:
                 assert str(a[k]) not in prompt
+        # stamps travel as their raw values; the word "significant" itself is in the method sheet
+        assert f"stamp: {a.get('stamp')}" not in prompt and f"{a['card_id']}: {a.get('stamp')}" not in prompt
     for word in ("needs_more_years", "not_significant", "not_enough_evidence", key.overall):
         assert word not in prompt
     assert "red_herring" not in prompt and "main_cards" not in prompt

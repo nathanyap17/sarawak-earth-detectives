@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/img/banner.jpg" alt="Sarawak Earth Detectives: real events, real NASA data, you're the detective" width="100%"></p>
+
 # Sarawak Earth Detectives
 
 *Real events. Real NASA data. You're the detective.*
@@ -28,7 +30,7 @@ cd frontend && npm install && npm run dev
 ```
 
 ## Use of AI
-- **In the product:** Gemini on Vertex AI through Google's Agent Development Kit, for the Partner (hints only, guarded so it never gives the answer) and the Chief (wording the code's grade). Statistics and grading are plain code. Two more agents, the Scout and the Case Builder, draft new cases: a weekly job reads public news feeds (headline, link and date only) and checks the saved NASA records for unusual readings; code runs the checklist, picks the evidence cards and computes the answer key; Gemini only screens the headlines and writes the brief, and its text passes the same guards. Every draft waits for a human editor (`/#/review`) before students can see it. The wire desk in the office (`/#/play?at=agency`) shows this activity. Case 001 was written by the team from news sources.
+- **In the product:** Gemini on Vertex AI through Google's Agent Development Kit, for the Partner (hints only, guarded so it never gives the answer) and the Chief (wording the code's grade). Statistics and grading are plain code. Two more agents, the Scout and the Case Builder, draft new cases: a weekly job reads public news feeds (headline, link and date only) and checks the saved NASA records for unusual readings; code runs the checklist, picks the evidence cards and computes the answer key; Gemini only screens the headlines and writes the brief, and its text passes the same guards. Every draft waits for a human editor (`/#/review`) before students can see it. When a case is closed, a fifth agent, the Reporter, writes a formal executive summary from a facts sheet built by code; every figure must already be in that sheet, otherwise the summary is written by a code template. The student's printable case study is built by code alone. Students can hold a button to speak a question to Kenyalang instead of typing: this uses the browser's own speech recognition (in Chrome and Edge the audio goes to the browser maker's speech service); we receive only the text, and store no audio. The wire desk in the office (`/#/play?at=agency`) shows this activity. Case 001 was written by the team from news sources.
 - **In development:** Claude Code (Anthropic) helped with planning, scaffolding and code. AI-assisted source files carry a header note.
 - AI-generated images or video carry a visible watermark. No NASA logos are used.
 
