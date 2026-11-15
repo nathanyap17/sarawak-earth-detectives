@@ -38,7 +38,7 @@ export default function App() {
   }
   if (mode === 'lite') return <LiteApp onOffice={webglOk() ? () => pick('3d') : undefined} note={reason} />
   return (
-    <Suspense fallback={<p className="muted" style={{ padding: 16 }}>Opening the office…</p>}>
+    <Suspense fallback={<div className="office"><p className="stage-boot" role="status">Opening the office…</p></div>}>
       <OfficeApp onLite={() => pick('lite')} onHome={home} />
     </Suspense>
   )
