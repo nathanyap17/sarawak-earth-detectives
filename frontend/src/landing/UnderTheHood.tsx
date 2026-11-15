@@ -78,9 +78,9 @@ function Agents() {
   return (
     <section className="band dark reveal" id="agents">
       <p className="eyebrow">Under the hood · 2 of 3</p>
-      <h2>Two AI agents on a short leash</h2>
-      <p className="lead">The AI may explain and encourage. It may not calculate, and it may not give the answer. Plain code stands on both sides of it: code decides what the AI is told, and code checks what the AI says.</p>
-      <Diagram viewBox="0 0 1000 500" label="Agent pipeline: code builds the prompt without the answer key, Gemini replies, a number guard and an answer guard check the reply, and an approved hint is used if a check fails.">
+      <h2>Four AI agents on a short leash</h2>
+      <p className="lead">The AI may find a story, explain and encourage. It may not calculate, it may not give the answer, and it may not publish. Plain code stands on both sides of it, and a person approves every new case.</p>
+      <Diagram viewBox="0 0 1000 700" label="Agent pipelines. Partner: code builds the prompt without the answer key, Gemini replies, a number guard and an answer guard check the reply, and an approved hint is used if a check fails. Chief: code grades, Gemini words the grade. Case desk: news and NASA records pass a code checklist, Gemini screens and writes the brief, the guards check it, code computes the answer key, and a human editor approves.">
         <text x={30} y={34} className="row-title">Kenyalang, the Partner: hints, never answers</text>
         <Node i={0} x={30} y={60} w={150} h={96} title="Student asks" lines={['"Is it getting', 'drier?"']} />
         <Node i={1} x={220} y={60} w={180} h={96} title="Code builds the prompt" lines={['the case, their steps,', 'hints unlocked so far']} tone="gold" />
@@ -104,8 +104,19 @@ function Agents() {
         <Node i={12} x={830} y={356} w={140} h={96} title="Chief's note" lines={['quotes what the', 'student did']} />
         <Wire i={9} id="c1" d="M200 404 L240 404" /><Wire i={10} id="c2" d="M430 404 L470 404" /><Wire i={11} id="c3" d="M620 404 L660 404" /><Wire i={12} id="c4" d="M790 404 L830 404" />
         <text x={335} y={480} textAnchor="middle" className="w-label">the score never waits on the AI</text>
+
+        <text x={30} y={534} className="row-title">The case desk: the Scout and the Case Builder look for new cases every week</text>
+        <Node i={13} x={30} y={560} w={150} h={96} title="News + NASA data" lines={['read weekly by a', 'scheduled job']} />
+        <Node i={14} x={205} y={560} w={150} h={96} title="Checklist" lines={['real event? our region?', 'record checked? Code.']} tone="gold" />
+        <Node i={15} x={380} y={560} w={150} h={96} title="Scout + Builder" lines={['Gemini screens and', 'writes the brief']} tone="red" />
+        <Node i={16} x={555} y={560} w={130} h={96} title="Both guards" lines={['same checks']} tone="teal" />
+        <Node i={17} x={710} y={560} w={130} h={96} title="Answer key" lines={['computed by code,', 'kept on the server']} tone="gold" />
+        <Node i={18} x={865} y={560} w={110} h={96} title="Human editor" lines={['approves', 'or rejects']} tone="ink" />
+        <Wire i={14} id="d1" d="M180 608 L205 608" /><Wire i={15} id="d2" d="M355 608 L380 608" /><Wire i={16} id="d3" d="M530 608 L555 608" />
+        <Wire i={17} id="d4" d="M685 608 L710 608" /><Wire i={18} id="d5" d="M840 608 L865 608" />
+        <text x={500} y={686} textAnchor="middle" className="w-label">a draft is invisible to students until a person says yes</text>
       </Diagram>
-      <p className="note">Tested before launch: 10 attempts to trick the Partner into giving the answer, 0 leaks. If the AI is switched off entirely, the app still works on the approved hints.</p>
+      <p className="note">Tested before launch: 10 attempts to trick the Partner into giving the answer, 0 leaks. If the AI is switched off entirely, the app still works on the approved hints. In the office, the wire desk shows what each agent has been doing: <a href="#/play?at=agency">see the agents at work</a>.</p>
     </section>
   )
 }

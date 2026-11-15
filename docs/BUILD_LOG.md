@@ -1,5 +1,33 @@
 # BUILD_LOG.md
 
+## [2026-11-15 ~16:10 MYT] Case desk (Scout + Case Builder), wire desk, re-pinning, more chart types, cinematic office — read this first
+### What changed (Nathan's four points)
+- **1. Agents that add cases, and a place to watch them**
+  - `backend/app/agents/scout.py`: SCOUT (code reads the Borneo Post and Dayak Daily RSS feeds: headline, link, date, summary; code checks the vault for a last full year more than 1.5 standard deviations from the 1991-2020 normal) → QUALIFY (code checklist: a fire, haze, dry or heat event, in Sarawak, in a region the vault holds, not already a case; then the Scout agent, Gemini, screens the shortlist) → BUILD (the Case Builder agent writes title and brief from the headline only, checked by the number guard and the answer guard, with a code template as fallback; code picks cards, hints and limits from per-type templates and computes the answer key) → REVIEW (status `draft` until a human approves).
+  - When the news has nothing usable, an unusual reading opens a case instead ("data-triggered", source = the NASA record).
+  - `backend/app/docs.py`: document store (files in `data/agency` locally, Firestore in cloud) for desk cases, their answer keys and the activity log. `casework.load_case/list_cases` read hand-made cases from `cases/*.json` and desk cases from the store.
+  - Routes: `GET /agency/activity` (public), `POST /admin/scout/run`, `GET /admin/cases`, `POST /admin/cases/{id}/approve|reject` (header `X-Admin-Token`; open locally, 503 in cloud until `ADMIN_TOKEN` is set).
+  - `agents/activity.py`: one line per step (Scout, Data desk, Case Builder, Grader, Editor, Partner, Chief), each marked ai / code / human. Fixed wording and counts only.
+  - Frontend: `beats/Agency.tsx` (the wire desk: pipeline, counts, live feed, filter by who did it), a ninth station in the 3D office (teleprinter and a board of five lamps), an "Agents at work" button in both modes, `/#/play?at=agency`, and `beats/Review.tsx` at `/#/review` for the human editor.
+- **2. The office looks like a place**: `office/Room.tsx` rewritten. Taller room, teak wall panelling and floorboards, forest-green plaster, a back wall built around the window so the low sun casts real shadows (one 2048 shadow map), light beams, dust, ceiling fan, brass pendant lamp, woven rug in Sarawak weaving colours, leather chair, banker's lamp, bookshelf, globe, palms, hat stand, agency crest, red string on the corkboard. Textures are painted in code (`office/paint.ts`); nothing is downloaded. UI: forest-green top bar with a hornbill crest, cream paper drawer (42% of the width) with a brass edge, yellow next-step label with a pointer, monospace for data and sources, labels hide during the 0.8 s camera glide.
+- **3. Pins can be changed**: Move and Remove on every pin report (2D and 3D), `LogEvent.kind = "pins"` replaces the set on the backend. Different spots already gave different reports (fire counts, days, busiest day, town, in or out of the region, ground height); cases without a fire layer report town, region and height.
+- **4. More chart types** (all drawn from backend values): year-by-month heatmap and yearly stripes on the Board; in the Lab the trend line with its 95% range as a shaded fan, a picture of the two p-values against 0.05, the normal year as bars and a heatmap of differences from normal for the season filter, and a scatter of the record against the El Niño index (`AnalysisResult.enso_out`).
+### Decisions
+- Rule 4 stays: agents draft, a person publishes. "Autonomous" means the weekly scan and the drafting, not publication.
+- Google News RSS is not used: its terms allow personal feed readers only. Publisher feeds are read directly, headline fields only.
+- Flood cases are set aside until the rain record is cross-checked (EXP-11), because provisional cards cannot be main cards.
+- One case per type and region, so the shelf can hold at most eight cases with today's vault (two regions x four types).
+- The data desk reads the saved vault. It does not fetch NASA data in the cloud: the image is read-only for data, and a Cloud Storage vault is still planned.
+- Cases drafted by the desk use a shared base map (`public/scenes/base`): Blue Marble and terrain, no fire layer.
+### Verified
+- Backend: 58 tests pass (7 new: checklist, feed parser, draft invisible until approval, data-triggered case, public feed carries no secrets, admin key, pin replacement).
+- Real run, local, live feeds and real model: 30 headlines read, 0 usable (29 not weather or land, 1 flood), so two heat cases were drafted from unusual 2025 readings; both briefs were written by Gemini and passed the guards. Case 002 approved on `/#/review` and played to a Scales stamp.
+- Headless Edge click-through (puppeteer, software WebGL), no console errors: wire desk, pin add / move / remove in 2D and 3D, heatmap, stripes, season bars, range fan, El Niño scatter, all 3D stations, landing agent diagram (no text outside a box), phone width 390 px with no sideways scroll.
+### Still broken / unverified
+- Not deployed. Not seen on a real GPU: the room was checked only in software rendering (16 fps there, which says nothing about a laptop). If it is slow on school laptops, lower the shadow map in `Room.tsx` (`shadow-mapSize`).
+- Cloud: `ADMIN_TOKEN` and the Cloud Scheduler job do not exist yet (infra/DEPLOY.md §5). Firestore-backed case store and activity log are untested against real Firestore (tests use files).
+- Local `data/agency` holds two drafted heat cases (002 approved, 003 draft); it is gitignored, so the cloud starts with case 001 only.
+
 ## [2026-11-15 ~10:50 MYT] Upgrades: hands-on lab, pin clue reports, simpler words, real lab bench, landing diagrams — read this first
 ### What changed (Nathan's three upgrade points)
 - **More doing, less clicking**

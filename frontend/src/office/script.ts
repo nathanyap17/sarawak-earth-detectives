@@ -15,6 +15,7 @@ export const SPOT: Record<SpotId, { name: string; todo: string }> = {
   lab:       { name: 'Lab bench', todo: 'Test the records' },
   deduction: { name: 'Typewriter', todo: 'Write your verdict' },
   closed:    { name: 'Case shelf', todo: "Read the Chief's stamp" },
+  agency:    { name: 'Wire desk', todo: 'See the agents at work' },
 }
 
 export interface GuideState {
@@ -31,7 +32,7 @@ export function target(s: GuideState): SpotId {
 /** What Kenyalang says, and which words it offers to explain. */
 export function say(s: GuideState): { text: string; words: string[] } {
   const t = target(s)
-  if (s.win !== t && s.win !== null && s.win !== 'inbox') {
+  if (s.win !== t && s.win !== null && s.win !== 'inbox' && s.win !== 'agency') {
     return { text: `You're back at the ${SPOT[s.win].name.toLowerCase()}. When you're ready, the next step is: ${SPOT[t].todo.toLowerCase()}.`, words: [] }
   }
   if (s.win === null) {
@@ -51,6 +52,7 @@ export function say(s: GuideState): { text: string; words: string[] } {
     case 'board': return { text: `Flip each card to see how it changed over the years (${s.opened} flipped). Look for bumps, dips and odd years before you test anything.`, words: ['record', 'trend', 'wobble', 'mission', 'NASA POWER', 'MERRA-2'] }
     case 'lab': return { text: `Now test each record. Go left to right along the bench: look, filter, measure, weigh, then check for El Niño. With the Ruler you lay your own line first! Every record needs a stamp (${s.stamped} stamped so far).`, words: ['regression', 'trend line', 'range', 'p-value', 't-test', 'Mann-Kendall', 'shuffle test', 'significant', 'El Niño', 'per decade'] }
     case 'deduction': return { text: 'Write what you found, in your own words. Your verdict must follow your stamps. Saying the record can\'t settle it yet is allowed, if that is what the evidence shows.', words: ['verdict', 'significant', 'hypothesis', 'confidence'] }
+    case 'agency': return { text: 'This is the wire desk. Every line is something the agency did: the Scout reading the news, the Case Builder drafting a case, the code doing the maths, a person approving it. Look for who did each step: AI, code or a human.', words: ['agent', 'guard', 'answer key', 'editor'] }
     case 'closed': return s.sentBack
       ? { text: "The Chief sent it back. That happens to good detectives. Read the notes, then go back to the typewriter for one more try.", words: [] }
       : { text: "Case closed! Read the Chief's notes. Your case is filed under Learnt cases in the inbox.", words: [] }
@@ -100,6 +102,12 @@ export const GLOSSARY: Record<string, string> = {
   VIIRS: 'A camera on NASA satellites that can see heat. It spots fires day and night from about 830 km up.',
   'NASA POWER': 'A free NASA service that gives weather and soil measurements for any place on Earth, going back to 1981.',
   'MERRA-2': "NASA's computer rebuild of the world's weather, hour by hour since 1980. It blends satellite and ground measurements into one complete picture.",
+  agent: 'A computer helper with one job. Ours are the Scout (finds events), the Case Builder (drafts a case), the Partner (gives hints) and the Chief (writes feedback).',
+  guard: 'A piece of plain code that checks what the AI wrote. If the AI writes a number the code did not work out, or gives away an answer, the guard throws the reply away.',
+  'answer key': 'The correct stamps for a case, worked out by code from the NASA record. It stays locked on the server. No AI and no browser ever sees it.',
+  editor: 'A real person who reads every case the agents draft and decides whether students may see it.',
+  heatmap: 'A chart made of coloured squares. Here each row is a month and each column is a year. Red squares were above normal, blue squares below.',
+  'climate stripes': 'One coloured stripe for every year, in order. If the colours drift from one end to the other, something is changing.',
   verdict: 'Your final answer to the case, in your own words: what changed, where, how much, and whether the change is real.',
 }
 
@@ -112,6 +120,7 @@ export const STATION: Record<SpotId, { icon: string; what: string; why: string }
   board: { icon: '📌', what: 'A corkboard where each card becomes a chart: one dot for every year since 1981.', why: 'A chart lets you see change over time with your own eyes, before any test.' },
   lab: { icon: '🔬', what: 'A bench of six tools. Each tool answers one small question about a record.', why: 'Eyes can be fooled. Tools check whether a change is real or just luck.' },
   deduction: { icon: '⌨️', what: 'The typewriter, where you write your answer in your own words.', why: 'Science is not finished until someone explains what the evidence shows, and what it does not.' },
+  agency: { icon: '📠', what: 'The wire desk. A ticker of everything the agency\'s helpers have been doing.', why: 'You should always know who did what: the AI, the code, or a person.' },
   closed: { icon: '🏅', what: 'The case shelf. The Chief stamps your case and tells you how you did.', why: 'Good detectives learn from every case, even the ones that get sent back.' },
 }
 

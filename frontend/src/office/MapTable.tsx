@@ -5,9 +5,9 @@
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, BufferAttribute, CanvasTexture, Color, InstancedMesh, Object3D, PlaneGeometry, SRGBColorSpace, TextureLoader, type Texture } from 'three'
-import { logQuiet } from '../api/client'
 import type { SceneManifest } from '../api/types'
 import { TOWNS } from '../beats/PinReport'
+import { loadManifest, placePin } from '../beats/pins'
 import { useSession } from '../state/session'
 import { Spot } from './Spot'
 import { useUI } from './ui'
@@ -50,9 +50,9 @@ export function useScene(caseId: string | undefined) {
   const [base, setBase] = useState<Texture | null>(null)
   useEffect(() => {
     if (!caseId) return
-    const dir = `/scenes/${caseId}`
     let live = true
-    fetch(`${dir}/manifest.json`).then((r) => r.json()).then(async (mm: SceneManifest) => {
+    setM(null); setHeights(null); setFires([])
+    loadManifest(caseId).then(async ({ dir, m: mm }) => {
       if (!live) return
       setM(mm)
       const t = await new TextureLoader().loadAsync(`${dir}/${mm.base}`)
@@ -68,7 +68,7 @@ export function useScene(caseId: string | undefined) {
 
 export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
   const { m, heights, fires, base } = scene
-  const { activeCase: c, sceneDay, cluePins, addPin, sessionId } = useSession()
+  const { activeCase: c, sceneDay, cluePins, movingPin } = useSession()
   const win = useUI((u) => u.win)
   const D = m ? TABLE_W * (m.bbox[3] - m.bbox[1]) / (m.bbox[2] - m.bbox[0]) : TABLE_W * 0.7
   const size = m?.terrain?.size ?? 2
@@ -128,12 +128,11 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
   })
 
   function drop(e: ThreeEvent<MouseEvent>) {
-    if (win !== 'scene' || !m || !e.uv || cluePins.length >= 3) return
+    if (win !== 'scene' || !m || !e.uv || (cluePins.length >= 3 && movingPin == null)) return
     e.stopPropagation()
     const [W, S, E, N] = m.bbox
     const p: [number, number] = [+(W + e.uv.x * (E - W)).toFixed(3), +(S + e.uv.y * (N - S)).toFixed(3)]
-    addPin(p)
-    logQuiet(sessionId, { kind: 'clue', lonlat: p })
+    placePin(p)
   }
 
   const region = c && m ? (() => {
@@ -156,11 +155,11 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
           <meshStandardMaterial color="#5a3d26" />
         </mesh>
       ))}
-      <spotLight position={[0, 2.6, 0.4]} angle={0.75} penumbra={0.6} intensity={9} distance={4} color="#fff1dc" />
+      <spotLight position={[0, 2.6, 0.4]} angle={0.75} penumbra={0.6} intensity={2.5} distance={4} color="#fff1dc" />
       <group position={[0, LIFT, 0]}>
         <mesh geometry={geom} onClick={drop} receiveShadow
           onPointerMove={() => { if (win === 'scene') document.body.style.cursor = 'crosshair' }}>
-          <meshStandardMaterial map={base ?? undefined} emissiveMap={base ?? undefined} emissive={base ? '#ffffff' : '#000000'} emissiveIntensity={0.45}
+          <meshStandardMaterial map={base ?? undefined} emissiveMap={base ?? undefined} emissive={base ? '#ffffff' : '#000000'} emissiveIntensity={0.32}
             color={base ? '#ffffff' : '#3d6b4f'} roughness={0.9} />
         </mesh>
         <instancedMesh ref={embers} args={[undefined, undefined, MAX_EMBERS]} frustumCulled={false}>
@@ -186,7 +185,7 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
           const [x, y, z] = toLocal(lon, lat)
           return (
             <group key={i} position={[x, y, z]}>
-              <Tag text={`Pin ${i + 1}`} at={[0, 0.13, 0]} bg="#c8102e" lift={0.02} h={0.04} />
+              <Tag text={movingPin === i ? `Pin ${i + 1}: tap a new spot` : `Pin ${i + 1}`} at={[0, 0.13, 0]} bg={movingPin === i ? '#f6c700' : '#c8102e'} fg={movingPin === i ? '#1a1a1a' : '#fff'} lift={0.02} h={0.04} />
               <mesh position={[0, 0.06, 0]}><cylinderGeometry args={[0.004, 0.004, 0.12, 6]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
               <mesh position={[0, 0.125, 0]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#c8102e" emissive="#5a0010" /></mesh>
             </group>

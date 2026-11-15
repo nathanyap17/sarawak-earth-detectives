@@ -12,6 +12,7 @@ _netrc
 # Data (downloaded NASA data, vault files)
 data/raw/*
 data/vault/*
+data/agency/
 !data/**/.gitkeep
 
 # Python

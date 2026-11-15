@@ -16,6 +16,8 @@
 | MODEL_TIMEOUT_S | agents | optional | Partner timeout, default 8 s; then the ladder hint is used |
 | FIRMS_MAP_KEY | ingest only | `.env`; Secret Manager if ingest runs in the cloud | Free key from FIRMS |
 | EARTHDATA_TOKEN | ingest only | `.env`; Secret Manager if needed | NASA Earthdata login token |
+| ADMIN_TOKEN | backend admin routes (`/admin/*`) | Cloud Run env (move to Secret Manager after the event); unset locally | The editor's key: typed on `/#/review`, sent by Cloud Scheduler as `X-Admin-Token`. Nathan creates it; never committed, never pasted in chat |
+| SCOUT_FEEDS, SCOUT_MAX_DRAFTS, SCOUT_SCHEDULE | case desk | optional | News feed URLs (default: Borneo Post and Dayak Daily RSS), drafts per run (2), schedule text shown on the wire desk |
 | VITE_API_BASE | frontend | `frontend/.env.local` / build env | Backend URL |
 | VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_APP_ID | frontend | `frontend/.env.local` | Firebase web config (public by design, still untracked) |
 | (ADC) | backend, local | `gcloud auth application-default login` | Nathan runs it |

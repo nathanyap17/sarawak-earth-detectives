@@ -1,0 +1,21 @@
+{
+ "bbox": [
+  109.5,
+  0.8,
+  115.7,
+  5.1
+ ],
+ "width": 930,
+ "height": 645,
+ "base": "../001/base.jpg",
+ "base_source": "NASA GIBS: Blue Marble shaded relief and bathymetry",
+ "fires_source": "",
+ "fire_days": [],
+ "missing_days": [],
+ "terrain": {
+  "file": "../001/height.bin",
+  "size": 256,
+  "max_m": 2071,
+  "source": "SRTM-derived heights (AWS Terrain Tiles, terrarium)"
+ }
+}

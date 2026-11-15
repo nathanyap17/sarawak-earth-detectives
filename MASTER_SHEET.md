@@ -183,6 +183,8 @@ Stretch measurements, only if time allows: air pollution gases (OMI), temperatur
 
 ### 5.7 How a case is made (the Client's loop)
 
+> **Update 2026-11-15.** SCOUT, QUALIFY, BUILD and REVIEW are now built (`backend/app/agents/scout.py`): a weekly job reads two public Sarawak news feeds and checks the vault for unusual readings; code runs the checklist; Gemini screens the shortlist and writes the brief (guarded); code computes the answer key; a human editor approves at `/#/review`. Limits: cases can be made only for regions and records already in the vault (two regions; fire, haze, dry and heat cases; flood cases wait for a checked rain record), the scan is weekly not daily, the cloud vault is refreshed by rebuilding the image, and OPEN-notification and FOLLOW UP are not built.
+>
 > **Correction 2026-11-14.** This loop is the design. In the hackathon build the team did SCOUT, QUALIFY and REVIEW by hand for case 001; BUILD's answer key is computed by code (`app.casework`). See the status column in §5.9.
 
 ```
@@ -253,8 +255,8 @@ Evidence behind the need:
 
 | Agent | Type | Tools it can call | Status |
 |---|---|---|---|
-| **Scout** (the Client) | Scheduled workflow | News search, vault query, unusual-reading check | 🔜 Built as: case 001 written by the team from news sources, answer key computed in code |
-| **Case Builder** | Sequential workflow | Region lookup, playbook lookup, series fetch, trend test, El Niño removal, answer-key writer | 🔜 Built as: `app.casework` (plain code) computes the answer key |
+| **Scout** (the Client) | Scheduled workflow | News search, vault query, unusual-reading check | ✅ Built 2026-11-15 as: code reads news feeds and runs the data watch and the checklist; an ADK LlmAgent screens the shortlist (guarded, with a code fallback). Weekly via Cloud Scheduler. Case 001 was written by the team |
+| **Case Builder** | Sequential workflow | Region lookup, playbook lookup, series fetch, trend test, El Niño removal, answer-key writer | ✅ Built 2026-11-15 as: an ADK LlmAgent writes the title and brief from the headline (number guard and answer guard, code template as fallback); code picks cards from per-type templates and computes the answer key; a human approves |
 | **Partner** | Conversational, with session state | Glossary search, "what has the student done" lookup, hint ladder. No access to the answer key's verdict | ✅ Built as: one ADK LlmAgent; code passes it the case, the student's steps and the unlocked hints in the prompt (no tool calls); every reply is guarded |
 | **Chief** | Single-shot grader | Answer key, rubric, student's session log | ✅ Built as: code grades; an ADK LlmAgent only words the code's grade, guarded |
 | **Reporter** | Single-shot | Chart renderer, report template | 🔜 |
@@ -750,6 +752,7 @@ If step 1 fails, stop and solve data access before building anything else.
 
 ## Change log
 
+- **v1.4, 15 Nov 2026 (case desk):** Scout and Case Builder built with human review (§5.7, §5.9); the office gains a wire desk that shows agent activity; clue pins can be moved and removed; records can be viewed as heatmaps and stripes, and the lab shows the trend's 95% range, a p-value picture and an El Niño scatter chart. Still not built: Reporter agent, embeddings retrieval, ML models, Firebase sign-in, Cloud Storage vault, data-refresh job in the cloud.
 - **v1.3, 14 Nov 2026 (build review):** §5.7 and §5.9 now mark what is built and what is planned. Not built for the hackathon: Scout, Case Builder and Reporter agents, embeddings retrieval, ML models (scikit-learn, XGBoost, ruptures), Firebase sign-in, Cloud Storage vault, scheduled jobs. Built: Partner and Chief (ADK, guarded), statistics in code (statsmodels, pymannkendall), Firestore sessions.
 - **v1, 14 Nov 2026:** first full sheet. Name set to Sarawak Earth Detectives.
 - **v1.2, 14 Nov 2026 (build session):** POWER tested and works (no login, 1981 to 10 Nov 2026). POWER rain is MERRA-2 bias-corrected, not IMERG; IMERG becomes a cross-check. El Niño index switched to NOAA RONI. Coastal grid cells behave like sea; regions use land cells only. Open checks 2, 5 and 10 closed. Details: `sandbox/EXPERIMENTS.md` EXP-1, 3, 4, 11.

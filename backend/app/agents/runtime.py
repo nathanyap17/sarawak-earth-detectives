@@ -23,7 +23,7 @@ def _env() -> None:
     os.environ["GOOGLE_CLOUD_LOCATION"] = s.google_cloud_location  # model endpoint, not the app region
 
 
-def _runner(name: str, instruction: str):
+def _runner(name: str, instruction: str, max_tokens: int | None = None, as_json: bool = False):
     if name not in _runners:
         _env()
         from google.adk.agents import LlmAgent
@@ -34,16 +34,17 @@ def _runner(name: str, instruction: str):
         agent = LlmAgent(
             name=name, model=s.model_name, instruction=instruction,
             generate_content_config=types.GenerateContentConfig(
-                max_output_tokens=s.partner_max_output_tokens, temperature=0.4,
+                max_output_tokens=max_tokens or s.partner_max_output_tokens, temperature=0.4,
+                response_mime_type="application/json" if as_json else None,
                 thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")))
         _runners[name] = InMemoryRunner(agent=agent, app_name=f"sed-{name}")
     return _runners[name]
 
 
-async def _run(name: str, instruction: str, prompt: str) -> str:
+async def _run(name: str, instruction: str, prompt: str, max_tokens: int | None = None, as_json: bool = False) -> str:
     from google.genai import types
 
-    r = _runner(name, instruction)
+    r = _runner(name, instruction, max_tokens, as_json)
     sess = await r.session_service.create_session(app_name=f"sed-{name}", user_id="student")
     out = ""
     async for ev in r.run_async(user_id="student", session_id=sess.id,
@@ -53,14 +54,15 @@ async def _run(name: str, instruction: str, prompt: str) -> str:
     return out.strip()
 
 
-async def run_once(name: str, instruction: str, prompt: str, timeout: float | None = None) -> tuple[str | None, float, str]:
+async def run_once(name: str, instruction: str, prompt: str, timeout: float | None = None,
+                   max_tokens: int | None = None, as_json: bool = False) -> tuple[str | None, float, str]:
     """(text or None, seconds, error). None means: use the deterministic fallback."""
     s = get_settings()
     if s.mock_agents:
         return None, 0.0, "mock"
     t0 = time.perf_counter()
     try:
-        text = await asyncio.wait_for(_run(name, instruction, prompt), timeout or s.model_timeout_s)
+        text = await asyncio.wait_for(_run(name, instruction, prompt, max_tokens, as_json), timeout or s.model_timeout_s)
         dt = time.perf_counter() - t0
         log.info("agent=%s ok %.2fs chars=%d", name, dt, len(text))
         _last_ok[name] = time.monotonic()

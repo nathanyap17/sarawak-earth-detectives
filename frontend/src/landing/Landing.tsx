@@ -51,7 +51,7 @@ const ASKS = [
 const STACK: [string, string[]][] = [
   ['Earth data', ['NASA POWER (MERRA-2)', 'NASA GIBS: VIIRS fire detections', 'NASA GIBS: Blue Marble', 'NOAA RONI (El Niño)', 'SRTM-derived terrain']],
   ['Statistics in code', ['Python', 'statsmodels', 'pymannkendall', 'pandas', 'NumPy']],
-  ['AI with guard rails', ['Gemini on Vertex AI', 'Google ADK', 'Number guard', 'Answer guard']],
+  ['AI with guard rails', ['Gemini on Vertex AI', 'Google ADK', 'Scout and Case Builder', 'Number guard', 'Answer guard', 'Human approval']],
   ['App', ['React', 'TypeScript', 'three.js', 'Apache ECharts', 'anime.js', 'FastAPI', 'Cloud Run', 'Firebase Hosting', 'Cloud Firestore']],
 ]
 
@@ -155,7 +155,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             <p>NASA keeps open records of rain, heat, soil and fire going back decades. The challenge asks for a tool where a user selects variables, sees change over time, and decides what is changing, where, how much, and whether it is significant.</p></article>
           <article className="pop s"><span>Solution</span>
             <h3>A detective agency</h3>
-            <p>Every real event becomes a case with one question: <em>is this getting worse, or was it one bad year?</em> The student does the science. The AI only gives hints. Code does every number. "Not enough evidence" can be the winning verdict.</p></article>
+            <p>Every real event becomes a case with one question: <em>is this getting worse, or was it one bad year?</em> The student does the science. The AI finds cases and gives hints. Code does every number, and a person approves every case. "Not enough evidence" can be the winning verdict.</p></article>
         </div>
       </section>
 

@@ -5,6 +5,8 @@
 // AI-assisted: written with Claude Code.
 import { useEffect, useState } from 'react'
 import type { Region, SceneManifest } from '../api/types'
+import { useSession } from '../state/session'
+import { MAX_PINS, removePin } from './pins'
 
 export type Fire = [day: number, lon: number, lat: number]
 export const NEAR_KM = 25
@@ -50,14 +52,14 @@ function question(r: Report): string {
   return 'Only a few fires here. Compare it with your other pins: why did one place burn more than another?'
 }
 
-export function useFires(caseId: string | undefined, m: SceneManifest | null): Fire[] {
+export function useFires(dir: string | undefined, m: SceneManifest | null): Fire[] {
   const [fires, setFires] = useState<Fire[]>([])
   useEffect(() => {
-    if (!caseId || !m?.fire_points) return
+    if (!dir || !m?.fire_points) return
     let live = true
-    fetch(`/scenes/${caseId}/${m.fire_points.file}`).then((r) => r.json()).then((f) => { if (live) setFires(f) }).catch(() => undefined)
+    fetch(`${dir}/${m.fire_points.file}`).then((r) => r.json()).then((f) => { if (live) setFires(f) }).catch(() => undefined)
     return () => { live = false }
-  }, [caseId, m])
+  }, [dir, m])
   return fires
 }
 
@@ -79,31 +81,51 @@ export function PinReports({ pins, fires, m, region, day, onJump, heightAt }: {
   pins: [number, number][]; fires: Fire[]; m: SceneManifest; region: Region; day: number; onJump: (day: number) => void
   heightAt?: (lon: number, lat: number) => number | null
 }) {
+  const { movingPin, setMovingPin } = useSession()
+  const hasFires = !!m.fire_points
   return (
     <div className="pin-reports">
       <ul className="map-key" aria-label="Map key">
-        <li><i className="k-fire" /> A fire the satellite saw that day</li>
+        {hasFires && <li><i className="k-fire" /> A fire the satellite saw that day</li>}
         <li><i className="k-box" /> The case region: your records are averages of this box</li>
         <li><i className="k-pin" /> Your clue pins</li>
       </ul>
       {pins.length === 0 && (
-        <p className="pin-why"><strong>Why drop pins?</strong> A pin asks the satellite a question: <em>what did you see right here?</em>{' '}
-          Press Play, watch where fires start and where they keep burning, then pin up to three places that puzzle you.
-          Each pin gives you a clue report.</p>
+        <p className="pin-why"><strong>Why drop pins?</strong> {hasFires
+          ? <>A pin asks the satellite a question: <em>what did you see right here?</em> Press Play, watch where fires start and where they keep burning, then pin up to three places that puzzle you.</>
+          : <>A pin asks: <em>what kind of place is this?</em> Pin up to three places: one inside the yellow box, one outside, one on high ground. Compare what each report says.</>}
+          {' '}Each pin gives you a clue report, and you can move or remove a pin at any time.</p>
       )}
+      {movingPin != null && <p className="pin-moving" role="status">Now tap the map where pin {movingPin + 1} should go. <button onClick={() => setMovingPin(null)}>Cancel</button></p>}
+      {movingPin == null && pins.length >= MAX_PINS && <p className="muted">All three pins are placed. Want to look somewhere else? Press <strong>Move</strong> on a pin, then tap the map.</p>}
       {pins.map((p, i) => {
         const r = pinReport(p, fires, m.fire_days.length, region)
         const h = heightAt?.(p[0], p[1])
         return (
-          <article key={i} className="pin-card">
+          <article key={i} className={`pin-card ${movingPin === i ? 'moving' : ''}`}>
             <header><span className="pin-no">{i + 1}</span>
               <strong>{r.townKm <= 5 ? `At ${r.town}` : `About ${r.townKm} km from ${r.town}`}</strong>
-              <small>{p[1].toFixed(2)}°N, {p[0].toFixed(2)}°E</small></header>
-            {fires.length === 0 ? <p className="muted">Reading the satellite log…</p> : (
+              <small>{p[1].toFixed(2)}°N, {p[0].toFixed(2)}°E</small>
+              <span className="pin-actions">
+                <button onClick={() => setMovingPin(movingPin === i ? null : i)} aria-pressed={movingPin === i}>{movingPin === i ? 'Cancel move' : 'Move'}</button>
+                <button onClick={() => removePin(i)} aria-label={`Remove pin ${i + 1}`}>Remove</button>
+              </span></header>
+            {hasFires && fires.length === 0 ? <p className="muted">Reading the satellite log…</p> : !hasFires ? (
+              <>
+                {h != null && <p>The ground here is about <strong>{Math.round(h / 10) * 10} m</strong> above the sea.{' '}
+                  {h < 40 ? 'Low, flat land near the coast: this is where most people in Sarawak live, and where the peat swamps are.' : h > 400 ? 'This is hill country. Hills are cooler and catch more rain than the coast.' : 'This is gently rising inland ground.'}</p>}
+                <p className={r.inRegion ? 'pin-in' : 'pin-out'}>{r.inRegion
+                  ? 'Inside the yellow box, so the records you test later include this place.'
+                  : 'Outside the yellow box, so the records you test later do not include this place. Still a fair clue for comparing.'}</p>
+                <p className="pin-q">🕵️ {r.inRegion
+                  ? `Your records are one average for the whole yellow box, which is more than a hundred kilometres wide. Would ${r.town} feel the same as a hill village in that box? Keep that in mind when you write "where".`
+                  : `This place is outside the case box. If the same thing is happening here too, is the change local or much wider? The twin map in the lab can help.`}</p>
+              </>
+            ) : (
               <>
                 <p>{r.total === 0
                   ? <>The satellite saw <strong>no fires</strong> within {NEAR_KM} km of this pin, {m.fire_days[0]} to {m.fire_days[m.fire_days.length - 1]}.</>
-                  : <>The satellite saw <strong>{r.total} fire detections</strong> within {NEAR_KM} km, on <strong>{r.days} different days</strong>.
+                  : <>The satellite saw <strong>{r.total} fire detections</strong> within {NEAR_KM} km, on <strong>{r.days} {r.days === 1 ? 'day' : 'different days'}</strong>.
                     The busiest day was <strong>{m.fire_days[r.busiest]}</strong> ({r.busiestCount} detections).</>}</p>
                 {r.total > 0 && <Spark perDay={r.perDay} day={day} busiest={r.busiest} />}
                 {r.total > 0 && <p className="spark-note">Each bar is one day. Red is the busiest day. The dotted line is the day on the map.{' '}
@@ -119,7 +141,7 @@ export function PinReports({ pins, fires, m, region, day, onJump, heightAt }: {
           </article>
         )
       })}
-      {pins.length > 0 && <p className="source">Pin reports count NASA VIIRS (Suomi NPP) 375 m fire detections saved for this case. One detection is one hot pixel on one day, not one separate fire.</p>}
+      {pins.length > 0 && hasFires && <p className="source">Pin reports count NASA VIIRS (Suomi NPP) 375 m fire detections saved for this case. One detection is one hot pixel on one day, not one separate fire.</p>}
     </div>
   )
 }

@@ -275,3 +275,81 @@ button.mode { padding: 4px 10px; font-size: .85rem; }
 /* display type, shared with the landing page */
 h1, h2, h3, .win-bar strong, .brand, .spot-label strong { font-family: "Fraunces Variable", Georgia, serif; }
 .stamp, .chief-stamp, .folder-tab { font-family: "Special Elite", "Courier New", monospace; }
+
+/* ---------- 2026-11-15: forest-green agency look, cinematic stage, wire desk, pin tools, new charts ---------- */
+:root { --green: #1f3a2c; --green-2: #2f4a3d; --brass: #d2a94e; --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Courier New", monospace; }
+/* quantitative data, metadata and source lines are set in monospace */
+.mission, .source, .nums dd, .mission-def, .chart-note, .wire time, .agency-counts dd, .pin-card header small, output { font-family: var(--mono); letter-spacing: -.01em; }
+.chart-note { font-size: .76rem; color: var(--muted); margin: 2px 0 8px; }
+.pbar { width: 100%; max-width: 380px; display: block; margin: 6px 0; }
+
+/* the stage: vignette and a faint warm grade over the 3D room */
+.stage.cinema::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 46%, rgba(0, 0, 0, 0) 52%, rgba(8, 4, 2, .5) 100%), linear-gradient(180deg, rgba(255, 170, 90, .05), rgba(0, 0, 0, 0) 40%, rgba(10, 6, 3, .22)); }
+.office { background: #0d0907; }
+
+/* top bar: forest green, brass rule, hornbill crest */
+.office-top { right: 0; background: linear-gradient(180deg, rgba(20, 38, 29, .96), rgba(20, 38, 29, .82)); border-bottom: 2px solid var(--brass); padding: 8px 16px; box-shadow: 0 6px 22px rgba(0, 0, 0, .45); }
+.office-top .crest { width: 34px; height: 34px; flex: none; }
+.office-top h1, .office-top .brand { font-size: 1.2rem; letter-spacing: .02em; text-shadow: none; }
+.office-top .case-chip { margin-left: 4px; font-family: var(--mono); font-size: .78rem; box-shadow: 0 0 0 2px rgba(255, 255, 255, .18); }
+.office-top button.mode { background: rgba(255, 250, 240, .08); border-color: rgba(210, 169, 78, .55); color: #f4ead8; border-radius: 99px; }
+.office-top button.mode:first-of-type { margin-left: auto; }
+.office-top button.mode:hover { background: rgba(210, 169, 78, .25); }
+.office:has(.office-window) .office-top { right: calc(min(600px, 42vw) + 24px); border-bottom-right-radius: 12px; }
+.office-note { top: 64px; }
+.top { border-image: none; border-bottom: 3px solid var(--green); }
+.top h1 { color: var(--green); }
+button.primary { background: var(--green); border-color: var(--green); }
+button.on, .seg button.on { background: var(--green); border-color: var(--green); }
+
+/* labels: brass-edged plates; the next one is yellow with a pointer; all hide while the camera glides */
+.labels.moving .spot-label { opacity: 0 !important; transition: opacity .12s; }
+.spot-label { background: rgba(20, 38, 29, .92); border-color: rgba(210, 169, 78, .6); border-radius: 6px; }
+.spot-label::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: rgba(20, 38, 29, .92); }
+.spot-label.next { box-shadow: 0 0 22px 4px rgba(246, 199, 0, .45); }
+.spot-label.next::after { border-top-color: var(--yellow); }
+
+/* the drawer: cream paper sliding over the room, about 40% of the screen */
+.office-window { top: 0; right: 0; bottom: 0; width: min(600px, 42vw); border-radius: 0; border-left: 3px solid var(--brass);
+  background: linear-gradient(90deg, rgba(120, 90, 50, .10), rgba(0, 0, 0, 0) 26px), repeating-linear-gradient(0deg, rgba(120, 90, 50, .035) 0 1px, rgba(0, 0, 0, 0) 1px 28px), var(--paper);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, .55); animation: drawer-in .45s cubic-bezier(.2, .8, .2, 1); }
+@keyframes drawer-in { from { transform: translateX(100%); } }
+.win-bar { background: var(--green); border-image: none; border-bottom: 2px solid var(--brass); padding: 10px 10px 10px 18px; }
+.win-bar strong { font-size: 1.15rem; letter-spacing: .02em; }
+.station { font-size: .92rem; }
+@media (max-width: 640px) { .office-window { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 62vh; border-left: 0; border-top: 3px solid var(--brass); }
+  .office:has(.office-window) .office-top { right: 0; } .office-top .brand, .office-top h1 { font-size: .95rem; } .office-top button.mode { font-size: .72rem; padding: 3px 8px; } }
+@media (prefers-reduced-motion: reduce) { .office-window { animation: none; } }
+
+/* clue pins: move and remove */
+.pin-actions { display: inline-flex; gap: 4px; }
+.pin-actions button { font-size: .74rem; padding: 2px 8px; border-radius: 99px; }
+.pin-card.moving { border-left-color: var(--yellow); background: #fff8dc; }
+.pin-moving { padding: 8px 12px; background: var(--yellow); border-radius: 8px; font-weight: 700; }
+.pin-moving button { margin-left: 8px; font-size: .8rem; padding: 2px 8px; }
+.pin.moving { background: var(--yellow); color: var(--black); animation: pulse 1.2s infinite; }
+
+/* the wire desk */
+.pipeline { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.pipeline li { position: relative; padding: 10px 10px 10px 12px; background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 8px; display: grid; gap: 4px; align-content: start; }
+.pipeline li strong { font-family: "Fraunces Variable", Georgia, serif; }
+.pipeline small { color: var(--muted); font-size: .78rem; line-height: 1.3; }
+.pipe-no { position: absolute; top: -13px; left: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--green); color: #fff; font-size: .75rem; display: grid; place-items: center; font-weight: 700; }
+.pipe-by { display: flex; gap: 4px; flex-wrap: wrap; }
+.by { font-style: normal; font-family: var(--mono); font-size: .66rem; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; background: #eee; color: #333; }
+.by-ai { background: #dff1f7; color: #134c5f; } .by-code { background: #fdeccb; color: #6b4300; } .by-human { background: #fbdcdc; color: #8a1220; }
+.agency-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+.agency-counts div { background: var(--green); color: #f4ead8; border-radius: 8px; padding: 8px 10px; }
+.agency-counts dt { font-size: .72rem; opacity: .85; } .agency-counts dd { margin: 0; font-size: 1.5rem; font-weight: 700; } .agency-counts dd.small { font-size: .78rem; font-weight: 400; line-height: 1.3; padding-top: 4px; }
+.wire { list-style: none; margin: 8px 0; padding: 0; border-left: 2px dashed var(--line); }
+.wire li { display: flex; gap: 10px; padding: 8px 0 8px 12px; position: relative; }
+.wire li::before { content: ''; position: absolute; left: -6px; top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--warn); border: 2px solid var(--paper); }
+.wire li.wire-ai::before { background: var(--teal); } .wire li.wire-human::before { background: var(--red); }
+.wire-icon { font-size: 1.25rem; line-height: 1.2; }
+.wire header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.wire time { margin-left: auto; font-size: .7rem; color: var(--muted); }
+.wire p { margin: 2px 0 0; font-size: .9rem; }
+.wire-panel { margin: 12px 0; padding: 4px 16px 12px; background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 10px; }
+.review .top a { font-size: .9rem; }
+.review label { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 220px; }

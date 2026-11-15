@@ -6,11 +6,13 @@ AI-assisted: written with Claude Code."""
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime, timezone
 from functools import lru_cache
 
 import pandas as pd
 
+from app import docs
 from app.analysis import trend
 from app.config import get_settings
 from app.schemas import (AnalysisResult, AnswerKey, CardKey, CasePack, CasePublic, EvidenceCard,
@@ -21,20 +23,49 @@ from app.vault.cards import CARDS, CardDef
 
 # ---------------------------------------------------------------- case packs
 @lru_cache(maxsize=64)
-def load_case(case_id: str) -> CasePack:
+def _file_case(case_id: str) -> CasePack | None:
     p = get_settings().cases_dir / f"{case_id}.json"
-    if not p.exists():
+    return CasePack.model_validate_json(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+_dyn: dict[str, tuple[float, CasePack | None]] = {}  # cases written by the case desk, cached briefly
+_dyn_all: list = [0.0, []]
+TTL = 30.0
+
+
+def forget(case_id: str | None = None) -> None:
+    """Drop cached desk cases after one is drafted, approved or rejected."""
+    _dyn.clear()
+    _dyn_all[0] = 0.0
+
+
+def load_case(case_id: str) -> CasePack:
+    """Hand-made cases live in cases/*.json; cases from the Scout live in the document store."""
+    c = _file_case(case_id) if case_id.replace("-", "").replace("_", "").isalnum() else None
+    if c:
+        return c
+    hit = _dyn.get(case_id)
+    if not hit or time.monotonic() - hit[0] > TTL:
+        d = docs.store().get("cases", case_id)
+        hit = (time.monotonic(), CasePack.model_validate(d) if d else None)
+        _dyn[case_id] = hit
+    if hit[1] is None:
         raise KeyError(case_id)
-    return CasePack.model_validate_json(p.read_text(encoding="utf-8"))
+    return hit[1]
+
+
+def _desk_cases() -> list[CasePack]:
+    if _dyn_all[0] == 0.0 or time.monotonic() - _dyn_all[0] > TTL:
+        _dyn_all[1] = [CasePack.model_validate(d) for d in docs.store().all("cases")]
+        _dyn_all[0] = time.monotonic()
+    return _dyn_all[1]
 
 
 def list_cases(status: str | None = "open") -> list[CasePack]:
-    out = []
-    for p in sorted(get_settings().cases_dir.glob("*.json")):
-        c = load_case(p.stem)
-        if status is None or c.status == status:
-            out.append(c)
-    return out
+    files = [load_case(p.stem) for p in sorted(get_settings().cases_dir.glob("*.json"))]
+    have = {c.id for c in files}
+    out = files + [c for c in _desk_cases() if c.id not in have]
+    return sorted((c for c in out if status is None or c.status == status), key=lambda c: c.id)
 
 
 def public_card(card: CardDef) -> EvidenceCard:
@@ -105,7 +136,7 @@ def run_tool(card_id: str, region_id: str, tool: str, options: dict | None = Non
         adj = trend.elnino_lamp(yearly, e)
         return AnalysisResult(**_from_test(base, trend.scales(adj, card.band)),
                               elnino_r=_r(trend.elnino_correlation(yearly, e), 3),
-                              series_out=_pts(adj))
+                              series_out=_pts(adj), enso_out=_pts(e.reindex(yearly.index).dropna()))
     if tool == "twin":
         region_b = options.get("region_b")
         if not region_b:
@@ -143,7 +174,11 @@ def run_shuffle(card_id: str, region_id: str) -> dict:
 
 # ---------------------------------------------------------------- answer key
 def build_answer_key(case_id: str) -> AnswerKey:
-    c = load_case(case_id)
+    return build_answer_key_for(load_case(case_id))
+
+
+def build_answer_key_for(c: CasePack) -> AnswerKey:
+    case_id = c.id
     bad = [m for m in c.main_cards if CARDS[m].provisional]
     if bad:
         raise ValueError(f"provisional cards cannot be main cards: {bad}")
@@ -175,6 +210,8 @@ def write_answer_key(case_id: str) -> AnswerKey:
 
 if __name__ == "__main__":  # uv run python -m app.casework  -> rebuild all answer keys
     for case in list_cases(status=None):
+        if _file_case(case.id) is None:
+            continue  # desk cases keep their key in the document store
         k = write_answer_key(case.id)
         print(case.id, k.overall, json.dumps({i: (v.stamp, v.elnino_stamp)
                                               for i, v in k.per_card.items()}))

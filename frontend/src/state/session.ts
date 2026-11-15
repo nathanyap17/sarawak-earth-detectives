@@ -38,6 +38,11 @@ interface State {
   begin: (c: CasePublic, sessionId: string) => void
   setBeat: (b: Beat) => void
   addPin: (p: [number, number]) => void
+  removePin: (i: number) => void
+  movePin: (i: number, p: [number, number]) => void
+  /** which pin the next map click moves (null: the click adds a new pin) */
+  movingPin: number | null
+  setMovingPin: (i: number | null) => void
   setChosen: (ids: string[], herring: boolean) => void
   putSeries: (s: Series) => void
   markOpened: (id: string) => void
@@ -55,7 +60,7 @@ export function frontier(s: { reached: number; grade: Grade | null }): number {
 export const caseFiled = (g: Grade | null) => !!g && !g.can_retry
 
 const fresh = {
-  activeCase: null, sessionId: null, beat: 'call' as Beat, reached: 0, sceneDay: 0, cluePins: [], chosen: [],
+  activeCase: null, sessionId: null, beat: 'call' as Beat, reached: 0, sceneDay: 0, cluePins: [], movingPin: null as number | null, chosen: [],
   herringWarning: false, series: {}, opened: [], results: {}, grade: null, draft: null as Draft | null,
   hintRung: {} as Record<string, number>, chat: [] as ChatLine[],
 }
@@ -68,6 +73,9 @@ export const useSession = create<State>((set) => ({
   setBeat: (beat) => set((s) => ({ beat, reached: Math.max(s.reached, BEATS.indexOf(beat)) })),
   setSceneDay: (sceneDay) => set({ sceneDay }),
   addPin: (p) => set((s) => (s.cluePins.length >= 3 ? s : { cluePins: [...s.cluePins, p] })),
+  removePin: (i) => set((s) => ({ cluePins: s.cluePins.filter((_, k) => k !== i), movingPin: null })),
+  movePin: (i, p) => set((s) => ({ cluePins: s.cluePins.map((q, k) => (k === i ? p : q)), movingPin: null })),
+  setMovingPin: (movingPin) => set({ movingPin }),
   setChosen: (chosen, herringWarning) => set({ chosen, herringWarning }),
   putSeries: (x) => set((s) => ({ series: { ...s.series, [x.card_id]: x } })),
   markOpened: (id) => set((s) => (s.opened.includes(id) ? s : { opened: [...s.opened, id] })),

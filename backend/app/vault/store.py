@@ -56,7 +56,14 @@ def load_index() -> dict:
 
 def load_answer_key(case_id: str) -> AnswerKey:
     p = root() / "answer_keys" / f"{case_id}.json"
-    return AnswerKey.model_validate_json(p.read_text(encoding="utf-8"))
+    if p.exists():
+        return AnswerKey.model_validate_json(p.read_text(encoding="utf-8"))
+    from app import docs  # cases drafted by the case desk keep their key in the document store
+
+    d = docs.store().get("answer_keys", case_id)
+    if d is None:
+        raise FileNotFoundError(f"no answer key for case {case_id}")
+    return AnswerKey.model_validate(d)
 
 
 def clear_caches() -> None:

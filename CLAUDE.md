@@ -22,7 +22,8 @@ The student does the science — chooses evidence, removes seasons, tests the tr
 
 ## Architecture
 - `frontend/` — one React app. `/` is the landing page (`src/landing/`, spec in `LANDING.md`); `/#/play` is the app. `src/beats/` holds the seven beats, shared by `src/lite/` (2D, built first) and `src/office/` (3D). `src/api/` is the only module that calls the backend.
-- `backend/app/api/` routes · `analysis/` statistics (no I/O) · `vault/` ingest + region averaging · `agents/` ADK agents and tools · `reports/` case report.
+- `backend/app/api/` routes · `analysis/` statistics (no I/O) · `vault/` ingest + region averaging · `agents/` ADK agents (Partner, Chief, and the case desk in `scout.py`: Scout + Case Builder), `activity.py` the public activity log · `docs.py` document store for desk cases, their keys and the log (files locally, Firestore in cloud) · `reports/` case report.
+- Case desk: `POST /admin/scout/run` (weekly, Cloud Scheduler) drafts cases with `status: draft`; a human approves at `/#/review` (`/admin/cases/{id}/approve`). Admin routes need `ADMIN_TOKEN` in cloud. `GET /agency/activity` feeds the wire desk.
 - `cases/` approved CasePack JSON · `data/` downloaded data (never committed) · `infra/` deploy scripts.
 - Diagram and routes: `MASTER_SHEET.md` §9.
 
@@ -70,4 +71,4 @@ cd frontend && npm run build
 The seven beats for case 001, real statistics in code, the student-written verdict, the Partner's "no answers" rule, lite mode.
 
 ## Shipping status
-2026-11-15: upgrades deployed (hands-on lab, pin reports, landing diagrams; Cloud Run revision sed-api-00002-sj2). Landing https://ssc-workspace-2026.web.app/ · app https://ssc-workspace-2026.web.app/#/play · API https://sed-api-f7fsjojvgq-as.a.run.app (Cloud Run `sed-api`, asia-southeast1, min 1 instance). Pushes and deploys need Nathan's ask (see Ownership).
+2026-11-15 (afternoon, NOT yet deployed): case desk (Scout + Case Builder, human review), wire desk, pin move/remove, heatmap and other charts, cinematic 3D office. Before deploy: set `ADMIN_TOKEN` on Cloud Run and create the Cloud Scheduler job (infra/DEPLOY.md §5). Earlier the same day: upgrades deployed (hands-on lab, pin reports, landing diagrams; Cloud Run revision sed-api-00002-sj2). Landing https://ssc-workspace-2026.web.app/ · app https://ssc-workspace-2026.web.app/#/play · API https://sed-api-f7fsjojvgq-as.a.run.app (Cloud Run `sed-api`, asia-southeast1, min 1 instance). Pushes and deploys need Nathan's ask (see Ownership).

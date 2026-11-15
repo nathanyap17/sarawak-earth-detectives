@@ -79,7 +79,7 @@ Nathan confirmed 3D modelling with three.js is a core requirement, not polish. L
 | **Gate 4** | Three cases + 3D map table; hand build to Zoe/Malcolm for recording |
 
 ### Phase 6 — Tier 3, only if Gate 4 passed (Sun 13:00–16:00)
-Scout + Case Builder drafting case 004 with admin approval; polish (stamps, hornbill).
+Scout + Case Builder drafting case 004 with admin approval; polish (stamps, hornbill). **Built 2026-11-15:** `agents/scout.py`, `/admin/*`, `/#/review`, the wire desk; see BUILD_LOG.
 
 ### Phase 7 — Freeze and submit (Sun 16:00–20:00)
 16:00 feature freeze · redeploy · private-window link test · README AI disclosure · fill MASTER_SHEET §3/§4 links · 20:00 submit.

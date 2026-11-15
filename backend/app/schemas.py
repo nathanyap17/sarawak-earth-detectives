@@ -151,6 +151,7 @@ class AnalysisResult(BaseModel):
     direction: Direction | None = None
     series_out: list[YearlyPoint] = Field(default_factory=list)
     monthly_out: list[MonthlyPoint] = Field(default_factory=list)  # season tool
+    enso_out: list[YearlyPoint] = Field(default_factory=list)  # elnino tool: the index each year (scatter chart)
 
 
 class MyLineRequest(BaseModel):
@@ -230,10 +231,11 @@ class ChooseResult(BaseModel):
 
 
 class LogEvent(BaseModel):
-    kind: Literal["beat", "clue", "open_card", "hint"]
+    kind: Literal["beat", "clue", "open_card", "hint", "pins"]
     beat: str | None = None
     card_id: str | None = None
     lonlat: tuple[float, float] | None = None
+    pins: list[tuple[float, float]] | None = Field(default=None, max_length=3)  # kind "pins": the whole set, after a move or removal
 
 
 class Verdict(BaseModel):

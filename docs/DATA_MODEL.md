@@ -50,3 +50,11 @@ CasePack fields: see `schemas.CasePack`. Students can read only `status == "open
 | Minors | No free chat between students; the Partner stays on topic |
 | Answer keys | Never in client-readable Firestore paths, never in API responses |
 | Retention | Hackathon: sessions kept until judging ends, then deletable |
+
+## Added 2026-11-15: case desk
+- **`cases` (Firestore in cloud, `data/agency/cases/*.json` locally):** CasePacks drafted by the Scout and Case Builder. `status` is `draft` until a human approves (`open`) or rejects (`closed`). Hand-made cases stay in `cases/*.json` in the repository and win if an id clashes.
+- **`answer_keys` (same store, server only):** the AnswerKey for each desk case, computed by code when the draft is built. Never returned by a student route; the editor's page shows only the overall verdict and the stamps.
+- **`agent_activity`:** `{at, agent, by: ai|code|human, kind, text}`. Fixed wording and counts only: no student text, no nickname, no answer key, no text from an unapproved case. Read by `GET /agency/activity` (latest 40).
+- **Routes:** `GET /agency/activity` (public) · `POST /admin/scout/run`, `GET /admin/cases`, `POST /admin/cases/{id}/approve|reject` (header `X-Admin-Token`).
+- **`LogEvent.kind = "pins"`** with `pins: [[lon, lat], …]` (max 3) replaces the session's clue pins after a move or removal. The log stores only the count.
+- **`AnalysisResult.enso_out`** (El Niño tool): the El Niño index for each year, for the scatter chart.

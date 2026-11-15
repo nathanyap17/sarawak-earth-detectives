@@ -1,8 +1,9 @@
 // Lite mode: the seven beats as flat pages (MASTER_SHEET §5.4, §19). Built first; the 3D
 // office will reuse the same beats and state.
 // AI-assisted: written with Claude Code.
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { logQuiet } from '../api/client'
+import { Agency } from '../beats/Agency'
 import { BoardBeat } from '../beats/BoardBeat'
 import { CallBeat } from '../beats/CallBeat'
 import { ClosedBeat } from '../beats/ClosedBeat'
@@ -19,12 +20,14 @@ export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: stri
   useEffect(() => { logQuiet(sessionId, { kind: 'beat', beat }) }, [beat, sessionId])
 
   const idx = BEATS.indexOf(beat)
+  const [wire, setWire] = useState(false)
   return (
     <div className="lite">
       <header className="top">
         <h1>Sarawak Earth Detectives</h1>
         <span className="top-right">
           {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
+          <button className="mode" onClick={() => setWire(!wire)} aria-expanded={wire}>📠 Agents at work</button>
           {onOffice && <button className="mode" onClick={onOffice} aria-label="Switch to the 3D office">3D office</button>}
         </span>
       </header>
@@ -36,6 +39,7 @@ export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: stri
           </li>
         ))}</ol>
       </nav>
+      {wire && <aside className="wire-panel" aria-label="Agents at work"><h2>Agents at work</h2><Agency /></aside>}
       <main>
         {beat === 'call' && <CallBeat />}
         {beat === 'scene' && <SceneBeat onDone={() => go('locker')} />}

@@ -9,6 +9,7 @@ import { Vector3, type PerspectiveCamera } from 'three'
 import { logQuiet } from '../api/client'
 import { BoardBeat } from '../beats/BoardBeat'
 import { CallBeat } from '../beats/CallBeat'
+import { Agency } from '../beats/Agency'
 import { PinReports } from '../beats/PinReport'
 import { ClosedBeat } from '../beats/ClosedBeat'
 import { DeductionBeat } from '../beats/DeductionBeat'
@@ -27,7 +28,7 @@ import { OVERVIEW, STATIONS } from './stations'
 import { useUI } from './ui'
 
 /** Pixel width the window covers on the right (matches .office-window in index.css). */
-function windowPx(w: number) { return w <= 640 ? 0 : Math.min(540, 0.46 * w) + 24 }   // ≤640 px: bottom sheet, no side shift
+function windowPx(w: number) { return w <= 640 ? 0 : Math.min(600, 0.42 * w) }   // ≤640 px: bottom sheet, no side shift
 
 function CameraRig() {
   const win = useUI((u) => u.win)
@@ -35,8 +36,11 @@ function CameraRig() {
   const look = useRef(new Vector3(...OVERVIEW.look))
   const goalP = useRef(new Vector3()), goalL = useRef(new Vector3())
   const shift = useRef(0)
+  const setMoving = useUI((u) => u.setMoving)
+  // the glide takes about 0.8 s; labels hide while it lasts so the room stays uncluttered
+  useEffect(() => { setMoving(true); const t = setTimeout(() => setMoving(false), 850); return () => clearTimeout(t) }, [win, setMoving])
   useFrame((_, dt) => {
-    const k = 1 - Math.exp(-dt * 2.5)        // smooth glide, frame-rate independent
+    const k = 1 - Math.exp(-dt * 4.2)        // smooth glide of about 0.8 s, frame-rate independent
     // while a window is open, shift the projection so the object sits in the free area
     const cam = camera as PerspectiveCamera
     const want = win ? windowPx(size.width) : 0
@@ -89,19 +93,23 @@ function ScenePanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onD
   }, [playing, m, setSceneDay])
   if (!m) return <p className="muted">Flying to the scene…</p>
   const count = scene.fires.filter((f) => f[0] === sceneDay).length
+  const hasDays = m.fire_days.length > 0
   return (
     <section className="beat">
-      <p>The map table is Sarawak seen from space, with real hills and valleys. Every glowing ember is a fire a NASA satellite
+      {hasDays ? <p>The map table is Sarawak seen from space, with real hills and valleys. Every glowing ember is a fire a NASA satellite
         spotted from about 830 km up, {c!.scene.from} to {c!.scene.to}. Press <strong>Play</strong> to watch the season, then{' '}
         <strong>click the map</strong> to pin up to three places that puzzle you. Each pin gives you a clue report.</p>
-      <div className="slider-row">
+        : <p>The map table is Sarawak seen from space, with real hills and valleys. The yellow box is the region this case is about:
+          every record you test is an average over that box. <strong>Click the map</strong> to pin up to three places and compare them.
+          You can move or remove a pin at any time.</p>}
+      {hasDays && <div className="slider-row">
         <button onClick={() => setPlaying(!playing)}>{playing ? 'Pause' : 'Play'}</button>
         <input type="range" min={0} max={m.fire_days.length - 1} value={sceneDay}
           onChange={(e) => { setPlaying(false); setSceneDay(+e.target.value) }} aria-label="Day" />
         <output>{m.fire_days[sceneDay]}</output>
-      </div>
-      <p className="muted">{count} fire detections that day. Yellow box: {c!.region.name}.</p>
-      <p className="source">Imagery: {m.base_source}. Fires: {m.fires_source}. Relief: {m.terrain?.source ?? 'flat'}, height exaggerated.
+      </div>}
+      <p className="muted">{hasDays && `${count} fire detections that day. `}Yellow box: {c!.region.name}.</p>
+      <p className="source">Imagery: {m.base_source}.{hasDays && ` Fires: ${m.fires_source}.`} Relief: {m.terrain?.source ?? 'flat'}, height exaggerated.
         {m.missing_days.length > 0 && ` No fire image for ${m.missing_days.join(', ')}.`}</p>
       <p><strong>Clue pins: {cluePins.length}/3</strong></p>
       <PinReports pins={cluePins} fires={scene.fires} m={m} region={c!.region} day={sceneDay} onJump={(d) => { setPlaying(false); setSceneDay(d) }}
@@ -121,6 +129,11 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
   const { win, setWin, setIdle } = useUI()
   const scene = useScene(activeCase?.id)
   const [slow, setSlow] = useState(false)
+  // a link can open straight at the inbox or the wire desk: /#/play?at=agency
+  useEffect(() => {
+    const at = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('at')
+    if (at === 'agency' || at === 'inbox') setWin(at)
+  }, [setWin])
 
   useEffect(() => { logQuiet(sessionId, { kind: 'beat', beat }) }, [beat, sessionId])
 
@@ -177,14 +190,10 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
 
   return (
     <div className="office">
-      <div className="stage">
-        <Canvas dpr={[1, 1.5]} camera={{ fov: 50, position: OVERVIEW.pos, near: 0.05, far: 60 }}
+      <div className="stage cinema">
+        <Canvas shadows="soft" dpr={[1, 1.5]} camera={{ fov: 52, position: OVERVIEW.pos, near: 0.05, far: 60 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}>
-          <color attach="background" args={['#120d0a']} />
-          <hemisphereLight args={['#ffd9a8', '#3a2a20', 0.9]} />
-          <directionalLight position={[0, 3, -3.5]} intensity={0.9} color="#ffb070" />
-          <directionalLight position={[2, 5, 7]} intensity={0.6} color="#ffe8cc" />
-          <pointLight position={[0, 3.1, 0]} intensity={2.2} distance={8} color="#ffe2b8" />
+          <color attach="background" args={['#0d0907']} />
           <Room />
           <Hornbill />
           <MapTable scene={scene} />
@@ -194,9 +203,13 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
       </div>
       <Labels />
       <header className="office-top">
+        <svg className="crest" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#1f3a2c" stroke="#d2a94e" strokeWidth="2" />
+          <ellipse cx="18" cy="24" rx="6" ry="8" fill="#111" transform="rotate(-20 18 24)" /><circle cx="22" cy="15" r="4.5" fill="#111" />
+          <path d="M25 14 Q34 15 35 21 Q30 18 25 18z" fill="#f6c700" /><path d="M24 12 Q30 8 33 13 Q28 12 25 14z" fill="#e8641b" /><circle cx="23" cy="14.5" r="1" fill="#fff" /></svg>
         {onHome ? <button className="brand" onClick={onHome} title="Back to the front page">Sarawak Earth Detectives</button> : <h1>Sarawak Earth Detectives</h1>}
         {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
         <button className="mode" onClick={() => setWin(win === 'inbox' ? null : 'inbox')}>✉ Inbox</button>
+        <button className="mode" onClick={() => setWin(win === 'agency' ? null : 'agency')}>📠 Agents at work</button>
         <button className="mode" onClick={onLite} aria-label="Switch to the 2D lite mode">2D</button>
       </header>
       {slow && (
@@ -213,6 +226,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
             <p className="station"><span aria-hidden="true">{STATION[win].icon}</span>
               <span><strong>What is this?</strong> {STATION[win].what} <em>{STATION[win].why}</em></span></p>
             {win === 'inbox' && <Inbox />}
+            {win === 'agency' && <Agency />}
             {win === 'call' && (!activeCase ? <CallBeat /> : (
               <article className="folder"><p className="folder-tab">Case {activeCase.id} · {activeCase.type}</p><h2>{activeCase.title}</h2>
                 <blockquote className="brief">“{activeCase.brief}”<footer>— The Client</footer></blockquote>

@@ -34,6 +34,8 @@ export interface AnalysisResult {
   stamp: Stamp | null; years_needed: number | null; direction: Direction | null
   series_out: { y: number; v: number | null }[]
   monthly_out: { t: string; v: number | null }[]
+  /** elnino tool: the El Niño index for each year, for the scatter chart */
+  enso_out: { y: number; v: number | null }[]
 }
 export interface Verdict {
   session_id: string; what: string; where: string; direction: 'worsening' | 'improving' | 'no_change'
@@ -52,9 +54,17 @@ export interface PartnerReply {
 export interface ChiefNote { attempt: number; chief_note: string | null }
 export interface ChooseResult { chosen: string[]; partner_asks_why: boolean }
 export interface LogEvent {
-  kind: 'beat' | 'clue' | 'open_card' | 'hint'
-  beat?: string; card_id?: string; lonlat?: [number, number]
+  kind: 'beat' | 'clue' | 'open_card' | 'hint' | 'pins'
+  beat?: string; card_id?: string; lonlat?: [number, number]; pins?: [number, number][]
 }
+/** GET /agency/activity: what the agents, the code and the human editor have been doing. */
+export interface AgencyEvent { at: string; agent: string; by: 'ai' | 'code' | 'human'; kind: string; text: string }
+export interface Agency {
+  steps: { name: string; by: string; does: string }[]; schedule: string
+  counts: { open: number; waiting: number }; events: AgencyEvent[]
+}
+/** Editor's desk (admin only). */
+export interface DraftRow { case: Omit<CasePublic, 'evidence'> & { red_herrings: string[]; main_cards: string[]; evidence: string[] }; key_overall: string | null; key_stamps: Record<string, [string, string]> }
 export interface SceneManifest {
   bbox: [number, number, number, number]; width: number; height: number; base: string
   base_source: string; fires_source: string; fire_days: string[]; missing_days: string[]

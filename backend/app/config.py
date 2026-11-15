@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     firms_map_key: str | None = None
     earthdata_token: str | None = None
 
+    # Case desk (Scout and Case Builder). The weekly run is started by Cloud Scheduler.
+    admin_token: str | None = None  # required in cloud for /admin routes; never committed
+    scout_feeds: str = "https://www.theborneopost.com/feed/,https://dayakdaily.com/feed/"
+    scout_max_drafts: int = 2  # at most this many new drafts per run
+    scout_schedule: str = "Every Monday, 06:00 (Sarawak time)"  # shown on the activity page
+
     # Cost guard
     partner_max_turns_per_session: int = 30
     partner_max_output_tokens: int = 200

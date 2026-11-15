@@ -1,6 +1,6 @@
 // The ONLY module that calls the backend. AI-assisted: written with Claude Code.
 import type {
-  AnalysisResult, CasePublic, ChiefNote, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
+  Agency, AnalysisResult, CasePublic, DraftRow, ChiefNote, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
@@ -13,14 +13,14 @@ export function onSessionLost(fn: (oldId: string) => Promise<string | null>) { r
 const TIMEOUT_MS = 15_000
 const SLOW_MS = 25_000
 
-async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown, retried = false, ms = TIMEOUT_MS): Promise<T> {
+async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown, retried = false, ms = TIMEOUT_MS, extra?: Record<string, string>): Promise<T> {
   const ctl = new AbortController()
   const t = setTimeout(() => ctl.abort(), ms)
   let r: Response
   try {
     r = await fetch(`${BASE}${path}`, {
       method, signal: ctl.signal,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...extra },
       body: body ? JSON.stringify(body) : undefined,
     })
   } catch (e) {
@@ -64,6 +64,13 @@ export const api = {
   partner: (sid: string, beat: string, rung: number, message: string) =>
     call<PartnerReply>('POST', `/sessions/${sid}/partner`, { beat, rung, message }, false, SLOW_MS),
   verdict: (v: Verdict) => call<Grade>('POST', `/sessions/${v.session_id}/verdict`, v),
+  agency: () => call<Agency>('GET', '/agency/activity'),
+  /** Editor's desk. The key is typed by the editor and kept only in this tab's memory. */
+  admin: {
+    drafts: (key: string) => call<DraftRow[]>('GET', '/admin/cases', undefined, true, TIMEOUT_MS, { 'X-Admin-Token': key }),
+    decide: (key: string, id: string, d: 'approve' | 'reject') => call<{ id: string; status: string }>('POST', `/admin/cases/${id}/${d}`, undefined, true, TIMEOUT_MS, { 'X-Admin-Token': key }),
+    scout: (key: string) => call<{ drafted: { id: string }[]; headlines: number }>('POST', '/admin/scout/run', undefined, true, 180_000, { 'X-Admin-Token': key }),
+  },
   chief: (sid: string) => call<ChiefNote>('POST', `/sessions/${sid}/chief`, undefined, false, SLOW_MS),
 }
 

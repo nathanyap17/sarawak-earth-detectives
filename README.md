@@ -16,7 +16,7 @@ Built for the NASA Space Apps Challenge 2026, challenge "Be An Earth System Tren
 ## How it works
 1. **The Call** — a case arrives. 2. **The Scene** — visit it on a map of Sarawak. 3. **The Evidence Locker** — choose measurements, reject red herrings. 4. **The Board** — see each as a time series. 5. **The Lab** — season filter, trend ruler, significance scales, El Niño lamp. 6. **The Deduction** — write the verdict. 7. **Case Closed** — the Chief's stamp, feedback and badges; solved cases are filed under Learnt cases in the inbox.
 
-Every number comes from statistics code (OLS trend + Mann-Kendall, both must agree), never from the AI.
+Every number comes from statistics code (OLS trend + Mann-Kendall, both must agree), never from the AI. Each record can be seen as a line chart, a year-by-month heatmap or yearly stripes; the lab adds the trend line with its 95% range, the two p-values, a shuffle-test histogram, the normal year as bars and an El Niño scatter chart. Clue pins on the map can be moved or removed at any time.
 
 ## Data
 Used in the build: NASA POWER (MERRA-2: soil wetness, humidity, rain, wind), NASA GIBS (VIIRS fire detections, Blue Marble imagery), NOAA's Relative Oceanic Niño Index (RONI), and SRTM-derived terrain (AWS Terrain Tiles). Planned sources and full links: `MASTER_SHEET.md` §6–7.
@@ -28,7 +28,7 @@ cd frontend && npm install && npm run dev
 ```
 
 ## Use of AI
-- **In the product:** Gemini on Vertex AI through Google's Agent Development Kit, for the Partner (hints only, guarded so it never gives the answer) and the Chief (wording the code's grade). Statistics and grading are plain code. Case 001 was written by the team from news sources; the AI Client that drafts cases is planned, not built.
+- **In the product:** Gemini on Vertex AI through Google's Agent Development Kit, for the Partner (hints only, guarded so it never gives the answer) and the Chief (wording the code's grade). Statistics and grading are plain code. Two more agents, the Scout and the Case Builder, draft new cases: a weekly job reads public news feeds (headline, link and date only) and checks the saved NASA records for unusual readings; code runs the checklist, picks the evidence cards and computes the answer key; Gemini only screens the headlines and writes the brief, and its text passes the same guards. Every draft waits for a human editor (`/#/review`) before students can see it. The wire desk in the office (`/#/play?at=agency`) shows this activity. Case 001 was written by the team from news sources.
 - **In development:** Claude Code (Anthropic) helped with planning, scaffolding and code. AI-assisted source files carry a header note.
 - AI-generated images or video carry a visible watermark. No NASA logos are used.
 

@@ -46,7 +46,7 @@
     ]
   },
   "limits": [
-    "Fire detections from satellites are not in this case yet; it uses the weather that dries peat out.",
+    "Satellite fire detections are shown on the map only. The records you test are the weather that dries peat out, not counts of fires.",
     "Soil wetness and humidity come from a weather model (MERRA-2) checked against observations, not from a sensor in the ground.",
     "Each value is an average over grid squares about 50 km wide, not one village.",
     "Rain cards are provisional: they have not yet been cross-checked against GPM IMERG satellite rain.",

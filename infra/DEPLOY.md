@@ -51,3 +51,18 @@ firebase deploy --only hosting,firestore:rules --project ssc-workspace-2026
 
 ## Redeploy
 Backend: the same `gcloud run deploy` command. Frontend: `npm run build` then `firebase deploy --only hosting`.
+
+## 5. Case desk: editor's key and the weekly Scout (added 2026-11-15)
+The admin routes answer 503 in the cloud until `ADMIN_TOKEN` is set. Nathan creates the key (it is a secret: do not paste it in chat or commit it).
+PowerShell:
+```powershell
+$key = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N"); $key | Set-Clipboard   # keep it in your password manager
+gcloud run services update sed-api --region asia-southeast1 --update-env-vars "ADMIN_TOKEN=$key"
+gcloud services enable cloudscheduler.googleapis.com
+gcloud scheduler jobs create http sed-scout-weekly --location asia-southeast1 --schedule "0 6 * * 1" --time-zone "Asia/Kuching" --uri "https://sed-api-f7fsjojvgq-as.a.run.app/admin/scout/run" --http-method POST --headers "X-Admin-Token=$key" --attempt-deadline 300s
+```
+- **Important:** `--set-env-vars` in the deploy command of section 2 replaces every variable, so it would remove `ADMIN_TOKEN`. Redeploy with `--update-env-vars` instead (same list), or set the key again afterwards.
+- First run without waiting for Monday: open `https://ssc-workspace-2026.web.app/#/review`, type the key, press **Run the Scout now**, then approve or reject the drafts.
+- Run it once by hand from the scheduler: `gcloud scheduler jobs run sed-scout-weekly --location asia-southeast1`.
+- The Scout reads only RSS headlines, links and dates from the Borneo Post and Dayak Daily. Google News RSS is not used: its terms forbid use inside an app.
+- The NASA records in the cloud are the ones baked into the image. To refresh them: `cd backend && uv run python -m app.vault.build --refresh && uv run python -m app.casework`, then redeploy the backend.

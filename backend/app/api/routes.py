@@ -2,12 +2,14 @@
 AI-assisted: written with Claude Code."""
 from __future__ import annotations
 
+import hmac
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 
 from app import casework
-from app.agents import chief, partner, runtime
+from app import docs
+from app.agents import activity, chief, partner, runtime, scout
 from app.config import get_settings
 from app.grading import Attempt, grade
 from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChiefNote, ChooseCards, ChooseResult,
@@ -93,7 +95,7 @@ def analyse(session_id: str, body: AnalysisRequest):
         res = casework.run_tool(body.card_id, c.region.id, body.tool, opts)
     except FileNotFoundError:
         raise HTTPException(503, "record not in the vault yet")
-    s.analyses.append(res.model_dump(exclude={"series_out", "monthly_out", "twin"}))
+    s.analyses.append(res.model_dump(exclude={"series_out", "monthly_out", "enso_out", "twin"}))
     s.record("tool", tool=body.tool, card_id=body.card_id, stamp=res.stamp,
              ms=round((time.perf_counter() - t0) * 1000))
     sessions.save(s, "analyses")
@@ -125,7 +127,10 @@ def log(session_id: str, body: LogEvent):
     s = _session(session_id)
     if body.kind == "clue" and body.lonlat and len(s.clue_pins) < 3:
         s.clue_pins.append(list(body.lonlat))
-    s.record(body.kind, **body.model_dump(exclude={"kind"}, exclude_none=True))
+    if body.kind == "pins" and body.pins is not None:   # the student moved or removed a pin
+        s.clue_pins = [list(p) for p in body.pins[:3]]
+    s.record(body.kind, **body.model_dump(exclude={"kind", "pins"}, exclude_none=True),
+             **({"n": len(body.pins)} if body.pins is not None else {}))  # Firestore has no nested arrays
     sessions.save(s, "clue_pins")
     return {"ok": True}
 
@@ -150,6 +155,12 @@ async def ask_partner(session_id: str, body: PartnerAsk):
     fallback = None
     if r.source == "ladder":
         fallback = "guarded" if r.note.startswith("guard") else "busy" if r.note in ("timeout", "empty") or r.note.endswith("Error") else "off"
+    activity.record("Partner", "ai" if r.source == "ai" else "code", {
+        None: f"Gave a level {r.rung} hint in {r.seconds:.1f} s. It passed the number guard and the answer guard.",
+        "guarded": "A reply was blocked by the guard, so the approved hint was used instead.",
+        "busy": "The model was slow, so the approved hint was used instead.",
+        "off": "AI is switched off, so the approved hint was used.",
+    }[fallback], "hint")
     return PartnerReply(text=r.text, rung=r.rung, source=r.source, turns_left=cap - s.partner_turns,
                         fallback=fallback)
 
@@ -215,6 +226,8 @@ async def submit_verdict(session_id: str, body: Verdict):
     s.grade = g.model_dump()
     s.record("verdict", attempt=attempt_no, ending=g.ending, score=g.score)
     sessions.save(s, "verdicts", "grade")
+    activity.record("Grader", "code", f"Graded a verdict on case {c.id} in code: "
+                    + {"solved": "solved.", "solved_not_enough": "solved, with honest doubt.", "sent_back": "sent back for one more try."}[g.ending], "grade")
     return g  # the grade is code; the Chief's wording comes separately (POST …/chief), so nobody waits on the model
 
 
@@ -233,5 +246,77 @@ async def chief_note(session_id: str):
     if fresh.grade and fresh.grade.get("attempt") == g.attempt and note:
         fresh.grade["chief_note"] = note
     fresh.record("chief", attempt=g.attempt, source="ai" if note else f"code ({why})")
+    activity.record("Chief", "ai" if note else "code", "Wrote a note on a graded case. It passed the guards."
+                    if note else "The Chief's note was not used, so the grader's own feedback was shown.", "note")
     sessions.save(fresh, "grade")
     return ChiefNote(attempt=g.attempt, chief_note=note)
+
+
+# ---------------------------------------------------------------- the agency at work (public)
+STEPS = [
+    {"name": "Scout", "by": "code + AI", "does": "Reads the news feeds and watches the NASA records for unusual readings."},
+    {"name": "Checklist", "by": "code", "does": "Keeps only real weather and land events in a region we hold checked records for."},
+    {"name": "Case Builder", "by": "AI + code", "does": "AI writes the brief from the headline. Code guards it, picks the evidence cards and computes the answer key."},
+    {"name": "Editor", "by": "human", "does": "A person reads every draft. Nothing reaches students without approval."},
+    {"name": "Partner and Chief", "by": "AI + code", "does": "Hints and feedback, checked by the number guard and the answer guard."},
+]
+
+
+@router.get("/agency/activity")
+def agency_activity():
+    """What the agents, the code and the human editor have been doing. Wording and counts only:
+    no student text, no answer key, nothing from a case that is not approved."""
+    cases = casework.list_cases(status=None)
+    return {"steps": STEPS, "schedule": get_settings().scout_schedule,
+            "counts": {"open": sum(c.status == "open" for c in cases), "waiting": sum(c.status == "draft" for c in cases)},
+            "events": activity.recent(40)}
+
+
+# ---------------------------------------------------------------- admin: the editor's desk
+def _admin(token: str | None) -> None:
+    st = get_settings()
+    if st.admin_token:
+        if not token or not hmac.compare_digest(token.encode(), st.admin_token.encode()):
+            raise HTTPException(401, "editor's key needed")
+    elif st.app_env != "local":
+        raise HTTPException(503, "editor's desk is not set up (ADMIN_TOKEN missing)")
+
+
+@router.post("/admin/scout/run")
+async def scout_run(x_admin_token: str | None = Header(default=None)):
+    """The weekly pass (Cloud Scheduler calls this). Drafts only: students see nothing until approval."""
+    _admin(x_admin_token)
+    return await scout.run()
+
+
+@router.get("/admin/cases")
+def admin_cases(x_admin_token: str | None = Header(default=None)):
+    _admin(x_admin_token)
+    out = []
+    for c in casework.list_cases(status=None):
+        d = docs.store().get("cases", c.id)
+        if d is None:
+            continue  # hand-made cases are edited in the repository, not here
+        key = docs.store().get("answer_keys", c.id) or {}
+        out.append({"case": c.model_dump(by_alias=True), "key_overall": key.get("overall"),
+                    "key_stamps": {k: [v["stamp"], v["elnino_stamp"]] for k, v in key.get("per_card", {}).items()}})
+    return out
+
+
+@router.post("/admin/cases/{case_id}/{decision}")
+def admin_decide(case_id: str, decision: str, x_admin_token: str | None = Header(default=None)):
+    """Rule 4: a draft becomes open only here, by a person."""
+    _admin(x_admin_token)
+    if decision not in ("approve", "reject"):
+        raise HTTPException(400, "approve or reject")
+    d = docs.store().get("cases", case_id)
+    if d is None:
+        raise HTTPException(404, "not a desk case")
+    if d.get("status") != "draft":
+        raise HTTPException(409, "already decided")
+    d["status"] = "open" if decision == "approve" else "closed"
+    docs.store().put("cases", case_id, d)
+    casework.forget(case_id)
+    activity.record("Editor", "human", f"A human editor approved case {case_id}. It is now in the inbox."
+                    if decision == "approve" else f"A human editor rejected the draft of case {case_id}. It was not published.", "review")
+    return {"id": case_id, "status": d["status"]}

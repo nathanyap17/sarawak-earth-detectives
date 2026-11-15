@@ -17,7 +17,7 @@ const IDS = Object.keys(SPOT) as SpotId[]
 
 function useEnabled() {
   const { reached, activeCase } = useSession()
-  return (id: SpotId) => id === 'inbox' || id === 'call' || (!!activeCase && BEATS.indexOf(id as Beat) <= reached)
+  return (id: SpotId) => id === 'inbox' || id === 'agency' || id === 'call' || (!!activeCase && BEATS.indexOf(id as Beat) <= reached)
 }
 
 function useOpen() {
@@ -26,7 +26,7 @@ function useOpen() {
   const enabled = useEnabled()
   return (id: SpotId) => {
     if (!enabled(id)) return
-    if (id !== 'inbox') setBeat(id)
+    if (id !== 'inbox' && id !== 'agency') setBeat(id)
     setWin(id)
   }
 }
@@ -72,13 +72,13 @@ export function Spot({ id, at, children, clickThrough = false }: {
 }
 
 export function Labels() {
-  const { win, hover, idle, setHover } = useUI()
+  const { win, hover, idle, setHover, moving } = useUI()
   const enabled = useEnabled()
   const open = useOpen()
   const next = target(useGuideState())
   if (win !== null) return null
   return (
-    <nav className="labels" aria-label="Things in the office">
+    <nav className={`labels ${moving ? 'moving' : ''}`} aria-label="Things in the office">
       {IDS.map((id) => {
         const on = enabled(id), isNext = next === id
         const show = isNext || hover === id || idle

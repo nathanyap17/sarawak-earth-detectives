@@ -3,11 +3,14 @@
 import { useState } from 'react'
 import { api, logQuiet } from '../api/client'
 import { useSession } from '../state/session'
-import { MissionBadge, TimeChart } from './shared'
+import { HeatChart, MissionBadge, Stripes, TimeChart } from './shared'
+
+type View = 'yearly' | 'monthly' | 'heat' | 'stripes'
+const VIEWS: [View, string][] = [['yearly', 'Line: each year'], ['monthly', 'Line: each month'], ['heat', 'Heatmap'], ['stripes', 'Stripes']]
 
 export function BoardBeat({ onDone }: { onDone: () => void }) {
   const { activeCase: c, sessionId, chosen, series, putSeries, opened, markOpened } = useSession()
-  const [view, setView] = useState<Record<string, 'yearly' | 'monthly'>>({})
+  const [view, setView] = useState<Record<string, View>>({})
   const [err, setErr] = useState<string | null>(null)
 
   async function open(id: string) {
@@ -22,7 +25,8 @@ export function BoardBeat({ onDone }: { onDone: () => void }) {
   return (
     <section className="beat">
       <h2>The Board</h2>
-      <p>Flip each card to see its record. Look for patterns before you test anything.</p>
+      <p>Flip each card to see its record. Look at it four ways: a <strong>line</strong> shows ups and downs, a <strong>heatmap</strong> shows which months changed,
+        and <strong>stripes</strong> show the whole record at a glance. Look for patterns before you test anything.</p>
       {err && <p className="error">{err}</p>}
       <div className="board">
         {cards.map((e) => {
@@ -35,13 +39,18 @@ export function BoardBeat({ onDone }: { onDone: () => void }) {
                 <button className="flip" onClick={() => open(e.id)}>Flip card</button>
               ) : (
                 <>
-                  <div className="seg">
-                    <button className={v === 'yearly' ? 'on' : ''} onClick={() => setView({ ...view, [e.id]: 'yearly' })}>Each year</button>
-                    <button className={v === 'monthly' ? 'on' : ''} onClick={() => setView({ ...view, [e.id]: 'monthly' })}>Each month</button>
+                  <div className="seg wrap" role="group" aria-label={`Chart type for ${e.name}`}>
+                    {VIEWS.map(([id, label]) => (
+                      <button key={id} className={v === id ? 'on' : ''} onClick={() => setView({ ...view, [e.id]: id })}>{label}</button>
+                    ))}
                   </div>
-                  <TimeChart unit={e.unit} zoom={v === 'monthly'}
+                  {(v === 'yearly' || v === 'monthly') && <TimeChart unit={e.unit} zoom={v === 'monthly'}
                     lines={[{ name: e.name, points: v === 'yearly' ? s.yearly.map((p) => [p.y, p.v]) : s.monthly.map((p) => [p.t, p.v]) }]}
-                    summary={`${e.name}, ${v} values from ${s.yearly[0]?.y} to ${s.yearly.at(-1)?.y}.`} />
+                    summary={`${e.name}, ${v} values from ${s.yearly[0]?.y} to ${s.yearly.at(-1)?.y}.`} />}
+                  {v === 'heat' && <HeatChart unit={e.unit} monthly={s.monthly.map((p) => [p.t, p.v])}
+                    summary={`${e.name}: a grid of months (rows) by years (columns), coloured from low to high.`} />}
+                  {v === 'stripes' && <Stripes unit={e.unit} yearly={s.yearly.map((p) => [p.y, p.v])}
+                    summary={`${e.name}: one coloured stripe per year from ${s.yearly[0]?.y} to ${s.yearly.at(-1)?.y}.`} />}
                   <MissionBadge mission={e.mission} asOf={s.data_as_of} definition={e.definition} />
                 </>
               )}

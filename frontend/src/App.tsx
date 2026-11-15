@@ -10,20 +10,25 @@ import { liteReason, saveMode, savedMode, webglOk, type Mode } from './office/ca
 const OfficeApp = lazy(() => import('./office/OfficeApp').then((m) => ({ default: m.OfficeApp })))
 const Landing = lazy(() => import('./landing/Landing').then((m) => ({ default: m.Landing })))
 
+const Review = lazy(() => import('./beats/Review').then((m) => ({ default: m.Review })))
+
 const playing = () => window.location.hash.startsWith('#/play')
+const reviewing = () => window.location.hash.startsWith('#/review')
 
 export default function App() {
   const [play, setPlay] = useState(playing)
+  const [review, setReview] = useState(reviewing)
   const [reason] = useState(liteReason)
   const [mode, setMode] = useState<Mode>(() => (webglOk() ? savedMode() : 'lite') ?? (reason ? 'lite' : '3d'))
   useEffect(() => {
-    const on = () => setPlay(playing())
+    const on = () => { setPlay(playing()); setReview(reviewing()) }
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
   const pick = (m: Mode) => { saveMode(m); setMode(m) }
   const home = () => { window.location.hash = '' }
 
+  if (review) return <Suspense fallback={null}><Review /></Suspense>
   if (!play) {
     return (
       <Suspense fallback={<div style={{ background: '#07090f', minHeight: '100vh' }} />}>

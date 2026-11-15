@@ -71,3 +71,8 @@ Data credits in words; the sources for each figure; "Built for NASA Space Apps 2
 - **The detective path**: the seven steps on one drawn path, plus four hands-on cards (pin the map, lay your own line, shuffle the years, write the verdict).
 - **Type**: Fraunces (headings), Atkinson Hyperlegible (reading text), Special Elite (typewriter accents), self-hosted with @fontsource.
 - We say regression and rank tests, not machine learning: no ML model is built.
+
+## Added 2026-11-15 (afternoon)
+- The agent diagram has a third row, the case desk: news and NASA data, checklist (code), Scout and Case Builder (Gemini), both guards, answer key (code), human editor. Heading is now "Four AI agents on a short leash".
+- A link to the wire desk: `/#/play?at=agency` opens the office at the agents' activity log.
+- Solution card and stack chips mention the Scout, the Case Builder and human approval.
