@@ -6,11 +6,11 @@ import hmac
 import logging
 import time
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 
 from app import casework
 from app import docs
-from app.agents import activity, chief, partner, reporter, runtime, scout
+from app.agents import activity, chief, listener, partner, reporter, runtime, scout
 from app.reports import casefile
 from app.config import get_settings
 from app.grading import Attempt, grade
@@ -73,6 +73,7 @@ async def create_session(body: SessionCreate):
     _case(body.case_id)
     runtime.keep_warm("partner", partner.INSTRUCTION)  # their first question shouldn't hit a cold model
     runtime.keep_warm("chief", chief.INSTRUCTION)
+    listener.keep_warm()   # and the hold-to-talk transcriber
     s = sessions.create(body.case_id, body.nickname.strip(), body.class_code)
     s.record("start")
     sessions.save(s)
@@ -135,6 +136,27 @@ def log(session_id: str, body: LogEvent):
              **({"n": len(body.pins)} if body.pins is not None else {}))  # Firestore has no nested arrays
     sessions.save(s, "clue_pins")
     return {"ok": True}
+
+
+_heard: dict[str, int] = {}   # transcriptions per session (in memory): a cap, not a record
+
+
+@router.post("/sessions/{session_id}/transcribe")
+async def transcribe(session_id: str, request: Request):
+    """Hold-to-talk for browsers without their own speech recognition: a short recording in, the
+    words out. The audio is passed to the model and dropped; only the text goes back."""
+    _session(session_id)
+    mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
+    if mime not in listener.TYPES:
+        raise HTTPException(415, "send a short audio recording")
+    audio = await request.body()
+    if not audio or len(audio) > listener.MAX_BYTES:
+        raise HTTPException(413, "keep it under 20 seconds")
+    if _heard.get(session_id, 0) >= 60:
+        raise HTTPException(429, "That's a lot of talking! Type your question instead.")
+    _heard[session_id] = _heard.get(session_id, 0) + 1
+    text, err = await listener.transcribe(audio, mime)
+    return {"text": text or "", "error": err}
 
 
 @router.post("/sessions/{session_id}/partner", response_model=PartnerReply)

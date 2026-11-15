@@ -51,7 +51,7 @@ export function Partner() {
         </button>
       </div>
       <form className="partner-row" onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(Math.max(1, used), q.trim()) }}>
-        <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask about this case…" aria-label="Ask the Partner" />
+        <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask about this case… or hold the mic" aria-label="Ask the Partner" />
         <button disabled={busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
         <HoldToTalk disabled={busy} onText={setQ} onDone={(t) => ask(Math.max(1, used), t)} />
       </form>

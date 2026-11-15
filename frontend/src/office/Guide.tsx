@@ -100,13 +100,12 @@ export function Guide() {
           ))}
           {canAsk && <button disabled={!!busy || used >= 3} onClick={() => ask(next, '')}>{used >= 3 ? 'No more hints here' : `💡 ${RUNG[next - 1]} (${next}/3)`}</button>}
         </div>
-        {canAsk && (
-          <form className="guide-row" onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(Math.max(1, used), q.trim()) }}>
-            <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} placeholder="Ask me anything about this case…" aria-label="Ask Kenyalang" />
-            <button disabled={!!busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
-            <HoldToTalk disabled={!!busy} onText={setQ} onDone={(t) => ask(Math.max(1, used), t)} />
-          </form>
-        )}
+        <form className="guide-row" onSubmit={(e) => { e.preventDefault(); if (canAsk && q.trim()) ask(Math.max(1, used), q.trim()) }}>
+          <input value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} disabled={!canAsk}
+            placeholder={canAsk ? 'Ask me anything about this case… or hold the mic' : 'Sign a case folder, then ask me here or out loud'} aria-label="Ask Kenyalang" />
+          <button disabled={!canAsk || !!busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
+          <HoldToTalk disabled={!canAsk || !!busy} onText={setQ} onDone={(t) => ask(Math.max(1, used), t)} />
+        </form>
         <details className="guide-log">
           <summary>📖 Word book ({Object.keys(GLOSSARY).length} words)</summary>
           <ul className="wordbook">{Object.keys(GLOSSARY).sort((a, b) => a.localeCompare(b)).map((w) => (

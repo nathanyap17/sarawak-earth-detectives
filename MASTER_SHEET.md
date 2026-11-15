@@ -438,6 +438,7 @@ flowchart TB
 | `POST /sessions/{id}/analyse` | Run a desk tool on a record; returns the stamp |
 | `POST /sessions/{id}/partner` | Ask the Partner |
 | `POST /sessions/{id}/verdict` | Submit the verdict; returns the grade and report link |
+| `POST /sessions/{id}/transcribe` | Hold-to-talk fallback: a short audio clip in (max 1.5 MB), the words out; audio not stored |
 | `GET /sessions/{id}/casefile` | The student's full case study (brief, evidence, step-by-step trail, tests, Kenyalang Q&A, verdict, grade); 409 until the case is closed |
 | `POST /sessions/{id}/summary` | The Reporter's executive summary (purpose, method, findings, conclusion, limitations), guarded, written once and kept in `grade.exec_summary` |
 | `GET /vault/health` | Freshness of every source |

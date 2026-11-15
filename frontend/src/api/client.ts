@@ -74,6 +74,19 @@ export const api = {
   chief: (sid: string) => call<ChiefNote>('POST', `/sessions/${sid}/chief`, undefined, false, SLOW_MS),
   casefile: (sid: string) => call<CaseFile>('GET', `/sessions/${sid}/casefile`, undefined, true),
   summary: (sid: string) => call<ExecSummary>('POST', `/sessions/${sid}/summary`, undefined, true, 40_000),
+  /** Hold-to-talk fallback: a short recording in, the words out (nothing is stored). */
+  transcribe: async (sid: string, audio: Blob): Promise<string> => {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), SLOW_MS)
+    try {
+      const r = await fetch(`${BASE}/sessions/${sid}/transcribe`, { method: 'POST', body: audio, signal: ctl.signal,
+        headers: { 'Content-Type': audio.type.split(';')[0] || 'audio/webm' } })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : "I couldn't hear that. Try typing instead.")
+      return (j.text as string) || ''
+    } catch (e) {
+      throw ctl.signal.aborted ? new Error('The line timed out. Try again or type it.') : e
+    } finally { clearTimeout(t) }
+  },
 }
 
 /** Fire-and-forget logging: a failed log must never block a student. */

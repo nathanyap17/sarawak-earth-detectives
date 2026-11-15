@@ -1,5 +1,16 @@
 # BUILD_LOG.md
 
+## [2026-11-15 ~20:20 MYT] Fix: the hold-to-talk button could not be seen
+
+**Why it was missing:** (1) in the 3D office, Kenyalang's box had no question row until a case folder was signed, so there was no mic either; (2) the button removed itself in any browser without built-in speech recognition (Firefox, some in-app browsers).
+
+**Fix**
+- The question row and mic are always in Kenyalang's box; greyed out with "Sign a case folder, then ask me here or out loud" until a case is open. Placeholders now say "or hold the mic".
+- Fallback for every browser: if there is no built-in recognition, or it fails (`network`, `service-not-allowed`), the button records up to 20 s (MediaRecorder) and posts it to `POST /sessions/{id}/transcribe`. New `agents/listener.py` sends it to Gemini with the game's vocabulary (Mann-Kendall, MERRA-2, Sarawak place names), returns text only; audio is not stored. Limits: audio types only, 1.5 MB, 60 per session. The text then goes through the Partner's guards like a typed question.
+- The Listener is warmed when a case starts (the first call on a fresh connection once took 37 s; warm calls take about 1.2 s).
+
+**Verified:** 72 backend tests (new `test_transcribe.py`). Real Gemini: a Windows TTS clip "What does the Mann-Kendall test tell me?" transcribed exactly in 1.2 s (before the vocabulary hint it heard "man candle"). Headless Edge with speech recognition removed and the clip as a fake microphone: 3D and lite both show the mic, holding it records, the words are transcribed, Kenyalang answers; no console errors.
+
 ## [2026-11-15 ~19:15 MYT] Kenyalang explains, hold-to-talk, logo, case study and executive summary
 
 **What changed**
