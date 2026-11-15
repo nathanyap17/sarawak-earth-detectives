@@ -16,6 +16,7 @@ import { DeductionBeat } from '../beats/DeductionBeat'
 import { LabBeat } from '../beats/LabBeat'
 import { LockerBeat } from '../beats/LockerBeat'
 import { BEATS, frontier, useSession, type Beat } from '../state/session'
+import { Grade } from './Grade'
 import { Guide } from './Guide'
 import { SPOT, STATION } from './script'
 import { Hornbill } from './Hornbill'
@@ -198,6 +199,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
           <Hornbill />
           <MapTable scene={scene} />
           <CameraRig />
+          <Grade />
           <FpsProbe onLow={() => setSlow(true)} />
         </Canvas>
       </div>

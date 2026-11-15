@@ -9,7 +9,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { AdditiveBlending, DoubleSide, type Group, type MeshStandardMaterial, type Texture } from 'three'
 import { useSession } from '../state/session'
-import { crestTexture, flagTexture, noteTexture, panelTexture, plankTexture, plasterTexture, rugTexture, shaftTexture, stampTexture, windowViewTexture, wireTexture, woodTexture } from './paint'
+import { ceilingTexture, corkTexture, crestTexture, flagTexture, leatherTexture, noteTexture, panelTexture, plankTexture, plasterTexture, rugTexture, shaftTexture, stampTexture, windowViewTexture, wireTexture, woodTexture } from './paint'
 import { LabBench } from './LabBench'
 import { Spot } from './Spot'
 import { useUI } from './ui'
@@ -24,14 +24,14 @@ function Box({ p, s, c, r = 0.75, map, metal = 0, rot }: { p: V; s: V; c: string
   return (
     <mesh position={p} rotation={rot} castShadow receiveShadow>
       <boxGeometry args={s} />
-      <meshStandardMaterial color={map ? '#ffffff' : c} map={map} roughness={r} metalness={metal} />
+      <meshStandardMaterial color={map ? '#ffffff' : c} map={map} bumpMap={map} bumpScale={map ? 0.9 : 0} roughness={r} metalness={metal} />
     </mesh>
   )
 }
 function Brass({ p, s, rot }: { p: V; s: V; rot?: V }) { return <Box p={p} s={s} c={BRASS} r={0.28} metal={0.85} rot={rot} /> }
 
 function useWoods() {
-  return useMemo(() => ({ teak: woodTexture('#8a5a2b', 5), dark: woodTexture('#55341c', 9), planks: plankTexture(), panel: panelTexture(), plaster: plasterTexture(GREEN) }), [])
+  return useMemo(() => ({ teak: woodTexture('#8a5a2b', 5), dark: woodTexture('#55341c', 9), planks: plankTexture(), panel: panelTexture(), plaster: plasterTexture(GREEN), cork: corkTexture(), leather: leatherTexture(), ceiling: ceilingTexture() }), [])
 }
 
 /** Dusk light: a low sun through the window (the only shadow caster), warm fills, and haze. */
@@ -60,11 +60,12 @@ function Shell({ w }: { w: ReturnType<typeof useWoods> }) {
   const fan = useRef<Group>(null)
   useFrame((_, dt) => { if (fan.current) fan.current.rotation.y += dt * 1.6 })
   const wl = -WIN.w / 2, wr = WIN.w / 2, wb = WIN.y - WIN.h / 2, wt = WIN.y + WIN.h / 2
-  const plaster = <meshStandardMaterial map={w.plaster} roughness={0.95} />
+  const plaster = <meshStandardMaterial map={w.plaster} bumpMap={w.plaster} bumpScale={1.4} roughness={0.93} />
+  const panel = <meshStandardMaterial map={w.panel} bumpMap={w.panel} bumpScale={1.6} roughness={0.5} />
   return (
     <group>
       {/* floor of teak boards, with a soft sheen */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[10, 8]} /><meshStandardMaterial map={w.planks} roughness={0.42} metalness={0.05} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[10, 8]} /><meshStandardMaterial map={w.planks} bumpMap={w.planks} bumpScale={1.2} roughness={0.36} metalness={0.04} /></mesh>
       {/* back wall, built around the window opening so the sun really comes through it */}
       <mesh position={[(-5 + wl) / 2, H / 2, -4.05]} castShadow receiveShadow><boxGeometry args={[wl + 5, H, 0.1]} />{plaster}</mesh>
       <mesh position={[(5 + wr) / 2, H / 2, -4.05]} castShadow receiveShadow><boxGeometry args={[5 - wr, H, 0.1]} />{plaster}</mesh>
@@ -74,11 +75,11 @@ function Shell({ w }: { w: ReturnType<typeof useWoods> }) {
       <mesh position={[-5, H / 2, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow><planeGeometry args={[8, H]} />{plaster}</mesh>
       <mesh position={[5, H / 2, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow><planeGeometry args={[8, H]} />{plaster}</mesh>
       {/* teak panelling to chair-rail height, all round */}
-      <mesh position={[(-5 + wl) / 2, 0.6, -3.99]} receiveShadow><planeGeometry args={[wl + 5, 1.2]} /><meshStandardMaterial map={w.panel} roughness={0.55} /></mesh>
-      <mesh position={[(5 + wr) / 2, 0.6, -3.99]} receiveShadow><planeGeometry args={[5 - wr, 1.2]} /><meshStandardMaterial map={w.panel} roughness={0.55} /></mesh>
-      <mesh position={[0, 0.6, -3.99]} receiveShadow><planeGeometry args={[WIN.w, 1.2]} /><meshStandardMaterial map={w.panel} roughness={0.55} /></mesh>
-      <mesh position={[-4.99, 0.6, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow><planeGeometry args={[8, 1.2]} /><meshStandardMaterial map={w.panel} roughness={0.55} /></mesh>
-      <mesh position={[4.99, 0.6, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow><planeGeometry args={[8, 1.2]} /><meshStandardMaterial map={w.panel} roughness={0.55} /></mesh>
+      <mesh position={[(-5 + wl) / 2, 0.6, -3.99]} receiveShadow><planeGeometry args={[wl + 5, 1.2]} />{panel}</mesh>
+      <mesh position={[(5 + wr) / 2, 0.6, -3.99]} receiveShadow><planeGeometry args={[5 - wr, 1.2]} />{panel}</mesh>
+      <mesh position={[0, 0.6, -3.99]} receiveShadow><planeGeometry args={[WIN.w, 1.2]} />{panel}</mesh>
+      <mesh position={[-4.99, 0.6, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow><planeGeometry args={[8, 1.2]} />{panel}</mesh>
+      <mesh position={[4.99, 0.6, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow><planeGeometry args={[8, 1.2]} />{panel}</mesh>
       <Box p={[0, 1.22, -3.96]} s={[10, 0.07, 0.06]} c={DARK} map={w.dark} />
       <Box p={[-4.96, 1.22, 0]} s={[0.06, 0.07, 8]} c={DARK} map={w.dark} />
       <Box p={[4.96, 1.22, 0]} s={[0.06, 0.07, 8]} c={DARK} map={w.dark} />
@@ -87,11 +88,12 @@ function Shell({ w }: { w: ReturnType<typeof useWoods> }) {
       <Box p={[0, H - 0.09, -3.94]} s={[10, 0.18, 0.12]} c={DARK} map={w.dark} />
       <Box p={[-4.94, H - 0.09, 0]} s={[0.12, 0.18, 8]} c={DARK} map={w.dark} />
       <Box p={[4.94, H - 0.09, 0]} s={[0.12, 0.18, 8]} c={DARK} map={w.dark} />
-      <mesh position={[0, H, 0]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[10, 8]} /><meshStandardMaterial color="#2a1b12" roughness={1} /></mesh>
+      <mesh position={[0, H, 0]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[10, 8]} /><meshStandardMaterial map={w.ceiling} bumpMap={w.ceiling} bumpScale={1} roughness={0.9} /></mesh>
       {[-3, -1, 1, 3].map((z) => <Box key={z} p={[0, H - 0.13, z]} s={[10, 0.26, 0.22]} c={DARK} map={w.dark} />)}
 
       {/* the window: rainforest at dusk, deep teak frame, glazing bars, sill, heavy curtains */}
       <mesh position={[0, WIN.y, -4.12]}><planeGeometry args={[WIN.w + 0.2, WIN.h + 0.2]} /><meshBasicMaterial map={view} toneMapped={false} /></mesh>
+      <mesh position={[0, WIN.y, -4.06]}><planeGeometry args={[WIN.w, WIN.h]} /><meshPhysicalMaterial color="#fff3e0" transparent opacity={0.12} roughness={0.05} metalness={0} clearcoat={1} depthWrite={false} /></mesh>
       <Box p={[wl - 0.06, WIN.y, -4.0]} s={[0.12, WIN.h + 0.24, 0.2]} c={DARK} map={w.dark} />
       <Box p={[wr + 0.06, WIN.y, -4.0]} s={[0.12, WIN.h + 0.24, 0.2]} c={DARK} map={w.dark} />
       <Box p={[0, wt + 0.06, -4.0]} s={[WIN.w + 0.24, 0.12, 0.2]} c={DARK} map={w.dark} />
@@ -115,20 +117,24 @@ function Shell({ w }: { w: ReturnType<typeof useWoods> }) {
 
       {/* agency crest, Sarawak flag, framed chart */}
       <mesh position={[0, wt + 0.72, -3.98]}><circleGeometry args={[0.36, 40]} /><meshStandardMaterial map={crest} roughness={0.5} /></mesh>
-      <group position={[2.55, 2.75, -3.98]}>
-        <Box p={[0, 0, -0.01]} s={[1.14, 0.8, 0.03]} c={DARK} map={w.dark} />
+      <group position={[3.9, 3.38, -3.97]}>
+        <Box p={[0, 0, -0.01]} s={[1.14, 0.8, 0.04]} c={DARK} map={w.dark} />
+        <Brass p={[0, -0.43, 0.01]} s={[0.3, 0.05, 0.01]} />
         <mesh position={[0, 0, 0.012]}><planeGeometry args={[1.0, 0.66]} /><meshStandardMaterial map={flag} roughness={0.8} /></mesh>
       </group>
       {/* brass wall lamps either side of the window */}
-      {[-2.25, 2.25].map((x) => (
-        <group key={x} position={[x, 3.45, -3.9]}>
+      {[-2.45, 2.45].map((x) => (
+        <group key={x} position={[x, 3.3, -3.9]}>
           <Brass p={[0, 0, 0]} s={[0.06, 0.2, 0.06]} />
           <mesh position={[0, 0.16, 0.06]}><sphereGeometry args={[0.09, 16, 12]} /><meshStandardMaterial color="#fff2d0" emissive="#ffc46b" emissiveIntensity={2.2} toneMapped={false} /></mesh>
         </group>
       ))}
 
       {/* woven rug under the map table */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0.25]} receiveShadow><planeGeometry args={[5.4, 3.6]} /><meshStandardMaterial map={rug} roughness={1} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0.25]} receiveShadow><planeGeometry args={[5.4, 3.6]} /><meshStandardMaterial map={rug} bumpMap={rug} bumpScale={1.5} roughness={1} /></mesh>
+      {[-2.76, 2.76].map((x) => Array.from({ length: 30 }).map((_, i) => (
+        <mesh key={`${x}-${i}`} position={[x, 0.008, 0.25 - 1.74 + i * 0.12]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.12, 0.025]} /><meshStandardMaterial color="#e8d9b5" roughness={1} /></mesh>
+      )))}
 
       {/* ceiling fan, turning slowly */}
       <group position={[0, H - 0.26, -1.6]}>
@@ -171,8 +177,9 @@ function Desk({ w }: { w: ReturnType<typeof useWoods> }) {
       <Box p={[0, 0.5, -0.46]} s={[1.34, 0.46, 0.03]} c={DARK} map={w.dark} />
       {/* leather chair behind the desk */}
       <group position={[0, 0, -0.78]}>
-        <Box p={[0, 0.48, 0]} s={[0.62, 0.1, 0.56]} c={LEATHER} r={0.5} />
-        <Box p={[0, 1.0, -0.26]} s={[0.62, 1.0, 0.1]} c={LEATHER} r={0.5} />
+        <Box p={[0, 0.48, 0]} s={[0.62, 0.1, 0.56]} c={LEATHER} map={w.leather} r={0.55} />
+        <Box p={[0, 1.0, -0.26]} s={[0.62, 1.0, 0.1]} c={LEATHER} map={w.leather} r={0.55} />
+        {[-0.27, -0.09, 0.09, 0.27].map((x) => [0.62, 0.86, 1.1, 1.34].map((y) => <Brass key={`${x}${y}`} p={[x, y, -0.205]} s={[0.018, 0.018, 0.01]} />))}
         <Box p={[-0.33, 0.66, -0.02]} s={[0.06, 0.26, 0.5]} c={DARK} />
         <Box p={[0.33, 0.66, -0.02]} s={[0.06, 0.26, 0.5]} c={DARK} />
         <mesh position={[0, 0.22, 0]}><cylinderGeometry args={[0.04, 0.2, 0.44, 10]} /><meshStandardMaterial color="#222" metalness={0.6} roughness={0.4} /></mesh>
@@ -213,6 +220,17 @@ function Desk({ w }: { w: ReturnType<typeof useWoods> }) {
         <mesh position={[0, 0.32, 0.04]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.07, 0.07, 0.3, 20, 1, false, 0, Math.PI]} /><meshStandardMaterial color="#1f6b45" emissive="#2fa56a" emissiveIntensity={0.9} roughness={0.25} side={DoubleSide} /></mesh>
         <pointLight position={[0, 0.26, 0.1]} intensity={2.4} distance={2.6} decay={1.8} color="#ffcf8a" />
       </group>
+      <group position={[0.42, 0.805, -0.05]} rotation={[0, -0.6, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]} castShadow><torusGeometry args={[0.07, 0.009, 10, 32]} /><meshStandardMaterial color={BRASS} metalness={0.9} roughness={0.25} /></mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.066, 32]} /><meshPhysicalMaterial color="#e8f4ff" transparent opacity={0.25} roughness={0} clearcoat={1} /></mesh>
+        <mesh position={[0.13, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow><cylinderGeometry args={[0.011, 0.013, 0.12, 10]} /><meshStandardMaterial color={DARK} roughness={0.4} /></mesh>
+      </group>
+      <group position={[-1.05, 0.8, -0.15]}>
+        <mesh position={[0, 0.045, 0]} castShadow><cylinderGeometry args={[0.04, 0.034, 0.09, 20]} /><meshStandardMaterial color="#f1ece0" roughness={0.25} /></mesh>
+        <mesh position={[0, 0.087, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.035, 20]} /><meshStandardMaterial color="#3a2012" roughness={0.15} /></mesh>
+        <mesh position={[0.045, 0.05, 0]} rotation={[0, 0, Math.PI / 2]}><torusGeometry args={[0.02, 0.006, 8, 16, Math.PI]} /><meshStandardMaterial color="#f1ece0" roughness={0.25} /></mesh>
+        <mesh position={[0, 0.002, 0]}><cylinderGeometry args={[0.065, 0.065, 0.004, 24]} /><meshStandardMaterial color="#f1ece0" roughness={0.25} /></mesh>
+      </group>
       {/* a stack of books and an ink stamp */}
       {[['#7a1f1f', 0], ['#22392d', 0.04], ['#c9a35a', 0.08]].map(([c, y], i) => <Box key={i} p={[1.0, 0.82 + (y as number), 0.2]} s={[0.26, 0.04, 0.18]} c={c as string} rot={[0, i * 0.2, 0]} />)}
       <group position={[0.5, 0.8, 0.3]}>
@@ -247,7 +265,7 @@ function Cabinet() {
   )
 }
 
-function Corkboard() {
+function Corkboard({ w }: { w: ReturnType<typeof useWoods> }) {
   const { activeCase: c, chosen, results } = useSession()
   const notes = useMemo(() => chosen.map((id) => {
     const card = c?.evidence.find((e) => e.id === id)
@@ -256,10 +274,10 @@ function Corkboard() {
   }), [chosen, c, results])
   const at = (i: number): V => [-0.7 + (i % 3) * 0.7, 0.3 - Math.floor(i / 3) * 0.6, 0.03]
   return (
-    <Spot id="board" at={[-2.4, 2.55, -3.9]}>
-      <group position={[-2.4, 1.85, -3.95]}>
-        <Box p={[0, 0, 0]} s={[2.0, 1.3, 0.04]} c="#b98a5a" r={1} />
-        <Box p={[0, 0, -0.005]} s={[2.14, 1.44, 0.035]} c={DARK} />
+    <Spot id="board" at={[-3.6, 2.7, -3.9]}>
+      <group position={[-3.6, 1.95, -3.95]}>
+        <mesh castShadow receiveShadow><boxGeometry args={[2.0, 1.3, 0.04]} /><meshStandardMaterial map={w.cork} bumpMap={w.cork} bumpScale={2} roughness={1} /></mesh>
+        <Box p={[0, 0, -0.005]} s={[2.14, 1.44, 0.035]} c={DARK} map={w.dark} />
         {notes.map((n, i) => (
           <group key={n.id} position={at(i)} rotation={[0, 0, ((i * 7) % 5 - 2) * 0.03]}>
             <mesh castShadow><planeGeometry args={[0.55, 0.41]} /><meshStandardMaterial map={n.tex} /></mesh>
@@ -396,7 +414,7 @@ function Decor({ w }: { w: ReturnType<typeof useWoods> }) {
   )
   return (
     <group>
-      {palm([-4.35, 0, -3.35], 1.15)}
+      {palm([-4.35, 0, 3.05], 1.15)}
       {palm([4.4, 0, 0.75])}
       {/* hat stand: trench coat and fedora */}
       <group position={[4.35, 0, 3.0]}>
@@ -433,7 +451,7 @@ export function Room() {
       <InboxStand w={w} />
       <Desk w={w} />
       <Cabinet />
-      <Corkboard />
+      <Corkboard w={w} />
       <LabBench />
       <Shelf w={w} />
       <WireDesk w={w} />

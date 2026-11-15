@@ -58,26 +58,46 @@ export function flagTexture() {
     g.lineTo(72 + r * Math.cos(a), 112 + r * Math.sin(a))
   }
   g.closePath(); g.fill()
+  for (let y = 0; y < 200; y += 2) { g.fillStyle = 'rgba(0,0,0,.05)'; g.fillRect(0, y, 300, 1) }     // weave
+  for (let x = 0; x < 300; x += 2) { g.fillStyle = 'rgba(255,255,255,.03)'; g.fillRect(x, 0, 1, 200) }
+  const fold = g.createLinearGradient(0, 0, 300, 0)
+  for (let i = 0; i <= 6; i++) fold.addColorStop(i / 6, i % 2 ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.06)')
+  g.fillStyle = fold; g.fillRect(0, 0, 300, 200)
   return tex(c)
 }
 
-/** Rainforest at dusk seen through the window. */
+/** Rainforest at dusk seen through the window: layered ridges in mist, a low sun, cloud bands. */
 export function windowViewTexture() {
-  const [c, g] = canvas(512, 256)
-  const sky = g.createLinearGradient(0, 0, 0, 256)
-  sky.addColorStop(0, '#2c3e66'); sky.addColorStop(0.55, '#e88a4f'); sky.addColorStop(0.8, '#f5c27a')
-  g.fillStyle = sky; g.fillRect(0, 0, 512, 256)
-  const hills = (y: number, col: string, amp: number, f: number) => {
-    g.fillStyle = col; g.beginPath(); g.moveTo(0, 256)
-    for (let x = 0; x <= 512; x += 8) g.lineTo(x, y + Math.sin(x * f) * amp + Math.sin(x * f * 2.7) * amp * 0.4)
-    g.lineTo(512, 256); g.closePath(); g.fill()
+  const [c, g] = canvas(1024, 512), r = rng(7)
+  const sky = g.createLinearGradient(0, 0, 0, 512)
+  sky.addColorStop(0, '#1d2c52'); sky.addColorStop(0.35, '#5a4a6e'); sky.addColorStop(0.6, '#e2834a'); sky.addColorStop(0.78, '#f7c47c'); sky.addColorStop(1, '#f2b06a')
+  g.fillStyle = sky; g.fillRect(0, 0, 1024, 512)
+  const sun = g.createRadialGradient(640, 330, 4, 640, 330, 260)
+  sun.addColorStop(0, 'rgba(255,246,214,1)'); sun.addColorStop(0.08, 'rgba(255,224,160,.9)'); sun.addColorStop(0.4, 'rgba(255,170,90,.25)'); sun.addColorStop(1, 'rgba(255,150,80,0)')
+  g.fillStyle = sun; g.fillRect(0, 0, 1024, 512)
+  for (let i = 0; i < 14; i++) {                      // thin cloud bands lit from below
+    const y = 90 + r() * 200, x = r() * 1024, w = 200 + r() * 420
+    g.fillStyle = y > 200 ? 'rgba(255,190,130,.3)' : 'rgba(150,110,140,.3)'
+    g.beginPath(); g.ellipse(x, y, w / 2, 4 + r() * 6, 0, 0, Math.PI * 2); g.fill()
   }
-  hills(150, '#3b4d3a', 14, 0.012); hills(180, '#24362a', 10, 0.02)
-  g.fillStyle = '#16241b'
-  for (let x = 0; x < 512; x += 14) {               // canopy crowns
-    const h = 30 + ((x * 37) % 23)
-    g.beginPath(); g.arc(x, 256 - h, 12 + ((x * 13) % 7), 0, Math.PI * 2); g.fill()
-    g.fillRect(x - 2, 256 - h, 4, h)
+  const ridge = (y: number, col: string, amp: number, f: number, mist: number) => {
+    g.fillStyle = col; g.beginPath(); g.moveTo(0, 512)
+    for (let x = 0; x <= 1024; x += 6) g.lineTo(x, y + Math.sin(x * f) * amp + Math.sin(x * f * 2.7 + 1) * amp * 0.45 + Math.sin(x * f * 7.1) * amp * 0.12)
+    g.lineTo(1024, 512); g.closePath(); g.fill()
+    const m = g.createLinearGradient(0, y - amp, 0, y + 60)   // mist settling in the valley
+    m.addColorStop(0, 'rgba(250,190,130,0)'); m.addColorStop(1, `rgba(250,190,130,${mist})`)
+    g.fillStyle = m; g.fillRect(0, y - amp, 1024, 80)
+  }
+  ridge(300, '#7a6a72', 22, 0.006, 0.35); ridge(335, '#56505a', 18, 0.009, 0.3); ridge(370, '#38403a', 16, 0.013, 0.22); ridge(405, '#26332a', 12, 0.02, 0.12)
+  for (let x = -10; x < 1034; x += 9) {              // canopy crowns, with a lit rim on the sun side
+    const h = 54 + ((x * 37) % 41), rad = 12 + ((x * 13) % 11)
+    g.fillStyle = '#121c15'; g.fillRect(x - 2, 512 - h, 4, h)
+    g.beginPath(); g.arc(x, 512 - h, rad, 0, Math.PI * 2); g.fill()
+    g.fillStyle = 'rgba(255,170,90,.18)'; g.beginPath(); g.arc(x + 3, 512 - h - 3, rad * 0.7, Math.PI * 1.1, Math.PI * 1.9); g.fill()
+  }
+  for (const [x, h] of [[170, 260], [880, 230]]) {   // two tall emergent trees
+    g.fillStyle = '#0e1610'; g.fillRect(x - 4, 512 - h, 8, h)
+    for (let k = 0; k < 5; k++) { g.beginPath(); g.ellipse(x + (k - 2) * 22, 512 - h - (k % 2) * 10, 30, 14, 0, 0, Math.PI * 2); g.fill() }
   }
   return tex(c)
 }
@@ -91,7 +111,7 @@ function tiled(c: HTMLCanvasElement, rx: number, ry: number) {
 function grain(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: () => number, dark: string, n: number, alongX = true) {
   g.strokeStyle = dark
   for (let i = 0; i < n; i++) {
-    g.globalAlpha = 0.05 + r() * 0.13; g.lineWidth = 0.6 + r() * 1.4
+    g.globalAlpha = 0.04 + r() * 0.12; g.lineWidth = 0.4 + r() * 1.3
     g.beginPath()
     if (alongX) { const yy = y + r() * h; g.moveTo(x, yy); g.bezierCurveTo(x + w * 0.3, yy + (r() - 0.5) * 5, x + w * 0.7, yy + (r() - 0.5) * 5, x + w, yy + (r() - 0.5) * 3) }
     else { const xx = x + r() * w; g.moveTo(xx, y); g.bezierCurveTo(xx + (r() - 0.5) * 5, y + h * 0.3, xx + (r() - 0.5) * 5, y + h * 0.7, xx + (r() - 0.5) * 3, y + h) }
@@ -99,57 +119,141 @@ function grain(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: 
   }
   g.globalAlpha = 1
 }
+/** Teak character: a knot with grain swirling round it. */
+function knot(g: CanvasRenderingContext2D, x: number, y: number, s: number) {
+  for (let k = 6; k > 0; k--) {
+    g.strokeStyle = `rgba(40,18,6,${0.08 + 0.05 * k})`; g.lineWidth = 0.8
+    g.beginPath(); g.ellipse(x, y, s * k * 1.7, s * k * 0.55, 0, 0, Math.PI * 2); g.stroke()
+  }
+  g.fillStyle = 'rgba(30,12,4,.7)'; g.beginPath(); g.ellipse(x, y, s * 1.2, s * 0.5, 0, 0, Math.PI * 2); g.fill()
+}
+/** Fine dark pores, the texture you see on real teak up close. */
+function pores(g: CanvasRenderingContext2D, w: number, h: number, r: () => number, n: number) {
+  for (let i = 0; i < n; i++) { g.fillStyle = `rgba(25,10,3,${0.12 + r() * 0.2})`; g.fillRect(r() * w, r() * h, 1 + r() * 3, 0.8) }
+}
+/** Varnish: a soft sheen band so polished wood catches the light. */
+function sheen(g: CanvasRenderingContext2D, w: number, h: number) {
+  const s = g.createLinearGradient(0, 0, w, h)
+  s.addColorStop(0, 'rgba(255,220,170,0)'); s.addColorStop(0.5, 'rgba(255,220,170,.06)'); s.addColorStop(1, 'rgba(255,220,170,0)')
+  g.fillStyle = s; g.fillRect(0, 0, w, h)
+}
 
-/** Teak floorboards: long planks in slightly different tones, with grain and dark seams. */
+/** Teak floorboards: planks in different tones, grain, knots, worn centres, dark seams and nails. */
 export function plankTexture() {
-  const [c, g] = canvas(512, 512), r = rng(11)
-  const tones = ['#6f4526', '#7b4e2b', '#68401f', '#845530', '#74492a']
+  const [c, g] = canvas(1024, 1024), r = rng(11)
+  const tones = ['#6f4526', '#7b4e2b', '#68401f', '#845530', '#74492a', '#5f3a1e']
   for (let row = 0; row < 8; row++) {
-    let x = -r() * 200
-    while (x < 512) {
-      const w = 180 + r() * 160
-      g.fillStyle = tones[Math.floor(r() * tones.length)]; g.fillRect(x, row * 64, w, 64)
-      grain(g, x, row * 64, w, 64, r, '#2a1608', 16)
-      g.fillStyle = 'rgba(20,10,4,.75)'; g.fillRect(x + w - 1.5, row * 64, 1.5, 64)
+    let x = -r() * 400
+    const y = row * 128
+    while (x < 1024) {
+      const w = 360 + r() * 320
+      g.fillStyle = tones[Math.floor(r() * tones.length)]; g.fillRect(x, y, w, 128)
+      g.fillStyle = 'rgba(255,210,160,.05)'; g.fillRect(x, y + 30, w, 60)          // worn, lighter middle
+      grain(g, x, y, w, 128, r, '#2a1608', 46)
+      grain(g, x, y, w, 128, r, '#d8a070', 10)
+      if (r() > 0.55) knot(g, x + 60 + r() * (w - 120), y + 30 + r() * 68, 2 + r() * 2.5)
+      g.fillStyle = 'rgba(20,10,4,.85)'; g.fillRect(x + w - 2.5, y, 2.5, 128)
+      g.fillStyle = 'rgba(15,8,3,.8)'
+      for (const ny of [22, 106]) { g.beginPath(); g.arc(x + 14, y + ny, 2.2, 0, 7); g.fill(); g.beginPath(); g.arc(x + w - 16, y + ny, 2.2, 0, 7); g.fill() }
       x += w
     }
-    g.fillStyle = 'rgba(20,10,4,.8)'; g.fillRect(0, row * 64, 512, 1.5)
+    g.fillStyle = 'rgba(20,10,4,.9)'; g.fillRect(0, y, 1024, 2.5)
+    g.fillStyle = 'rgba(255,220,180,.08)'; g.fillRect(0, y + 2.5, 1024, 1.5)
   }
+  pores(g, 1024, 1024, r, 9000)
   return tiled(c, 3, 2.4)
 }
 
 /** Polished teak for furniture. */
 export function woodTexture(base = '#8a5a2b', seed = 5) {
-  const [c, g] = canvas(256, 256), r = rng(seed)
-  g.fillStyle = base; g.fillRect(0, 0, 256, 256)
-  grain(g, 0, 0, 256, 256, r, '#2e1808', 70)
-  grain(g, 0, 0, 256, 256, r, '#f0c080', 20)
+  const [c, g] = canvas(512, 512), r = rng(seed)
+  g.fillStyle = base; g.fillRect(0, 0, 512, 512)
+  for (let b = 0; b < 9; b++) { g.fillStyle = r() > 0.5 ? `rgba(40,20,6,${0.04 + r() * 0.05})` : `rgba(230,170,110,${0.04 + r() * 0.05})`; g.fillRect(0, r() * 512, 512, 10 + r() * 50) }   // growth bands
+  grain(g, 0, 0, 512, 512, r, '#2e1808', 150)
+  grain(g, 0, 0, 512, 512, r, '#f0c080', 40)
+  if (seed % 2) knot(g, 140 + r() * 240, 120 + r() * 260, 3)
+  pores(g, 512, 512, r, 2500)
+  sheen(g, 512, 512)
   return tiled(c, 1, 1)
 }
 
-/** Wall panelling: teak boards with raised battens. */
+/** Wall panelling: teak boards with raised, bevelled fields and shadowed edges. */
 export function panelTexture() {
-  const [c, g] = canvas(256, 256), r = rng(23)
-  g.fillStyle = '#5c3a20'; g.fillRect(0, 0, 256, 256)
-  grain(g, 0, 0, 256, 256, r, '#1e0f05', 60, false)
-  for (let x = 0; x < 256; x += 64) {
-    g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(x, 0, 3, 256)
-    g.fillStyle = 'rgba(255,210,150,.12)'; g.fillRect(x + 3, 0, 2, 256)
-    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2; g.strokeRect(x + 12, 26, 40, 204)
-    g.strokeStyle = 'rgba(255,210,150,.10)'; g.strokeRect(x + 14, 28, 40, 204)
+  const [c, g] = canvas(512, 512), r = rng(23)
+  g.fillStyle = '#5c3a20'; g.fillRect(0, 0, 512, 512)
+  grain(g, 0, 0, 512, 512, r, '#1e0f05', 140, false)
+  grain(g, 0, 0, 512, 512, r, '#e2a46a', 20, false)
+  pores(g, 512, 512, r, 1800)
+  for (let x = 0; x < 512; x += 128) {
+    g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(x, 0, 5, 512)
+    g.fillStyle = 'rgba(255,210,150,.14)'; g.fillRect(x + 5, 0, 3, 512)
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x + 24, 52, 84, 410)
+    g.fillStyle = '#5a3920'; g.fillRect(x + 28, 56, 76, 402)
+    grain(g, x + 28, 56, 76, 402, r, '#1e0f05', 30, false)
+    g.strokeStyle = 'rgba(255,215,160,.22)'; g.lineWidth = 3; g.beginPath(); g.moveTo(x + 26, 460); g.lineTo(x + 26, 54); g.lineTo(x + 106, 54); g.stroke()
+    g.strokeStyle = 'rgba(0,0,0,.55)'; g.beginPath(); g.moveTo(x + 106, 54); g.lineTo(x + 106, 460); g.lineTo(x + 26, 460); g.stroke()
   }
+  sheen(g, 512, 512)
   return tiled(c, 5, 1)
 }
 
-/** Painted plaster with a little unevenness, so large walls do not look flat. */
+/** Limewashed plaster: brush clouds at several sizes, sand in the paint, hairline cracks. */
 export function plasterTexture(base = '#3d5c4b') {
-  const [c, g] = canvas(256, 256), r = rng(41)
-  g.fillStyle = base; g.fillRect(0, 0, 256, 256)
-  for (let i = 0; i < 900; i++) {
-    g.fillStyle = r() > 0.5 ? 'rgba(255,255,255,.012)' : 'rgba(0,0,0,.016)'
-    g.beginPath(); g.arc(r() * 256, r() * 256, 6 + r() * 22, 0, Math.PI * 2); g.fill()
+  const [c, g] = canvas(512, 512), r = rng(41)
+  g.fillStyle = base; g.fillRect(0, 0, 512, 512)
+  const layers: [number, number, number][] = [[260, 40, 90], [900, 10, 34], [2600, 2, 8]]
+  for (const [n, a, b] of layers) {
+    for (let i = 0; i < n; i++) {
+      g.fillStyle = r() > 0.5 ? `rgba(255,250,235,${0.004 + r() * 0.008})` : `rgba(0,0,0,${0.005 + r() * 0.009})`
+      g.beginPath(); g.arc(r() * 512, r() * 512, a + r() * (b - a), 0, Math.PI * 2); g.fill()
+    }
+  }
+  for (let i = 0; i < 26000; i++) { g.fillStyle = r() > 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)'; g.fillRect(r() * 512, r() * 512, 1, 1) }
+  g.strokeStyle = 'rgba(0,0,0,.13)'; g.lineWidth = 0.7
+  for (let k = 0; k < 4; k++) {
+    let x = r() * 512, y = r() * 512
+    g.beginPath(); g.moveTo(x, y)
+    for (let s = 0; s < 12; s++) { x += (r() - 0.4) * 18; y += (r() - 0.5) * 14; g.lineTo(x, y) }
+    g.stroke()
   }
   return tiled(c, 4, 2)
+}
+
+/** Cork for the pinboard: warm crumb with old pin holes. */
+export function corkTexture() {
+  const [c, g] = canvas(512, 512), r = rng(57)
+  g.fillStyle = '#b07f4e'; g.fillRect(0, 0, 512, 512)
+  for (let i = 0; i < 16000; i++) {
+    const t = r()
+    g.fillStyle = t > 0.66 ? 'rgba(90,52,24,.35)' : t > 0.33 ? 'rgba(220,170,110,.3)' : 'rgba(140,90,46,.4)'
+    g.beginPath(); g.arc(r() * 512, r() * 512, 0.6 + r() * 2.4, 0, Math.PI * 2); g.fill()
+  }
+  for (let i = 0; i < 70; i++) { g.fillStyle = 'rgba(40,20,8,.55)'; g.beginPath(); g.arc(r() * 512, r() * 512, 1.3, 0, 7); g.fill() }
+  return tiled(c, 2, 1.3)
+}
+
+/** Aged leather: dark oxblood with creases and a worn, lighter seat. */
+export function leatherTexture() {
+  const [c, g] = canvas(256, 256), r = rng(61)
+  g.fillStyle = '#3b1f17'; g.fillRect(0, 0, 256, 256)
+  for (let i = 0; i < 6000; i++) { g.fillStyle = r() > 0.5 ? 'rgba(255,200,170,.04)' : 'rgba(0,0,0,.12)'; g.fillRect(r() * 256, r() * 256, 1 + r() * 2, 1) }
+  g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 0.8
+  for (let i = 0; i < 40; i++) {
+    const x = r() * 256, y = r() * 256
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + (r() - 0.5) * 40, y + (r() - 0.5) * 20, x + (r() - 0.5) * 60, y + (r() - 0.5) * 30); g.stroke()
+  }
+  const wear = g.createRadialGradient(128, 110, 10, 128, 128, 140)
+  wear.addColorStop(0, 'rgba(160,90,60,.22)'); wear.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = wear; g.fillRect(0, 0, 256, 256)
+  return tiled(c, 1, 1)
+}
+
+/** Ceiling: dark-stained boards between the beams. */
+export function ceilingTexture() {
+  const [c, g] = canvas(512, 512), r = rng(71)
+  g.fillStyle = '#2a1b12'; g.fillRect(0, 0, 512, 512)
+  for (let x = 0; x < 512; x += 64) { grain(g, x, 0, 64, 512, r, '#0f0805', 14, false); g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x, 0, 2, 512) }
+  return tiled(c, 6, 4)
 }
 
 /** A woven rug in the colours of Sarawak weaving: maroon, black and cream diamonds and hooks. */
