@@ -9,13 +9,14 @@ import { Vector3, type PerspectiveCamera } from 'three'
 import { logQuiet } from '../api/client'
 import { BoardBeat } from '../beats/BoardBeat'
 import { CallBeat } from '../beats/CallBeat'
+import { PinReports } from '../beats/PinReport'
 import { ClosedBeat } from '../beats/ClosedBeat'
 import { DeductionBeat } from '../beats/DeductionBeat'
 import { LabBeat } from '../beats/LabBeat'
 import { LockerBeat } from '../beats/LockerBeat'
 import { BEATS, frontier, useSession, type Beat } from '../state/session'
 import { Guide } from './Guide'
-import { SPOT } from './script'
+import { SPOT, STATION } from './script'
 import { Hornbill } from './Hornbill'
 import { Inbox } from './Inbox'
 import { saveLearnt } from './learnt'
@@ -90,8 +91,9 @@ function ScenePanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onD
   const count = scene.fires.filter((f) => f[0] === sceneDay).length
   return (
     <section className="beat">
-      <p>The map table shows Sarawak in relief. Glowing embers are fires seen by satellite on the chosen day.
-        Scrub {c!.scene.from} to {c!.scene.to}, then <strong>click the map</strong> to drop up to three clue pins.</p>
+      <p>The map table is Sarawak seen from space, with real hills and valleys. Every glowing ember is a fire a NASA satellite
+        spotted from about 830 km up, {c!.scene.from} to {c!.scene.to}. Press <strong>Play</strong> to watch the season, then{' '}
+        <strong>click the map</strong> to pin up to three places that puzzle you. Each pin gives you a clue report.</p>
       <div className="slider-row">
         <button onClick={() => setPlaying(!playing)}>{playing ? 'Pause' : 'Play'}</button>
         <input type="range" min={0} max={m.fire_days.length - 1} value={sceneDay}
@@ -101,7 +103,14 @@ function ScenePanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onD
       <p className="muted">{count} fire detections that day. Yellow box: {c!.region.name}.</p>
       <p className="source">Imagery: {m.base_source}. Fires: {m.fires_source}. Relief: {m.terrain?.source ?? 'flat'}, height exaggerated.
         {m.missing_days.length > 0 && ` No fire image for ${m.missing_days.join(', ')}.`}</p>
-      <p>Clue pins: {cluePins.length}/3</p>
+      <p><strong>Clue pins: {cluePins.length}/3</strong></p>
+      <PinReports pins={cluePins} fires={scene.fires} m={m} region={c!.region} day={sceneDay} onJump={(d) => { setPlaying(false); setSceneDay(d) }}
+        heightAt={scene.heights && m.terrain ? (lon, lat) => {
+          const [W, S, E, N] = m.bbox, n = m.terrain!.size
+          const j = Math.min(n - 1, Math.max(0, Math.round(((lon - W) / (E - W)) * (n - 1))))
+          const i = Math.min(n - 1, Math.max(0, Math.round(((N - lat) / (N - S)) * (n - 1))))
+          return scene.heights![i * n + j]
+        } : undefined} />
       <button className="primary" disabled={cluePins.length < 1} onClick={onDone}>Done here: back to the office</button>
     </section>
   )
@@ -201,6 +210,8 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
             <button onClick={close} aria-label={`Close the ${SPOT[win].name.toLowerCase()} and go back to the office`}>✕</button>
           </header>
           <div className="win-body">
+            <p className="station"><span aria-hidden="true">{STATION[win].icon}</span>
+              <span><strong>What is this?</strong> {STATION[win].what} <em>{STATION[win].why}</em></span></p>
             {win === 'inbox' && <Inbox />}
             {win === 'call' && (!activeCase ? <CallBeat /> : (
               <article className="folder"><p className="folder-tab">Case {activeCase.id} · {activeCase.type}</p><h2>{activeCase.title}</h2>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { logQuiet } from '../api/client'
 import type { Region, SceneManifest } from '../api/types'
 import { useSession } from '../state/session'
+import { PinReports, TownLabels, useFires } from './PinReport'
 
 function boxStyle(r: Region, m: SceneManifest) {
   const [W, S, E, N] = m.bbox
@@ -22,6 +23,7 @@ export function SceneBeat({ onDone }: { onDone: () => void }) {
   const [playing, setPlaying] = useState(false)
   const mapRef = useRef<HTMLDivElement>(null)
   const base = `/scenes/${c!.id}`
+  const fires = useFires(c!.id, m)
 
   useEffect(() => { fetch(`${base}/manifest.json`).then((r) => r.json()).then(setM).catch(() => setM(null)) }, [base])
   useEffect(() => {
@@ -46,12 +48,14 @@ export function SceneBeat({ onDone }: { onDone: () => void }) {
   return (
     <section className="beat">
       <h2>The Scene</h2>
-      <p>Scrub through {c!.scene.from} to {c!.scene.to}. Red dots are fires seen by satellite that day.
-        Tap the map to drop up to three clue pins on things you notice.</p>
+      <p>This is Sarawak seen from space, {c!.scene.from} to {c!.scene.to}. Every red dot is a fire a NASA satellite spotted from
+        about 830 km up. Press <strong>Play</strong> to watch the season, then <strong>tap the map</strong> to pin up to three places
+        that puzzle you. Each pin gives you a clue report.</p>
       <div className="map" ref={mapRef} onClick={drop} style={{ aspectRatio: `${m.width} / ${m.height}` }}
         role="img" aria-label={`Satellite map of Sarawak with fire detections for ${m.fire_days[day]}`}>
         <img src={`${base}/${m.base}`} alt="" draggable={false} />
         <img src={`${base}/fires_${m.fire_days[day]}.png`} alt="" draggable={false} className="overlay" />
+        <TownLabels m={m} />
         <div className="region-box" style={boxStyle(c!.region, m)}><span>{c!.region.name}</span></div>
         {cluePins.map(([lon, lat], i) => (
           <span key={i} className="pin" style={{ left: `${((lon - W) / (E - W)) * 100}%`, top: `${((N - lat) / (N - S)) * 100}%` }}>{i + 1}</span>
@@ -65,7 +69,8 @@ export function SceneBeat({ onDone }: { onDone: () => void }) {
       </div>
       <p className="source">Imagery: {m.base_source}. Fires: {m.fires_source}.
         {m.missing_days.length > 0 && ` No fire image for ${m.missing_days.join(', ')}.`}</p>
-      <p>Clue pins: {cluePins.length}/3</p>
+      <p><strong>Clue pins: {cluePins.length}/3</strong></p>
+      <PinReports pins={cluePins} fires={fires} m={m} region={c!.region} day={day} onJump={(d) => { setPlaying(false); setDay(d) }} />
       <button className="primary" disabled={cluePins.length < 1} onClick={onDone}>Go to the Evidence Locker</button>
     </section>
   )

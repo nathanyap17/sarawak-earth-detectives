@@ -105,6 +105,12 @@ export function Guide() {
             <button disabled={!!busy || !q.trim()}>{busy ? 'Thinking…' : 'Ask'}</button>
           </form>
         )}
+        <details className="guide-log">
+          <summary>📖 Word book ({Object.keys(GLOSSARY).length} words)</summary>
+          <ul className="wordbook">{Object.keys(GLOSSARY).sort((a, b) => a.localeCompare(b)).map((w) => (
+            <li key={w}><button className="chip" onClick={() => setExtra({ id: seq++, title: `What does “${w}” mean?`, text: GLOSSARY[w] })}>{w}</button></li>
+          ))}</ul>
+        </details>
         {answers.length > 0 && (
           <details className="guide-log">
             <summary>Earlier answers ({answers.length})</summary>

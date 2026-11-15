@@ -111,6 +111,54 @@ def scales(yearly: pd.Series, band: float) -> TrendTest:
                      "rising" if rate > 0 else "falling", years_needed(rate, rng, n))
 
 
+# ---------------------------------------------------------------- workbench (learning tools)
+def my_line(yearly: pd.Series, rate_per_decade: float, level: float) -> dict:
+    """Score a line the student laid by hand against the best-fit line.
+
+    The student's line is  level + rate/10 * (year - middle year).  "Miss" is the average
+    distance between a line and the yearly dots. Score 100 means it lies on the best line.
+    """
+    s = _clean(yearly)
+    x = s.index.to_numpy(dtype=float)
+    mid = float(x.mean())
+    mine = level + rate_per_decade / 10 * (x - mid)
+    fit = sm.OLS(s.to_numpy(), sm.add_constant(x - mid)).fit()
+    best = fit.params[0] + fit.params[1] * (x - mid)
+    your_miss = float(np.abs(s.to_numpy() - mine).mean())
+    best_miss = float(np.abs(s.to_numpy() - best).mean())
+    # Score by how far the student's line sits from the best line, measured against the wobble
+    # of the dots (half a standard deviation away on average scores 0). Comparing misses alone is
+    # too kind: when the wobble is large, even a flat line misses the dots about as little.
+    gap = float(np.abs(mine - best).mean())
+    wobble = float(s.std()) or 1.0
+    score = max(0.0, 100.0 * (1 - gap / (0.5 * wobble)))
+    return {"your_miss": your_miss, "best_miss": best_miss, "score": round(score),
+            "best_rate_per_decade": float(fit.params[1] * 10), "best_level": float(fit.params[0]),
+            "mid_year": mid, "same_direction": bool(np.sign(rate_per_decade) == np.sign(fit.params[1]))}
+
+
+def shuffle_test(yearly: pd.Series, n: int = 1000, bins: int = 21, seed: int = 7) -> dict:
+    """Shuffle the years many times and measure the tilt each time.
+
+    If the order of the years doesn't matter (no real trend), a shuffled record tilts as much as
+    the real one quite often. Returns the real tilt, a histogram of shuffled tilts and how many
+    were at least as steep. A simple picture of "chance"; the Scales are stricter because they
+    also allow for each year resembling the last.
+    """
+    s = _clean(yearly)
+    x = s.index.to_numpy(dtype=float)
+    xc = x - x.mean()
+    denom = float((xc ** 2).sum())
+    y = s.to_numpy()
+    real = float((xc * (y - y.mean())).sum() / denom * 10)
+    rng = np.random.default_rng(seed)
+    tilts = np.array([float((xc * rng.permutation(y)).sum() / denom * 10) for _ in range(n)])
+    lim = max(float(np.abs(tilts).max()), abs(real)) * 1.05 or 1.0
+    counts, edges = np.histogram(tilts, bins=bins, range=(-lim, lim))
+    return {"real_rate_per_decade": real, "n": n, "as_steep": int((np.abs(tilts) >= abs(real)).sum()),
+            "edges": [float(e) for e in edges], "counts": [int(c) for c in counts]}
+
+
 # ---------------------------------------------------------------- El Nino lamp
 def elnino_lamp(yearly: pd.Series, enso: pd.Series) -> pd.Series:
     """Remove the part of each year explained by the El Nino index, keep the mean.

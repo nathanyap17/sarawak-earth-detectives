@@ -1,6 +1,6 @@
 // The ONLY module that calls the backend. AI-assisted: written with Claude Code.
 import type {
-  AnalysisResult, CasePublic, ChiefNote, ChooseResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
+  AnalysisResult, CasePublic, ChiefNote, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
@@ -57,6 +57,10 @@ export const api = {
   raw: { post: <T>(path: string, body: unknown) => call<T>('POST', path, body, true) },
   analyse: (sid: string, cardId: string, tool: Tool) =>
     call<AnalysisResult>('POST', `/sessions/${sid}/analyse`, { session_id: sid, card_id: cardId, tool }),
+  myLine: (sid: string, cardId: string, rate: number, level: number) =>
+    call<MyLineResult>('POST', `/sessions/${sid}/myline`, { card_id: cardId, rate_per_decade: rate, level }),
+  shuffle: (sid: string, cardId: string) =>
+    call<ShuffleResult>('POST', `/sessions/${sid}/shuffle`, { card_id: cardId }),
   partner: (sid: string, beat: string, rung: number, message: string) =>
     call<PartnerReply>('POST', `/sessions/${sid}/partner`, { beat, rung, message }, false, SLOW_MS),
   verdict: (v: Verdict) => call<Grade>('POST', `/sessions/${v.session_id}/verdict`, v),

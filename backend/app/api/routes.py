@@ -11,8 +11,8 @@ from app.agents import chief, partner, runtime
 from app.config import get_settings
 from app.grading import Attempt, grade
 from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChiefNote, ChooseCards, ChooseResult,
-                         Grade, LogEvent, PartnerAsk, PartnerReply, Series, SessionCreate,
-                         SessionOut, Verdict)
+                         Grade, LogEvent, MyLineRequest, MyLineResult, PartnerAsk, PartnerReply, Series, SessionCreate,
+                         SessionOut, ShuffleRequest, ShuffleResult, Verdict)
 from app.vault.cards import CARDS
 from app.sessions import store as sessions
 from app.vault import store as vault
@@ -152,6 +152,34 @@ async def ask_partner(session_id: str, body: PartnerAsk):
         fallback = "guarded" if r.note.startswith("guard") else "busy" if r.note in ("timeout", "empty") or r.note.endswith("Error") else "off"
     return PartnerReply(text=r.text, rung=r.rung, source=r.source, turns_left=cap - s.partner_turns,
                         fallback=fallback)
+
+
+def _workbench(session_id: str, card_id: str):
+    s = _session(session_id)
+    c = _case(s.case_id)
+    if card_id not in c.evidence:
+        raise HTTPException(400, "card not in this case")
+    return s, c
+
+
+@router.post("/sessions/{session_id}/myline", response_model=MyLineResult)
+def my_line(session_id: str, body: MyLineRequest):
+    """Score the trend line a student laid by hand. A learning tool: logged, never graded."""
+    s, c = _workbench(session_id, body.card_id)
+    res = casework.run_my_line(body.card_id, c.region.id, body.rate_per_decade, body.level)
+    s.record("workbench", what="myline", card_id=body.card_id, score=res["score"])
+    sessions.save(s)
+    return res
+
+
+@router.post("/sessions/{session_id}/shuffle", response_model=ShuffleResult)
+def shuffle(session_id: str, body: ShuffleRequest):
+    """Shuffle the years to picture what chance alone can do. A learning tool: logged, never graded."""
+    s, c = _workbench(session_id, body.card_id)
+    res = casework.run_shuffle(body.card_id, c.region.id)
+    s.record("workbench", what="shuffle", card_id=body.card_id)
+    sessions.save(s)
+    return res
 
 
 def _steps_summary(s, c) -> str:

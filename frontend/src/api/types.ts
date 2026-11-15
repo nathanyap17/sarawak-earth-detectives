@@ -61,3 +61,14 @@ export interface SceneManifest {
   terrain?: { file: string; size: number; max_m: number; source: string }
   fire_points?: { file: string; count: number }
 }
+
+/** Workbench (learning tools, never graded). Mirrors backend MyLineResult / ShuffleResult. */
+export interface MyLineResult {
+  card_id: string; mission: string; data_as_of: string; unit: string
+  your_miss: number; best_miss: number; score: number
+  best_rate_per_decade: number; best_level: number; mid_year: number; same_direction: boolean
+}
+export interface ShuffleResult {
+  card_id: string; mission: string; data_as_of: string; unit: string
+  real_rate_per_decade: number; n: number; as_steep: number; edges: number[]; counts: number[]
+}

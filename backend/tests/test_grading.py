@@ -81,3 +81,15 @@ def test_grade_never_contains_answer_key_fields():
     body = g.text
     for secret in ("per_card", "overall", "elnino_stamp", "computed_at"):
         assert secret not in body
+
+
+def test_workbench_my_line_and_shuffle():
+    sid = c.post("/sessions", json={"case_id": "001", "nickname": "T"}).json()["id"]
+    bad = c.post(f"/sessions/{sid}/myline", json={"card_id": "soil_dry3", "rate_per_decade": 5.0, "level": 0.0}).json()
+    best = c.post(f"/sessions/{sid}/myline", json={"card_id": "soil_dry3", "rate_per_decade": bad["best_rate_per_decade"],
+                                                    "level": bad["best_level"]}).json()
+    assert bad["score"] < 20 and best["score"] == 100 and best["your_miss"] <= bad["your_miss"]
+    sh = c.post(f"/sessions/{sid}/shuffle", json={"card_id": "soil_dry3"}).json()
+    assert sum(sh["counts"]) == sh["n"] == 1000 and 0 <= sh["as_steep"] <= 1000 and len(sh["edges"]) == len(sh["counts"]) + 1
+    assert sh == c.post(f"/sessions/{sid}/shuffle", json={"card_id": "soil_dry3"}).json()   # same every time
+    assert c.post(f"/sessions/{sid}/shuffle", json={"card_id": "nope"}).status_code == 400

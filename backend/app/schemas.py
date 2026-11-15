@@ -153,6 +153,44 @@ class AnalysisResult(BaseModel):
     monthly_out: list[MonthlyPoint] = Field(default_factory=list)  # season tool
 
 
+class MyLineRequest(BaseModel):
+    card_id: str
+    rate_per_decade: float
+    level: float
+
+
+class MyLineResult(BaseModel):
+    """The student's hand-laid line scored against the best-fit line (learning tool, not graded)."""
+    card_id: str
+    mission: str
+    data_as_of: str
+    unit: str
+    your_miss: float
+    best_miss: float
+    score: int  # 0..100; 100 = as close to the dots as the best line
+    best_rate_per_decade: float
+    best_level: float
+    mid_year: float
+    same_direction: bool
+
+
+class ShuffleRequest(BaseModel):
+    card_id: str
+
+
+class ShuffleResult(BaseModel):
+    """Tilts of the record with its years shuffled (learning tool, not graded)."""
+    card_id: str
+    mission: str
+    data_as_of: str
+    unit: str
+    real_rate_per_decade: float
+    n: int
+    as_steep: int
+    edges: list[float]
+    counts: list[int]
+
+
 class CardKey(BaseModel):
     direction: Direction | None
     stamp: Stamp

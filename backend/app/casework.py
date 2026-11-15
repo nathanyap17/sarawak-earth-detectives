@@ -120,6 +120,27 @@ def run_tool(card_id: str, region_id: str, tool: str, options: dict | None = Non
     raise ValueError(f"unknown tool {tool}")
 
 
+# ---------------------------------------------------------------- workbench (learning tools)
+def _wb_base(card_id: str, region_id: str):
+    card = CARDS[card_id]
+    ser = store.load_series(region_id, card_id)
+    return store.yearly_series(ser), {"card_id": card_id, "mission": card.mission,
+                                      "data_as_of": ser.data_as_of, "unit": f"{card.unit} per decade"}
+
+
+def run_my_line(card_id: str, region_id: str, rate_per_decade: float, level: float) -> dict:
+    yearly, base = _wb_base(card_id, region_id)
+    r = trend.my_line(yearly, rate_per_decade, level)
+    return {**base, **{k: (_r(v) if isinstance(v, float) else v) for k, v in r.items()}}
+
+
+def run_shuffle(card_id: str, region_id: str) -> dict:
+    yearly, base = _wb_base(card_id, region_id)
+    r = trend.shuffle_test(yearly)
+    return {**base, **r, "real_rate_per_decade": _r(r["real_rate_per_decade"]),
+            "edges": [_r(e) for e in r["edges"]]}
+
+
 # ---------------------------------------------------------------- answer key
 def build_answer_key(case_id: str) -> AnswerKey:
     c = load_case(case_id)

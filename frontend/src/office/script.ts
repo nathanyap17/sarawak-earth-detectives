@@ -43,14 +43,14 @@ export function say(s: GuideState): { text: string; words: string[] } {
     case 'inbox': return { text: 'Happenings are real events in Sarawak that we can investigate with NASA data. Solved cases move to Learnt cases. Pick a happening and open its folder.', words: ['happening', 'NASA data'] }
     case 'call': return { text: "Read the client's brief. Every case asks the same thing: is this getting worse, or was it one bad year? Type a detective name (not your real one) and sign.", words: ['trend'] }
     case 'scene': return s.pins < 1
-      ? { text: 'This is Sarawak from space. Press Play to watch the fires through the season. Then click the map where something catches your eye to drop a clue pin.', words: ['satellite', 'fire detection'] }
-      : { text: `${s.pins} of 3 pins placed. Add more if you like, then head to the Evidence Locker.`, words: ['satellite'] }
+      ? { text: 'This is Sarawak from space. Press Play to watch the fires through the season. Then click the map where something puzzles you to drop a clue pin. Each pin tells you what the satellite saw there.', words: ['satellite', 'fire detection', 'clue pin'] }
+      : { text: `${s.pins} of 3 pins placed. Read each clue report: how many fires, on how many days? Compare a busy place with a quiet one, then head to the Evidence Locker.`, words: ['fire detection', 'peat', 'VIIRS'] }
     case 'locker': return s.herring
       ? { text: "Hmm. One of those cards made me tilt my head. What does it have to do with the question? Change it, or keep it if you're sure.", words: ['red herring', 'evidence card'] }
       : { text: `Pick three to five records that could answer the question (${s.chosen} picked). Careful: not every card belongs to this case.`, words: ['evidence card', 'red herring', 'record'] }
-    case 'board': return { text: `Flip each card to see how it changed over the years (${s.opened} flipped). Look for bumps, dips and odd years before you test anything.`, words: ['record', 'trend', 'mission'] }
-    case 'lab': return { text: `Now test each record. A good order: Season filter, then Scales, then the El Niño lamp. Every record needs a stamp (${s.stamped} stamped so far).`, words: ['season filter', 'scales', 'significant', 'El Niño', 'per decade', 'twin region'] }
-    case 'deduction': return { text: 'Write what you found, in your own words. Your verdict must follow your stamps. Saying the record can\'t settle it yet is allowed, if that is what the evidence shows.', words: ['significant', 'hypothesis', 'confidence'] }
+    case 'board': return { text: `Flip each card to see how it changed over the years (${s.opened} flipped). Look for bumps, dips and odd years before you test anything.`, words: ['record', 'trend', 'wobble', 'mission', 'NASA POWER', 'MERRA-2'] }
+    case 'lab': return { text: `Now test each record. Go left to right along the bench: look, filter, measure, weigh, then check for El Niño. With the Ruler you lay your own line first! Every record needs a stamp (${s.stamped} stamped so far).`, words: ['regression', 'trend line', 'range', 'p-value', 't-test', 'Mann-Kendall', 'shuffle test', 'significant', 'El Niño', 'per decade'] }
+    case 'deduction': return { text: 'Write what you found, in your own words. Your verdict must follow your stamps. Saying the record can\'t settle it yet is allowed, if that is what the evidence shows.', words: ['verdict', 'significant', 'hypothesis', 'confidence'] }
     case 'closed': return s.sentBack
       ? { text: "The Chief sent it back. That happens to good detectives. Read the notes, then go back to the typewriter for one more try.", words: [] }
       : { text: "Case closed! Read the Chief's notes. Your case is filed under Learnt cases in the inbox.", words: [] }
@@ -59,11 +59,11 @@ export function say(s: GuideState): { text: string; words: string[] } {
 }
 
 const WORDS: Partial<Record<SpotId, string[]>> = {
-  scene: ['satellite'], locker: ['evidence card', 'red herring'], board: ['record', 'trend'],
-  lab: ['season filter', 'scales', 'significant', 'El Niño'], deduction: ['significant', 'hypothesis'],
+  scene: ['satellite', 'clue pin'], locker: ['evidence card', 'red herring', 'peat'], board: ['record', 'trend', 'wobble'],
+  lab: ['regression', 'p-value', 'Mann-Kendall', 'significant', 'El Niño'], deduction: ['verdict', 'significant', 'hypothesis'],
 }
 
-/** Vetted, case-free explanations (reading age about 13). */
+/** Vetted, case-free explanations, written for a ten-year-old. */
 export const GLOSSARY: Record<string, string> = {
   'detective work': 'You choose the evidence, test it and write the verdict. I only give hints. The computer does the maths, never me.',
   happening: 'A real event in Sarawak, like a fire, haze or flood, that left a trace in satellite data we can investigate.',
@@ -83,6 +83,36 @@ export const GLOSSARY: Record<string, string> = {
   'twin region': 'A second part of Sarawak tested the same way. If both show the same change, the evidence is stronger.',
   hypothesis: 'Your best explanation for why something is happening. Use careful words like "may" or "could", because data shows what changed, not always why.',
   confidence: 'How sure you are. Good detectives are less sure when the tests disagree or the record is short.',
+  'clue pin': 'A marker you drop on the map to ask: what did the satellite see right here? Each pin gives you a report of the fires seen nearby.',
+  'trend line': 'One straight line drawn through the middle of all the dots. If it tilts up, the thing is growing. If it tilts down, it is shrinking.',
+  regression: 'A way of finding the best straight line through scattered dots. The computer tries lines until the gaps between the line and the dots are as small as they can be.',
+  wobble: 'The random ups and downs from one year to the next. Scientists call it noise. A real change has to be bigger than the wobble to count.',
+  range: 'No measurement is perfect, so the ruler gives two numbers. The true answer is probably somewhere between them. If zero sits inside the range, there may be no change at all.',
+  'p-value': 'The chance that plain luck would make a pattern this strong. Written as p. Small p (under 0.05, which is 5 in 100) means luck is an unlikely explanation.',
+  't-test': 'Test number one on the Scales. It compares how steep the line is with how much the dots wobble. A steep line with little wobble passes.',
+  'Mann-Kendall': 'Test number two on the Scales, named after two scientists. It uses no line. It compares every year with every later year and counts ups and downs. Mostly ups, or mostly downs, means a real trend. One freak year cannot fool it.',
+  'shuffle test': 'Mix up the order of the years, like shuffling cards, and see if the mixed-up record tilts as much as the real one. If shuffling often matches it, the tilt could just be luck.',
+  average: 'Add up all the values and share them out equally. It gives one number that stands for the whole group.',
+  normal: 'What usually happens. Here it means the average for that month over 30 years (1991 to 2020).',
+  peat: 'Soil made of dead plants that piled up in swamps for thousands of years. When it is wet it is safe. When it dries out it can burn underground for days.',
+  'soil wetness': 'How much water is in the ground where roots grow. 0 means bone dry, 1 means soaked.',
+  humidity: 'How much water vapour is in the air. Dry air pulls water out of plants and soil, so things burn more easily.',
+  VIIRS: 'A camera on NASA satellites that can see heat. It spots fires day and night from about 830 km up.',
+  'NASA POWER': 'A free NASA service that gives weather and soil measurements for any place on Earth, going back to 1981.',
+  'MERRA-2': "NASA's computer rebuild of the world's weather, hour by hour since 1980. It blends satellite and ground measurements into one complete picture.",
+  verdict: 'Your final answer to the case, in your own words: what changed, where, how much, and whether the change is real.',
+}
+
+/** What each place in the office is for, in words for a ten-year-old. Shown at the top of its window. */
+export const STATION: Record<SpotId, { icon: string; what: string; why: string }> = {
+  inbox: { icon: '✉️', what: 'Your mail tray. New cases arrive here, and solved ones are kept here.', why: 'Every case starts with something that really happened in Sarawak.' },
+  call: { icon: '📁', what: 'The case folder. Inside is a letter from the client, asking one question.', why: 'A detective needs a clear question before looking for clues.' },
+  scene: { icon: '🗺️', what: 'A model of Sarawak made from satellite pictures. You can watch the fires day by day.', why: 'Seeing where and when things happened tells you which clues to look for.' },
+  locker: { icon: '🗄️', what: 'A cabinet of evidence cards. Each card is one thing NASA measures about Earth, year after year.', why: 'Choosing the right measurements is the first skill of a scientist. Some cards are traps!' },
+  board: { icon: '📌', what: 'A corkboard where each card becomes a chart: one dot for every year since 1981.', why: 'A chart lets you see change over time with your own eyes, before any test.' },
+  lab: { icon: '🔬', what: 'A bench of six tools. Each tool answers one small question about a record.', why: 'Eyes can be fooled. Tools check whether a change is real or just luck.' },
+  deduction: { icon: '⌨️', what: 'The typewriter, where you write your answer in your own words.', why: 'Science is not finished until someone explains what the evidence shows, and what it does not.' },
+  closed: { icon: '🏅', what: 'The case shelf. The Chief stamps your case and tells you how you did.', why: 'Good detectives learn from every case, even the ones that get sent back.' },
 }
 
 export function stampedCount(results: Record<string, Partial<Record<AnalysisResult['tool'], AnalysisResult>>>, chosen: string[]) {

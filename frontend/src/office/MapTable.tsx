@@ -4,9 +4,10 @@
 // AI-assisted: written with Claude Code.
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BoxGeometry, BufferAttribute, Color, InstancedMesh, Object3D, PlaneGeometry, SRGBColorSpace, TextureLoader, type Texture } from 'three'
+import { BoxGeometry, BufferAttribute, CanvasTexture, Color, InstancedMesh, Object3D, PlaneGeometry, SRGBColorSpace, TextureLoader, type Texture } from 'three'
 import { logQuiet } from '../api/client'
 import type { SceneManifest } from '../api/types'
+import { TOWNS } from '../beats/PinReport'
 import { useSession } from '../state/session'
 import { Spot } from './Spot'
 import { useUI } from './ui'
@@ -15,6 +16,32 @@ export const TABLE_W = 2.4
 const LIFT = 0.92          // tabletop height
 const RELIEF = 0.16        // exaggerated height of the tallest peak, in metres of room
 const MAX_EMBERS = 400
+
+/** A small text label drawn to a canvas (no font files, no DOM), used as a sprite. */
+function textTexture(text: string, bg: string, fg: string) {
+  const c = document.createElement('canvas')
+  const g = c.getContext('2d')!
+  g.font = '600 44px system-ui, sans-serif'
+  c.width = Math.ceil(g.measureText(text).width) + 36; c.height = 64
+  g.font = '600 44px system-ui, sans-serif'
+  g.fillStyle = bg; g.beginPath(); g.roundRect(0, 0, c.width, c.height, 14); g.fill()
+  g.fillStyle = fg; g.textBaseline = 'middle'; g.fillText(text, 18, 34)
+  const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace
+  return { t, aspect: c.width / c.height }
+}
+
+function Tag({ text, at, h = 0.045, bg = 'rgba(20,16,12,.82)', fg = '#fff', lift = 0.05 }: {
+  text: string; at: [number, number, number]; h?: number; bg?: string; fg?: string; lift?: number
+}) {
+  const { t, aspect } = useMemo(() => textTexture(text, bg, fg), [text, bg, fg])
+  useEffect(() => () => t.dispose(), [t])
+  return (
+    <group position={at}>
+      <mesh position={[0, lift / 2, 0]}><cylinderGeometry args={[0.002, 0.002, lift, 5]} /><meshBasicMaterial color="#fff" /></mesh>
+      <sprite position={[0, lift + h / 2, 0]} scale={[h * aspect, h, 1]}><spriteMaterial map={t} depthTest={false} transparent /></sprite>
+    </group>
+  )
+}
 
 export function useScene(caseId: string | undefined) {
   const [m, setM] = useState<SceneManifest | null>(null)
@@ -152,10 +179,14 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
             <lineBasicMaterial color="#f6c700" />
           </lineSegments>
         )}
+        {m && win === 'scene' && TOWNS.filter((t) => t.lon > m.bbox[0] && t.lon < m.bbox[2] && t.lat > m.bbox[1] && t.lat < m.bbox[3])
+          .map((t) => <Tag key={t.name} text={t.name} at={toLocal(t.lon, t.lat)} h={t.major ? 0.05 : 0.036} />)}
+        {region && win === 'scene' && <Tag text="Case region" at={[region.x - region.w / 2 + 0.02, RELIEF * 1.2, region.z - region.d / 2 + 0.02]} bg="#f6c700" fg="#1a1a1a" lift={0.02} h={0.04} />}
         {cluePins.map(([lon, lat], i) => {
           const [x, y, z] = toLocal(lon, lat)
           return (
             <group key={i} position={[x, y, z]}>
+              <Tag text={`Pin ${i + 1}`} at={[0, 0.13, 0]} bg="#c8102e" lift={0.02} h={0.04} />
               <mesh position={[0, 0.06, 0]}><cylinderGeometry args={[0.004, 0.004, 0.12, 6]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
               <mesh position={[0, 0.125, 0]}><sphereGeometry args={[0.02, 12, 12]} /><meshStandardMaterial color="#c8102e" emissive="#5a0010" /></mesh>
             </group>

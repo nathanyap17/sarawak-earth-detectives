@@ -1,19 +1,15 @@
 // Beat 5, The Lab: desk tools on each record. Every number shown comes from the backend.
+// Each tool says what it is in plain words, each result is explained step by step and shown next
+// to made-up sample pictures, and the Ruler starts with the student laying their own line.
 // AI-assisted: written with Claude Code.
 import { useState } from 'react'
 import { api } from '../api/client'
 import type { AnalysisResult, EvidenceCard, Series, Tool } from '../api/types'
 import { useSession } from '../state/session'
+import { explain, TOOL_INFO } from './explain'
+import { Samples } from './Samples'
 import { fmt, MissionBadge, pText, Stamp, TimeChart } from './shared'
-
-const TOOLS: { id: Tool; name: string; icon: string; what: string }[] = [
-  { id: 'magnifier', name: 'Magnifier', icon: '🔍', what: 'Zoom into the record in time.' },
-  { id: 'season', name: 'Season filter', icon: '🟠', what: 'Remove the yearly cycle: each month minus its normal.' },
-  { id: 'ruler', name: 'Ruler', icon: '📏', what: 'Lay a trend line and read the rate per decade.' },
-  { id: 'scales', name: 'Scales', icon: '⚖️', what: 'Weigh the trend against the noise with two tests.' },
-  { id: 'elnino', name: 'El Niño lamp', icon: '💡', what: 'Dim the El Niño effect and test again.' },
-  { id: 'twin', name: 'Twin map', icon: '🗺️', what: 'Run the same test on a second region.' },
-]
+import { Explain, MyLine, Shuffle } from './Workbench'
 
 function trendLine(s: Series, rate: number): [number, number | null][] {
   const pts = s.yearly.filter((p) => p.v != null)
@@ -22,7 +18,7 @@ function trendLine(s: Series, rate: number): [number, number | null][] {
   return s.yearly.map((p) => [p.y, mv + (rate / 10) * (p.y - my)])
 }
 
-function Result({ r, card, s, region, twinName }: { r: AnalysisResult; card: EvidenceCard; s: Series; region: string; twinName?: string }) {
+function Result({ r, card, s, region, twinName, before }: { r: AnalysisResult; card: EvidenceCard; s: Series; region: string; twinName?: string; before?: AnalysisResult }) {
   const yearly = s.yearly.map((p) => [p.y, p.v] as [number, number | null])
   const nums = (
     <dl className="nums">
@@ -59,51 +55,71 @@ function Result({ r, card, s, region, twinName }: { r: AnalysisResult; card: Evi
       )}
       {r.tool !== 'magnifier' && r.tool !== 'season' && nums}
       <MissionBadge mission={r.mission} asOf={r.data_as_of} definition={card.definition} />
+      <Explain steps={explain(r, before)} />
+      <Samples tool={r.tool} stamp={r.stamp} />
+      {r.tool === 'scales' && r.stamp !== 'record_too_short' && <Shuffle card={card} />}
     </div>
   )
 }
+
+const ORDER: Tool[] = ['magnifier', 'season', 'ruler', 'scales', 'elnino']
 
 export function LabBeat({ onDone }: { onDone: () => void }) {
   const { activeCase: c, sessionId, chosen, series, results, putResult } = useSession()
   const cards = c!.evidence.filter((e) => chosen.includes(e.id))
   const [cardId, setCardId] = useState(cards[0]?.id)
   const [tool, setTool] = useState<Tool | null>(null)
+  const [handLine, setHandLine] = useState(false)   // the Ruler starts with "lay your own line"
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const card = cards.find((e) => e.id === cardId)!
 
-  async function use(t: Tool) {
-    setTool(t); setErr(null)
+  async function run(t: Tool) {
+    setTool(t); setErr(null); setHandLine(false)
     if (results[cardId]?.[t]) return
     setBusy(true)
     try { putResult(await api.analyse(sessionId!, cardId, t)) } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
   }
+  function use(t: Tool) {
+    if (t === 'ruler' && !results[cardId]?.ruler && series[cardId]) { setTool('ruler'); setErr(null); setHandLine(true); return }
+    run(t)
+  }
 
   const stamped = (id: string) => !!(results[id]?.scales?.stamp || results[id]?.elnino?.stamp)
-  const r = tool ? results[cardId]?.[tool] : undefined
+  const r = tool && !handLine ? results[cardId]?.[tool] : undefined
+  const info = TOOL_INFO.find((t) => t.id === tool)
+  const nextTool = ORDER.find((t) => !results[cardId]?.[t])
   return (
     <section className="beat">
       <h2>The Lab</h2>
-      <div className="seg wrap">
+      <p>This is where a detective tests a hunch. Pick a record, then pick a tool from the bench.
+        A good order is left to right: <strong>look, filter, measure, weigh, check for El Niño</strong>.</p>
+      <div className="seg wrap" role="tablist" aria-label="Records to test">
         {cards.map((e) => (
-          <button key={e.id} className={e.id === cardId ? 'on' : ''} onClick={() => { setCardId(e.id); setTool(null) }}>
+          <button key={e.id} role="tab" aria-selected={e.id === cardId} className={e.id === cardId ? 'on' : ''} onClick={() => { setCardId(e.id); setTool(null); setHandLine(false) }}>
             {stamped(e.id) ? '✔ ' : ''}{e.name}
           </button>
         ))}
       </div>
       <div className="tools">
-        {TOOLS.filter((t) => t.id !== 'twin' || c!.twin_region).map((t) => (
-          <button key={t.id} className={`tool ${tool === t.id ? 'on' : ''}`} onClick={() => use(t.id)} title={t.what} disabled={busy}>
-            <span aria-hidden>{t.icon}</span> {t.name}
-            {results[cardId]?.[t.id] && <small> ✔</small>}
+        {TOOL_INFO.filter((t) => t.id !== 'twin' || c!.twin_region).map((t) => (
+          <button key={t.id} className={`tool ${tool === t.id ? 'on' : ''} ${nextTool === t.id && tool !== t.id ? 'suggest' : ''}`} onClick={() => use(t.id)} disabled={busy}>
+            <span className="tool-icon" aria-hidden>{t.icon}</span>
+            <strong>{t.name}{results[cardId]?.[t.id] && ' ✔'}</strong>
+            <small>{t.what}</small>
+            {nextTool === t.id && tool !== t.id && <em>Try this next</em>}
           </button>
         ))}
       </div>
-      {tool && <p className="muted">{TOOLS.find((t) => t.id === tool)!.what}</p>}
+      {info && <p className="tool-like"><strong>{info.name}.</strong> {info.like} {info.when}</p>}
       {busy && <p className="muted">Working…</p>}
       {err && <p className="error">{err}</p>}
-      {r && series[cardId] && <Result r={r} card={card} s={series[cardId]} region={c!.region.name} twinName={c!.twin_region?.name} />}
-      <p className="muted">Each record needs a stamp from the Scales or the El Niño lamp before you write your verdict.</p>
+      {handLine && series[cardId] && <MyLine key={cardId} card={card} s={series[cardId]} onBest={() => run('ruler')} />}
+      {r && series[cardId] && <Result r={r} card={card} s={series[cardId]} region={c!.region.name} twinName={c!.twin_region?.name}
+        before={r.tool === 'elnino' ? results[cardId]?.scales : undefined} />}
+      {tool === 'ruler' && r && <p><button onClick={() => setHandLine(true)}>✏️ Try laying the line by hand</button></p>}
+      <p className="muted">Each record needs a stamp from the Scales or the El Niño lamp before you write your verdict.
+        ({cards.filter((e) => stamped(e.id)).length} of {cards.length} stamped.)</p>
       <button className="primary" disabled={!cards.every((e) => stamped(e.id))} onClick={onDone}>Go to the typewriter</button>
     </section>
   )
