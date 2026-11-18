@@ -322,52 +322,78 @@ Space Apps rules ✅:
 
 ## 6. NASA data
 
-Confirm every link opens before submitting. Delete any row you did not actually use.
+> **Note:** Confirm every link opens before submitting, and delete any unused row from the final Space Apps form. Rows below distinguish **official `*.nasa.gov` NASA domains** from **NASA DAAC / GitHub domains** and separate **sources actually used in the live build** from **reference or planned-only rows**.
+
+### 6.1 NASA data used in the live build
+
+| Link text | URL | Domain | Used for | Status / Checked |
+|---|---|---|---|---|
+| NASA POWER | https://power.larc.nasa.gov/ | NASA (`*.nasa.gov`) | Weather and rainfall records by location (`app/vault/power.py`) | ✅ Live build |
+| MERRA-2 | https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/ | NASA (`*.nasa.gov`) | Reanalysis weather, soil wetness and humidity via NASA POWER (`app/vault/cards.py`) | ✅ Live build |
+| GIBS (live WMS endpoint & docs) | https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi · Docs: https://nasa-gibs.github.io/gibs-api-docs/ | NASA EOSDIS WMS on `*.nasa.gov` (docs hosted on `github.io`) | Blue Marble shaded relief imagery and VIIRS 375 m thermal anomalies on terrain (`app/vault/gibs.py`) | ✅ Live build *(use the `earthdata.nasa.gov` link if the form requires `.nasa.gov`)* |
+
+### 6.2 NASA method and design references consulted (not runtime data APIs)
+
+| Link text | URL | Domain | Used for | Status / Checked |
+|---|---|---|---|---|
+| Time-Series Analysis of Remotely-Sensed SeaWiFS Chlorophyll (NASA paper) | https://ntrs.nasa.gov/api/citations/20090042747/downloads/20090042747.pdf | NASA (`*.nasa.gov`) | Method template for trend and significance | ✅ Reference only |
+| My NASA Data: Earth System Data Explorer | https://mynasadata.larc.nasa.gov/basic-page/earth-system-data-explorer | NASA (`*.nasa.gov`) | Reference for student-facing design | ✅ Reference only |
+
+### 6.3 Planned or unused NASA data sources (remove before final submission if unused)
+
+| Link text | URL | Domain | Planned use | Status / Checked |
+|---|---|---|---|---|
+| GPM IMERG | https://gpm.nasa.gov/data/imerg | NASA (`*.nasa.gov`) | Rainfall cross-check against POWER (EXP-11) | ✅ Page works; ⚠️ not yet cross-checked in build |
+| FIRMS | https://firms.modaps.eosdis.nasa.gov/ | NASA (`*.nasa.gov`) | Active fire detections (EXP-2; by-country API unavailable; area API + archive planned) | ✅ Page works; ⚠️ live build uses GIBS VIIRS WMS |
+| SMAP Level 4 Soil Moisture | https://nsidc.org/data/spl4smgp/versions/7 | NASA DAAC on non-NASA domain (`nsidc.org`) | Soil wetness | ⚠️ Retired v7 (`nsidc-ecs-spl4smgp-008` on `earthdata.nasa.gov` is current); not used |
+| GLDAS | https://ldas.gsfc.nasa.gov/gldas | NASA (`*.nasa.gov`) | Soil, runoff, evaporation | ✅ Page; ⚠️ variables unused in build |
+| Giovanni | https://giovanni.gsfc.nasa.gov/ | NASA (`*.nasa.gov`) | Time series of land and air measurements | Challenge resource list only; unused |
+| AppEEARS | https://appeears.earthdatacloud.nasa.gov/ | NASA (`*.nasa.gov`) | Vegetation and land temperature extracts | Challenge resource list only; unused |
+| Hydrology Time Series | https://disc.gsfc.nasa.gov/information/tools?title=Hydrology%20Time%20Series | NASA (`*.nasa.gov`) | Water records | Challenge resource list only; ⚠️ page didn't load; unused |
+| NASADEM | https://www.earthdata.nasa.gov/data/catalog/lpcloud-nasadem-hgt-001 | NASA (`*.nasa.gov`) | 3D terrain of Sarawak | ⚠️ Replaced by AWS Terrain Tiles (non-NASA host) in live build |
+| Global Fire Weather Database | https://svs.gsfc.nasa.gov/4634/ | NASA (`*.nasa.gov`) | Fire-weather cross-check | ✅ (earlier); unused in build |
+
+## 7. Non-NASA data (Space agency partner, third-party sources, references and software)
+
+### 7.1 Non-NASA external data used in the live build
+
+| Link text | URL | Organization / Domain | Used for | Status / Checked |
+|---|---|---|---|---|
+| NOAA Relative Oceanic Niño Index (RONI) | https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/ | NOAA (`*.noaa.gov`, non-NASA) | El Niño index (official NOAA ENSO index since NWS statement 26-05; `app/vault/enso.py`) | ✅ Live build (`14 Nov`) |
+| AWS Terrain Tiles (SRTM-derived Terrarium) | https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png | Amazon S3 / Mapzen (`s3.amazonaws.com`, non-NASA host) | 3D relief heights of Sarawak (`app/vault/terrain.py`) | ✅ Live build |
+| The Borneo Post & DayakDaily RSS feeds | https://www.theborneopost.com/feed/ · https://dayakdaily.com/feed/ | Sarawak news outlets (non-NASA) | Weekly `Scout` case discovery headlines (`app/config.py`) | ✅ Live build |
+
+### 7.2 Non-NASA references and planned datasets (not used at runtime)
+
+| Link text | URL | Organization / Domain | Used for | Checked |
+|---|---|---|---|---|
+| KNMI Climate Explorer | https://climexp.knmi.nl/ | KNMI (non-NASA) | Cross-checking our trend numbers | ✅ |
+| NOAA Climate Data Online | https://www.ncei.noaa.gov/cdo-web/ | NOAA (non-NASA) | Ground stations, to check satellite records | From the challenge resources |
+| ESA Climate Detectives | https://education.esa.int/the_climate_detectives_school_project/ | ESA (space agency partner, non-NASA) | Prior work reviewed | ✅ |
+| Statistical test methods to detect trends in time series data | https://medium.com/@snp.kriss/statistical-test-methods-to-detect-trends-in-time-series-data-b361a0ec530b | Medium (non-NASA) | Method reference | From the challenge resources |
+| A Comprehensive Guide to Statistical Significance | https://www.statsig.com/perspectives/a-comprehensive-guide-to-statistical-significance | Statsig (non-NASA) | Method reference | From the challenge resources |
+| Dadap et al. 2019 | https://ui.adsabs.harvard.edu/abs/2019ERL....14i4014D/abstract | IOP / SAO-NASA ADS abstract (non-NASA journal paper) | Science behind the peat fire case | ✅ |
+| Sa'adi et al. 2019 | https://pure.seoultech.ac.kr/en/publications/trends-analysis-of-rainfall-and-rainfall-extremes-in-sarawak-mala/ | SeoulTech publication (non-NASA) | Science behind the rainfall cases | ✅ (earlier) |
+| District boundaries | ⚠️ choose an open dataset and link it | Third-party GIS (non-NASA) | Regions | ⚠️ |
+| River basin outlines | ⚠️ choose an open dataset and link it | Third-party GIS (non-NASA) | Regions | ⚠️ |
+| Peatland map | ⚠️ confirm a downloadable source | Third-party GIS (non-NASA) | Peat fire case | ⚠️ |
+| News sources for case briefs | List each article used | Local news (non-NASA) | Case briefs | Per case |
+
+### 7.3 Non-NASA software, libraries, cloud services and assets
 
 | Link text | URL | Used for | Checked |
 |---|---|---|---|
-| NASA POWER | https://power.larc.nasa.gov/ | Weather and rainfall records by location | ✅ |
-| GPM IMERG | https://gpm.nasa.gov/data/imerg | Rainfall cross-check against POWER (EXP-11) | ✅ |
-| MERRA-2 | https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/ | Weather, soil wetness, smoke and dust | ✅ |
-| FIRMS | https://firms.modaps.eosdis.nasa.gov/ | Active fire detections | ✅ The by-country API is currently unavailable; use the area API with a free map key, and the archive download for past years |
-| SMAP Level 4 Soil Moisture | https://nsidc.org/data/spl4smgp/versions/7 | Soil wetness | ✅ (this version is retired; link the current one) |
-| GLDAS | https://ldas.gsfc.nasa.gov/gldas | Soil, runoff, evaporation | ✅ page; ⚠️ variables |
-| Giovanni | https://giovanni.gsfc.nasa.gov/ | Time series of land and air measurements | From the challenge resources |
-| AppEEARS | https://appeears.earthdatacloud.nasa.gov/ | Vegetation and land temperature extracts | From the challenge resources |
-| Hydrology Time Series | https://disc.gsfc.nasa.gov/information/tools?title=Hydrology%20Time%20Series | Water records | From the challenge resources; ⚠️ page didn't load for me |
-| NASADEM | https://www.earthdata.nasa.gov/data/catalog/lpcloud-nasadem-hgt-001 | 3D terrain of Sarawak | ⚠️ |
-| GIBS | https://nasa-gibs.github.io/gibs-api-docs/ | Satellite imagery on the terrain | ✅ |
-| Global Fire Weather Database | https://svs.gsfc.nasa.gov/4634/ | Fire-weather cross-check | ✅ (earlier) |
-| Time-Series Analysis of Remotely-Sensed SeaWiFS Chlorophyll (NASA paper) | https://ntrs.nasa.gov/api/citations/20090042747/downloads/20090042747.pdf | Method template for trend and significance | ✅ |
-| My NASA Data: Earth System Data Explorer | https://mynasadata.larc.nasa.gov/basic-page/earth-system-data-explorer | Reference for student-facing design | ✅ |
-
-## 7. Space agency partner and other data
-
-| Link text | URL | Used for | Checked |
-|---|---|---|---|
-| KNMI Climate Explorer | https://climexp.knmi.nl/ | Cross-checking our trend numbers | ✅ |
-| NOAA Climate Data Online | https://www.ncei.noaa.gov/cdo-web/ | Ground stations, to check satellite records | From the challenge resources |
-| NOAA Relative Oceanic Niño Index (RONI) | https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/ | El Niño index (official NOAA ENSO index since NWS statement 26-05; removes tropical-mean warming) | ✅ 14 Nov |
-| ESA Climate Detectives | https://education.esa.int/the_climate_detectives_school_project/ | Prior work reviewed | ✅ |
-| Statistical test methods to detect trends in time series data | https://medium.com/@snp.kriss/statistical-test-methods-to-detect-trends-in-time-series-data-b361a0ec530b | Method reference | From the challenge resources |
-| A Comprehensive Guide to Statistical Significance | https://www.statsig.com/perspectives/a-comprehensive-guide-to-statistical-significance | Method reference | From the challenge resources |
-| Dadap et al. 2019 | https://ui.adsabs.harvard.edu/abs/2019ERL....14i4014D/abstract | Science behind the peat fire case | ✅ |
-| Sa'adi et al. 2019 | https://pure.seoultech.ac.kr/en/publications/trends-analysis-of-rainfall-and-rainfall-extremes-in-sarawak-mala/ | Science behind the rainfall cases | ✅ (earlier) |
-| District boundaries | ⚠️ choose an open dataset and link it | Regions | ⚠️ |
-| River basin outlines | ⚠️ choose an open dataset and link it | Regions | ⚠️ |
-| Peatland map | ⚠️ confirm a downloadable source | Peat fire case | ⚠️ |
-| News sources for case briefs | List each article used | Case briefs | Per case |
 | React | https://react.dev/ | Frontend | ⚠️ |
 | three.js | https://threejs.org/ | 3D | ⚠️ |
 | Apache ECharts | https://echarts.apache.org/ | Charts | ⚠️ |
 | FastAPI | https://fastapi.tiangolo.com/ | Backend | ⚠️ |
 | statsmodels | https://www.statsmodels.org/ | Statistics | ⚠️ |
 | pymannkendall | https://pypi.org/project/pymannkendall/ | Statistics | ⚠️ |
-| XGBoost | https://xgboost.readthedocs.io/ | Machine learning | ⚠️ |
+| XGBoost | https://xgboost.readthedocs.io/ | Machine learning (optional extra in `pyproject.toml`; unused in live build) | ⚠️ |
 | Google Cloud Run | https://cloud.google.com/run | Backend hosting | ⚠️ |
 | Vertex AI | https://cloud.google.com/vertex-ai | AI models | ⚠️ |
 | Google Agent Development Kit | https://google.github.io/adk-docs/ | Agents | ⚠️ |
-| Firebase | https://firebase.google.com/ | Hosting, sign-in, database | ⚠️ |
+| Firebase | https://firebase.google.com/ | Hosting, database | ⚠️ |
 | Google Fonts | https://fonts.google.com/ | Typefaces | ⚠️ |
 | 3D models, textures, sounds | List each asset and its licence | The office | ⚠️ only use assets you made or have a licence for |
 
