@@ -13,7 +13,7 @@ Built for the NASA Space Apps Challenge 2026, challenge "Be An Earth System Tren
 - **Web app (the detective office):** https://ssc-workspace-2026.web.app/#/play
   - Opens the 3D office; small screens and devices without WebGL get the 2D lite mode, and a **2D** button switches any time.
 - **Backend API (Cloud Run, for reference):** https://sed-api-f7fsjojvgq-as.a.run.app/health
-- **Demo (30 s):** _link to be added_
+- **Project demonstration (video):** https://youtu.be/o1hi2tD7dnQ
 
 ## How it works
 1. **The Call** — a case arrives. 2. **The Scene** — visit it on a map of Sarawak. 3. **The Evidence Locker** — choose measurements, reject red herrings. 4. **The Board** — see each as a time series. 5. **The Lab** — season filter, trend ruler, significance scales, El Niño lamp. 6. **The Deduction** — write the verdict. 7. **Case Closed** — the Chief's stamp, feedback and badges; solved cases are filed under Learnt cases in the inbox.
