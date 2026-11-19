@@ -2,6 +2,8 @@
 AI-assisted: scaffolded with Claude Code."""
 import asyncio
 import logging
+import os
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -24,6 +26,22 @@ async def lifespan(_: FastAPI):
         loop.create_task(warm("partner", partner.INSTRUCTION))
         loop.create_task(warm("chief", chief.INSTRUCTION))
     yield
+    await _leave_stuck_threads()
+
+
+async def _leave_stuck_threads(grace_s: float = 3.0) -> None:
+    """A model call stuck on the network keeps a worker thread busy. On shutdown asyncio would
+    then wait up to 300 s for it, and a reloading dev server (or a Cloud Run instance being
+    replaced) answers nothing meanwhile: the app shows "Could not reach the agency". Give the
+    threads a short grace; if any is still stuck, exit now. Requests are finished by this point
+    and every session write has already happened, so nothing is lost."""
+    loop = asyncio.get_running_loop()
+    await loop.shutdown_default_executor(timeout=grace_s)
+    stuck = [t.name for t in threading.enumerate() if t.name.startswith("asyncio_") and t.is_alive()]
+    if stuck:
+        logging.getLogger("app").warning("shutdown: %d model thread(s) stuck on the network; exiting without waiting", len(stuck))
+        logging.shutdown()
+        os._exit(0)
 
 
 app = FastAPI(title="Sarawak Earth Detectives API", version="0.1.0", lifespan=lifespan)
