@@ -1,5 +1,21 @@
 # BUILD_LOG.md
 
+## [2026-11-20] Deployed bd8bdf2; the live summary called a "can't tell" case "one bad year", now guarded
+
+**Deployed (Nathan asked):** commit `bd8bdf2`. Before: `uv run pytest -q` 92 passed, vault and answer key present. Backend: Cloud Run revision `sed-api-00007-bgb` from the repo root, with `--update-env-vars` so `ADMIN_TOKEN` was kept. Frontend: `npm run build` (API base checked in the bundle), `firebase deploy --only hosting`. After: `/health` says cloud, firestore, `gemini-3.5-flash-lite`, `mock_agents: false`; `/admin/scout/run` without the key answers 401; the live app lists cases 001–003; case 001 closed through the live API ends "solved, not enough evidence", 100.
+
+**Found on the live site:** two AI-written executive summaries for case 001 headlined that 2026 "was one bad year rather than a worsening trend", and one impact said "meaning 2026 was one bad year". Case 001's answer is that the record cannot yet tell. A trend that stops being significant once El Niño is removed is not evidence of no change, so the exemplar was teaching the wrong conclusion. The number guard can't catch this because no number is wrong.
+
+**Fixed locally (not yet deployed):**
+- `reporter.py`: the instruction now says a non-significant result never shows that nothing changed, and never to conclude "one bad year", a ruled-out trend or "not worsening".
+- New code guard `overclaims()`: a no-change conclusion ("was one bad year", "one-off", "not worsening", "no trend exists") or an asserted cause ("driven by", "caused by", "proves") sends the summary to the code template. Restating the question ("whether 2026 was one bad year") and denying a cause ("cannot yet prove what causes fires") pass.
+- The template's impact no longer says "the evidence supports no change…"; it says no change survives every check yet, so the record cannot tell.
+- Tests: 6 over-claims caught, 5 honest sentences pass, and an AI draft saying "one bad year" falls back to the template (`test_casefile.py`).
+
+**Verified locally:** two fresh real-model summaries. One was written by the AI ("current data cannot yet confirm if fire seasons are worsening… or if 2026 was one bad year"). The other was caught by the guard ("are not worsening") and replaced by the template. `uv run pytest -q` 104 passed.
+
+**Lessons:** a guard on numbers is not a guard on conclusions. The exemplar's whole point is the conclusion, so that needs its own check.
+
 ## [2026-11-19] Stress-testing the grader; the executive summary becomes the case's exemplar
 
 **Asked (Nathan):** check what was left unverified, try made-up answers ("I don't know"…) to see whether any wrong case closes, and make the executive summary cover the non-significant records too. Only the student's case study carries marks and badges; the executive summary is an exemplar.

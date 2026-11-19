@@ -76,6 +76,43 @@ def test_reporter_invented_number_falls_back(monkeypatch):
     assert source == "code" and note.startswith("guard") and "42.7" not in json.dumps(out)
 
 
+@pytest.mark.parametrize("text", [
+    "The evidence supports that trends do not show a worsening pattern, meaning 2026 was one bad year.",
+    "Records show 2026 was simply a bad year rather than a worsening trend.",
+    "The fires were a one-off.",
+    "Conditions are not worsening.",
+    "The drying is driven by El Nino.",
+    "This proves the peat is drying out.",
+])
+def test_reporter_overclaims_are_caught(text):
+    # seen live on 2026-11-20: a "can't tell yet" case written up as "2026 was one bad year"
+    assert reporter.overclaims(text)
+
+
+@pytest.mark.parametrize("text", [
+    "The analysis cannot yet show proof of what causes fires, as people, land use and drainage matter too.",
+    "It does not prove direct causes of fires.",
+    "El Nino years may be doing much of the work.",
+    "No record shows a trend strong enough to rule out chance.",
+    "The case asked whether 2026 was one bad year or part of a trend, and the record cannot yet tell.",
+])
+def test_reporter_honest_text_passes(text):
+    assert reporter.overclaims(text) == ""
+
+
+def test_reporter_one_bad_year_falls_back(monkeypatch):
+    c = casework.load_case("001")
+    items = insights.build(c)
+    good = reporter.template(c, items)
+
+    async def overclaimer(*a, **k):
+        return json.dumps({**good, "impact": "The evidence shows 2026 was one bad year."}), 0.4, ""
+    monkeypatch.setattr(reporter, "run_once", overclaimer)
+    out, source, note = asyncio.run(reporter.summarise(c, insights.facts(c, items), items))
+    assert source == "code" and "over-claims" in note
+    assert not reporter.overclaims(" ".join(out.values()))
+
+
 def test_summary_has_story_sections_and_code_charts():
     sid = _played(); _close(sid)
     a = client.post(f"/sessions/{sid}/summary").json()

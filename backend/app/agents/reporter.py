@@ -12,6 +12,7 @@ AI-assisted: written with Claude Code."""
 from __future__ import annotations
 
 import json
+import re
 
 from app.agents import guard
 from app.agents.runtime import run_once
@@ -34,6 +35,9 @@ was not stated for. A significant line drawn forward is an illustration, never a
 Never claim a cause: a trend that stops being significant once El Nino is removed means El Nino years MAY be
 doing much of the work, not that El Nino "drives" or "causes" it. Say what the evidence supports and what it
 cannot yet show.
+A result that is not significant, or stops being significant once El Nino is removed, never shows that nothing
+changed: when no record survives every check, the answer is that the record cannot yet tell. Never conclude that
+a year "was one bad year", that a trend is ruled out, or that conditions are not worsening.
 Return JSON with exactly these keys, each a string:
 "headline": one sentence (under 25 words) that sums up the case and what the evidence supports;
 "issue": two or three sentences on the problem in the region and the question asked;
@@ -41,6 +45,30 @@ Return JSON with exactly these keys, each a string:
 "insights": four to six sentences interpreting the results across the charts, significant and not;
 "impact": two or three sentences on what the evidence supports, what it does not, and sensible next steps
 (more years, a second region, other records), without promising anything the facts do not support."""
+
+
+# Conclusions the evidence can never support: absence of significance is not evidence of no change, and a
+# trend is never proof of a cause. Seen live on 2026-11-20 ("meaning 2026 was one bad year").
+NO_CHANGE_CLAIM = re.compile(
+    r"\b(was|is|were) (just |simply |only |merely )?(one|a single|an?) (bad|unusual|freak|isolated|one-off) year"
+    r"|\bone-off\b|\bno (real |long-term |lasting )?(change|trend) (exists|existed|occurred)"
+    r"|\b(is|are|was|were) not (getting )?worse(ning)?\b|\bnot (a )?worsening\b", re.I)
+CAUSE_CLAIM = re.compile(r"\b(driven|caused) by\b|\bel ni[nñ]o (drives|drove|causes|caused)\b|\bprov(e|es|ed|en)\b", re.I)
+NEGATED = re.compile(r"\b(not|cannot|can't|nor|never|no|without)\b[^.]{0,25}$", re.I)
+ASKED = re.compile(r"\b(whether|if)\b[^.,;]{0,40}$", re.I)
+
+
+def overclaims(text: str) -> str:
+    """The first claim in the text that the evidence cannot support, or "". Restating the question
+    ("whether 2026 was one bad year") is fine, and so is denying a cause ("cannot yet prove what causes
+    fires"); concluding no change, or asserting a cause, is not."""
+    for m in NO_CHANGE_CLAIM.finditer(text):
+        if not ASKED.search(text[:m.start()]):
+            return m.group(0)
+    for m in CAUSE_CLAIM.finditer(text):
+        if not NEGATED.search(text[:m.start()]):
+            return m.group(0)
+    return ""
 
 
 def _names(items: list[dict], group: str) -> list[str]:
@@ -73,7 +101,8 @@ def template(c: CasePack, items: list[dict]) -> dict[str, str]:
                    "includes zero, so the tilt could be year-to-year noise.")
     if not items:
         ins.append("No record could be tested.")
-    supports = ("a real change in " + ", ".join(robust)) if robust else "no change that survives every check"
+    supports = (f"The evidence supports a real change in {', '.join(robust)}." if robust else
+                "No change survives every check yet, so the record cannot tell whether conditions are worsening.")
     return {
         "headline": head,
         "issue": f"{c.brief} The case asked: {c.question}",
@@ -81,7 +110,7 @@ def template(c: CasePack, items: list[dict]) -> dict[str, str]:
                      "the same checks on each: a linear regression with a t-test, the Mann-Kendall rank test with Sen's "
                      "slope, R² of the line, and the same tests again with the El Niño effect removed."),
         "insights": " ".join(ins),
-        "impact": (f"The evidence supports {supports}. Next steps: re-test as new satellite years arrive, compare a second "
+        "impact": (f"{supports} Next steps: re-test as new satellite years arrive, compare a second "
                    "region, and keep the case's limits in view: " + " ".join(c.limits[:1])),
     }
 
@@ -102,4 +131,6 @@ async def summarise(c: CasePack, facts: str, items: list[dict]) -> tuple[dict[st
         chk = guard.check_numbers(t, allowed)
         if not chk.ok or not t:
             return template(c, items), "code", f"guard ({k}): {chk.reason or 'empty'}"
+        if claim := overclaims(t):
+            return template(c, items), "code", f"guard ({k}): over-claims ({claim})"
     return out, "ai", ""
