@@ -25,17 +25,17 @@ function Datasets({ rows }: { rows: DatasetConfig[] }) {
         <thead><tr><th>Role</th><th>Dataset</th><th>Source</th><th>One yearly value</th><th>Unit · grid</th><th>Record in the vault</th><th>“Too small” band</th><th>Worse when</th></tr></thead>
         <tbody>{rows.map((d) => (
           <tr key={d.id} className={`role-${d.role ?? 'missing'}`}>
-            <td><span className={`role-chip ${d.role}`} title={d.role ? ROLE[d.role][1] : ''}>{d.role ? ROLE[d.role][0] : 'Unknown'}</span></td>
-            <td><strong>{d.name}</strong><small className="mono"> {d.id}</small>{d.definition && <div className="desk-def">{d.definition}</div>}
+            <td data-l="Role"><span className={`role-chip ${d.role}`} title={d.role ? ROLE[d.role][1] : ''}>{d.role ? ROLE[d.role][0] : 'Unknown'}</span></td>
+            <td data-l="Dataset"><strong>{d.name}</strong><small className="mono"> {d.id}</small>{d.definition && <div className="desk-def">{d.definition}</div>}
               {d.provisional && <div className="caveat">Provisional: {d.provisional}</div>}</td>
-            <td className="mono">{d.mission ?? '—'}</td>
-            <td>{d.yearly_label ?? '—'}{d.months && d.months.length < 12 && <div className="desk-def">Months: {d.months.join(', ')}</div>}</td>
-            <td className="mono">{d.unit ?? '—'}{d.grid_km ? ` · ${d.grid_km} km` : ''}</td>
-            <td className="mono">{d.vault ? Object.values(d.vault).map((v) => (
+            <td data-l="Source" className="mono">{d.mission ?? '—'}</td>
+            <td data-l="One yearly value">{d.yearly_label ?? '—'}{d.months && d.months.length < 12 && <div className="desk-def">Months: {d.months.join(', ')}</div>}</td>
+            <td data-l="Unit · grid" className="mono">{d.unit ?? '—'}{d.grid_km ? ` · ${d.grid_km} km` : ''}</td>
+            <td data-l="Record in the vault" className="mono">{d.vault ? Object.values(d.vault).map((v) => (
               <div key={v.region}>{v.missing ? `${v.region}: not in the vault` : `${v.region}: ${v.first}–${v.last} (${v.n_years} yrs), to ${v.data_as_of}`}</div>
             )) : '—'}</td>
-            <td className="mono">{d.band_per_decade != null ? `±${d.band_per_decade} / decade` : '—'}</td>
-            <td>{words(d.worse_when)}</td>
+            <td data-l="“Too small” band" className="mono">{d.band_per_decade != null ? `±${d.band_per_decade} / decade` : '—'}</td>
+            <td data-l="Worse when">{words(d.worse_when)}</td>
           </tr>
         ))}</tbody>
       </table>
@@ -77,8 +77,8 @@ function CaseCard({ r, busy, decide }: { r: DraftRow; busy: boolean; decide: (id
             <div className="desk-scroll"><table className="desk-table">
               <thead><tr><th>Dataset</th><th>Direction</th><th>Stamp</th><th>Rate per decade</th><th>95% range</th><th>With the El Niño lamp</th></tr></thead>
               <tbody>{Object.entries(r.key_cards).map(([id, k]) => (
-                <tr key={id}><td>{name(id)}</td><td>{words(k.direction)}</td><td>{words(k.stamp)}</td>
-                  <td className="mono">{num(k.rate_per_decade)}</td><td className="mono">{num(k.range[0])} to {num(k.range[1])}</td><td>{words(k.elnino_stamp)}</td></tr>
+                <tr key={id}><td data-l="Dataset">{name(id)}</td><td data-l="Direction">{words(k.direction)}</td><td data-l="Stamp">{words(k.stamp)}</td>
+                  <td data-l="Rate per decade" className="mono">{num(k.rate_per_decade)}</td><td data-l="95% range" className="mono">{num(k.range[0])} to {num(k.range[1])}</td><td data-l="With the El Niño lamp">{words(k.elnino_stamp)}</td></tr>
               ))}</tbody>
             </table></div>
           </>

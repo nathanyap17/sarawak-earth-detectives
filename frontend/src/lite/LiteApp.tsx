@@ -25,11 +25,11 @@ export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: stri
   return (
     <div className="lite">
       <header className="top">
-        <h1><img className="brand-logo" src="/brand/logo-128.webp" width="30" height="30" alt="" />Sarawak Earth Detectives</h1>
+        <h1><img className="brand-logo" src="/brand/logo-128.webp" width="30" height="30" alt="" /><span>Sarawak Earth Detectives</span></h1>
         <span className="top-right">
           {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
-          <button className="mode" onClick={() => setWire(!wire)} aria-expanded={wire}>📠 Agents at work</button>
-          {onOffice && <button className="mode" onClick={onOffice} aria-label="Switch to the 3D office">3D office</button>}
+          <button className="mode" onClick={() => setWire(!wire)} aria-expanded={wire} aria-label="Agents at work" title="Agents at work">📠<span className="lbl"> Agents at work</span></button>
+          {onOffice && <button className="mode" onClick={onOffice} aria-label="Switch to the 3D office">3D<span className="lbl"> office</span></button>}
           <SettingsMenu />
         </span>
       </header>

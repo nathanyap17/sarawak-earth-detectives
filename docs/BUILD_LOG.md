@@ -1,5 +1,27 @@
 # BUILD_LOG.md
 
+## [2026-11-19] One look on phones, tablets and desktops
+
+**What changed** (frontend only)
+- **Top bars.** Buttons never wrap inside themselves. Up to 560 px wide, the 2D and 3D bars show icons only (✉, 📠, 3D/2D, ⚙); the full names stay as tooltips and screen-reader labels. On a phone the 2D header puts the buttons on a second row under the title instead of squeezing the title into three lines. In the 3D office, when a window is open on a screen up to 1180 px wide, the bar keeps icons only so it stays one line, and the title shortens with "…" rather than pushing the gear off screen.
+- **Progress steps** fit a 375 px phone (step 7, "Case Closed", was cut off).
+- **Upright tablets** (641–1100 px, portrait) open the 3D office windows as a bottom sheet, as phones do, instead of a 320 px side drawer. The 3D camera now moves the focused object into the visible strip above the sheet (phones too), and on tablets frames it to the right of Kenyalang, whose box takes the left half.
+- **Touch screens:** top-bar, tab and window buttons are at least 40 px tall.
+- **Teacher's desk on a phone:** each dataset and answer-key row becomes a small card (every value under its column name) instead of a table that scrolls sideways; the case facts stack; the key form fills the width.
+- **Executive report on a phone:** chart legends become a list under the plot, axis labels that would collide are dropped, the 0.05 label moves to the top, and the sticky print bar is one short row.
+
+**Verified:** in the built-in browser at 375×812, 768×1024, 1024×768 and 1280×800: landing page, 2D app through all seven beats of case 001 (scene, locker, board, lab tools, deduction, closed), settings popover, case study, executive report, teacher's desk (layout checked with a stand-in response in the browser only, because the local desk has no key) and the 3D office with the inbox open. No page scrolls sideways at any size. `npm run build` passes; 77 backend tests pass.
+
+**Not verified:** real phones and iPads (only browser emulation); landscape phones.
+
+## [2026-11-19] Fix: "Could not reach the agency" after the local backend reloaded
+
+**Cause:** two model warm-up calls (Kenyalang, the Chief) hung on the network for 40 s and left worker threads stuck. When `--reload` restarted the backend, asyncio waited up to 300 s for those threads before the old process let go, so port 8000 stayed open but answered nothing and the inbox showed "Could not reach the agency". Local Google credentials were fine; the stall was the network call itself.
+
+**Fix:** `main.py` lifespan shutdown gives the default executor 3 s; if a thread is still stuck it logs a warning and exits at once (requests are already finished and every session write has happened). The same applies on Cloud Run when an instance is replaced.
+
+**Verified:** 77 backend tests (new `test_shutdown.py`: a stuck thread no longer holds shutdown; a clean shutdown does not force an exit). Local backend restarted; `/health` and `/cases` answer; the inbox in the 3D office lists the cases again.
+
 ## [2026-11-19] Sound and settings, a fuller teacher's desk, and an executive report that tells a story
 
 **What changed**

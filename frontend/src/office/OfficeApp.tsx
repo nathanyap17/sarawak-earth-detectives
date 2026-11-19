@@ -29,15 +29,21 @@ import { OVERVIEW, STATIONS } from './stations'
 import { useUI } from './ui'
 import { SettingsMenu } from '../sound/Settings'
 
-/** Pixel width the window covers on the right (matches .office-window in index.css). */
-function windowPx(w: number) { return w <= 640 ? 0 : Math.min(600, 0.42 * w) }   // ≤640 px: bottom sheet, no side shift
+/** How far to move the view's centre while a window is open (matches .office-window in index.css):
+ *  [x, y] in pixels; x > 0 moves it left of a drawer on the right, x < 0 moves it right, past Kenyalang;
+ *  y moves it up above a bottom sheet (phones 62% of the height, upright tablets 58%). */
+function windowArea(w: number, h: number): [number, number] {
+  if (w <= 640) return [0, 0.62 * h]
+  if (w <= 1100 && h > w) return [-0.36 * w, 0.58 * h]   // Kenyalang holds the left half of the strip
+  return [Math.min(600, 0.42 * w), 0]
+}
 
 function CameraRig() {
   const win = useUI((u) => u.win)
   const { camera, size } = useThree()
   const look = useRef(new Vector3(...OVERVIEW.look))
   const goalP = useRef(new Vector3()), goalL = useRef(new Vector3())
-  const shift = useRef(0)
+  const shift = useRef(0), lift = useRef(0)
   const setMoving = useUI((u) => u.setMoving)
   // the glide takes about 0.8 s; labels hide while it lasts so the room stays uncluttered
   useEffect(() => { setMoving(true); const t = setTimeout(() => setMoving(false), 850); return () => clearTimeout(t) }, [win, setMoving])
@@ -45,19 +51,21 @@ function CameraRig() {
     const k = 1 - Math.exp(-dt * 4.2)        // smooth glide of about 0.8 s, frame-rate independent
     // while a window is open, shift the projection so the object sits in the free area
     const cam = camera as PerspectiveCamera
-    const want = win ? windowPx(size.width) : 0
+    const [want, wantY] = win ? windowArea(size.width, size.height) : [0, 0]
     shift.current += (want - shift.current) * k
-    const p = Math.round(shift.current), full = size.width + p
-    if (cam.view?.offsetX !== p || cam.view?.fullWidth !== full || cam.view?.height !== size.height || Math.abs(cam.aspect - full / size.height) > 1e-6) {
-      cam.aspect = full / size.height
-      cam.setViewOffset(full, size.height, p, 0, size.width, size.height)
+    lift.current += (wantY - lift.current) * k
+    const p = Math.round(shift.current), q = Math.round(lift.current), px = Math.max(p, 0)
+    const full = size.width + Math.abs(p), fullH = size.height + q
+    if (cam.view?.offsetX !== px || cam.view?.offsetY !== q || cam.view?.fullWidth !== full || cam.view?.fullHeight !== fullH || cam.view?.height !== size.height || Math.abs(cam.aspect - full / fullH) > 1e-6) {
+      cam.aspect = full / fullH
+      cam.setViewOffset(full, fullH, px, q, size.width, size.height)
       cam.updateProjectionMatrix()
     }
     const st = win ? STATIONS[win] : OVERVIEW
     goalL.current.set(...st.look)
     // stations are framed for a free area about as wide as it is tall; step back on narrower ones
-    const free = Math.max(1, size.width - want)
-    const back = win ? Math.min(1.6, Math.max(1, size.height / free)) : Math.min(1.5, Math.max(1, (1.5 * size.height) / free))
+    const free = Math.max(1, size.width - Math.max(want, 0))
+    const back = win ? (wantY ? 1.5 : Math.min(1.6, Math.max(1, size.height / free))) : Math.min(1.5, Math.max(1, (1.5 * size.height) / free))
     goalP.current.set(...st.pos).sub(goalL.current).multiplyScalar(back).add(goalL.current)
     camera.position.lerp(goalP.current, k)
     look.current.lerp(goalL.current, k)
@@ -219,8 +227,8 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
         <img className="crest" src="/brand/logo-128.webp" width="34" height="34" alt="" />
         {onHome ? <button className="brand" onClick={onHome} title="Back to the front page">Sarawak Earth Detectives</button> : <h1>Sarawak Earth Detectives</h1>}
         {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
-        <button className="mode" onClick={() => setWin(win === 'inbox' ? null : 'inbox')}>✉ Inbox</button>
-        <button className="mode" onClick={() => setWin(win === 'agency' ? null : 'agency')}>📠 Agents at work</button>
+        <button className="mode" onClick={() => setWin(win === 'inbox' ? null : 'inbox')} aria-label="Inbox" title="Inbox">✉<span className="lbl"> Inbox</span></button>
+        <button className="mode" onClick={() => setWin(win === 'agency' ? null : 'agency')} aria-label="Agents at work" title="Agents at work">📠<span className="lbl"> Agents at work</span></button>
         <button className="mode" onClick={onLite} aria-label="Switch to the 2D lite mode">2D</button>
         <SettingsMenu />
       </header>

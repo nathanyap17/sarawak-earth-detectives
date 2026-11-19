@@ -505,3 +505,64 @@ button.gear { font-size: 1.05rem; line-height: 1; padding: 6px 10px; }
   .report-doc { padding: 20px 16px; }
 }
 @media print { .xr-insights { break-inside: auto; } .xr-fig-body { grid-template-columns: 1fr 230px; } }
+
+/* ---- one look on every device: phones, tablets, desktops ----
+   Top-bar buttons never wrap inside; on narrow screens they shrink to their icon (the full name stays
+   in aria-label and the tooltip). The title truncates instead of pushing the gear off screen. */
+button.mode { white-space: nowrap; }
+.top h1 { display: flex; align-items: center; min-width: 0; }
+.top h1 > span { overflow: hidden; text-overflow: ellipsis; }
+.top-right { flex: none; }
+.office-top .brand, .office-top h1 { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.office-top > *:not(.brand):not(h1) { flex: none; }
+@media (max-width: 560px) {
+  .top-right .lbl, .office-top .lbl { display: none; }
+  .top-right { gap: 6px; }
+  .top { flex-wrap: wrap; row-gap: 6px; }
+  .top h1 { font-size: 1.05rem; white-space: nowrap; flex: 1 1 auto; }
+  .top-right { margin-left: auto; }
+  .brand-logo { width: 26px; height: 26px; margin-right: 6px; }
+  .top-right button.mode, button.gear { padding: 6px 9px; }
+  .beats ol { gap: 2px; }
+  .beats li { padding: 4px 3px; }
+  .beats li.now { padding: 4px 10px 4px 4px; }
+}
+/* tablets and narrow laptops: with a window open the top bar is short, so keep only the icons */
+@media (max-width: 1180px) { .office:has(.office-window) .office-top .lbl { display: none; } }
+/* touch screens: buttons big enough for a finger */
+@media (pointer: coarse) {
+  button.mode, button.gear, .desk-tabs button, .win-bar button { min-height: 40px; }
+  .guide-row button { min-height: 36px; }
+}
+/* the teacher's desk on a phone: facts stack, the key form fills the width */
+@media (max-width: 640px) {
+  .desk-facts { grid-template-columns: 1fr; }
+  .desk-facts dt { margin-top: 6px; }
+  .desk-case header { flex-wrap: wrap; }
+  .desk-origin { margin-left: 0; width: 100%; }
+  .review form.slider-row { flex-wrap: wrap; }
+  .review form.slider-row label { flex: 1 1 100%; }
+  .review form.slider-row button { margin-top: 0; }
+  /* each table row becomes a small card: every value under its column name */
+  .desk-table { min-width: 0; }
+  .desk-table thead { display: none; }
+  .desk-table, .desk-table tbody, .desk-table tr, .desk-table td { display: block; }
+  .desk-table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; padding: 8px 0; border-bottom: 2px solid var(--line); }
+  .desk-table td[data-l="Dataset"], .desk-table td[data-l="Record in the vault"] { grid-column: 1 / -1; }
+  .desk-table td { border: 0; padding: 3px 4px; }
+  .desk-table td::before { content: attr(data-l); display: block; font-family: inherit; font-size: .7rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--green); }
+}
+/* the report's sticky toolbar stays one short row on phones */
+@media (max-width: 560px) { .report-toolbar small { display: none; } .report-toolbar { padding: 6px 10px; } }
+/* tablets held upright: a side drawer would be only ~320 px wide, so windows open as a bottom sheet
+   (as on phones) and the room stays visible above; Kenyalang sits just above the sheet */
+@media (min-width: 641px) and (max-width: 1100px) and (orientation: portrait) {
+  .office-window { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 58vh; border-left: 0; border-top: 3px solid var(--brass);
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, .55); animation-name: sheet-in; }
+  .office:has(.office-window) .office-top { right: 0; border-bottom-right-radius: 0; }
+  .office:has(.office-window) .office-top .lbl { display: inline; }
+  .office:has(.office-window) .guide, .office:has(.office-window) .guide-min { bottom: calc(58vh + 12px); }
+  .office:has(.office-window) .guide { max-width: min(420px, 50vw); }
+  .office:has(.office-window) .guide-body { max-height: 20vh; }
+}
+@keyframes sheet-in { from { transform: translateY(100%); } }

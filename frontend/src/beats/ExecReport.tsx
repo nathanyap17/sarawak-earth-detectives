@@ -4,7 +4,7 @@
 // caption comes from the statistics code (POST /sessions/{id}/summary, reports/insights.py).
 // Charts use the SVG renderer so they stay sharp when printed or saved as PDF.
 // AI-assisted: written with Claude Code.
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import * as echarts from 'echarts/core'
 import { LineChart, ScatterChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent } from 'echarts/components'
@@ -29,19 +29,34 @@ function Chart({ option, height }: { option: echarts.EChartsCoreOption; height: 
   return <div ref={el} className="xr-chart" style={{ height }} />
 }
 
+/** Phones: the charts stack their legends and thin their axis labels so nothing overlaps. */
+const NARROW = '(max-width: 560px)'
+const useNarrow = () => useSyncExternalStore(
+  (cb) => { const m = window.matchMedia(NARROW); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb) },
+  () => window.matchMedia(NARROW).matches)
+
 const base = { animation: false, textStyle: { fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: C.ink } }
 
 /** One record: the yearly dots, the regression line, its illustrative extension and the El Niño re-test. */
-function trendOption(i: Insight): echarts.EChartsCoreOption {
+function trendSeriesCount(i: Insight) {
+  return 1 + (i.elnino_points ? 1 : 0) + (i.line ? 1 : 0) + (i.line && i.line.length === 3 ? 1 : 0)
+}
+/** Height of a trend chart: on phones the legend is a list under the plot, one row per series. */
+const trendHeight = (i: Insight, narrow: boolean) => (narrow ? 210 + trendSeriesCount(i) * 18 + 14 : 260)
+
+function trendOption(i: Insight, narrow = false): echarts.EChartsCoreOption {
   const solid = i.line ? i.line.slice(0, 2) : []
   const ext = i.line && i.line.length === 3 ? i.line.slice(1) : []
   const last = i.metrics.last + (ext.length ? i.extend_years : 0)
   return {
     ...base,
-    grid: { left: 54, right: 16, top: 26, bottom: 64 },
-    legend: { bottom: 0, left: 0, itemWidth: 14, itemHeight: 8, textStyle: { fontSize: 10.5 } },
+    grid: narrow ? { left: 44, right: 10, top: 26, bottom: 36 + trendSeriesCount(i) * 18 + 14 } : { left: 54, right: 16, top: 26, bottom: 64 },
+    legend: narrow
+      ? { bottom: 0, left: 0, orient: 'vertical', itemGap: 4, itemWidth: 14, itemHeight: 8, textStyle: { fontSize: 10, width: 250, overflow: 'break' } }
+      : { bottom: 0, left: 0, itemWidth: 14, itemHeight: 8, textStyle: { fontSize: 10.5 } },
     tooltip: { trigger: 'item' },
-    xAxis: { type: 'value', min: i.metrics.first - 1, max: last + 1, axisLabel: { formatter: (v: number) => String(v) }, splitLine: { show: false } },
+    xAxis: { type: 'value', min: i.metrics.first - 1, max: last + 1, splitLine: { show: false },
+      axisLabel: { formatter: (v: number) => String(v), hideOverlap: true, fontSize: narrow ? 10 : 12 } },
     yAxis: { type: 'value', name: i.unit, nameTextStyle: { fontSize: 10, align: 'left' }, scale: true, splitLine: { lineStyle: { color: '#eee4d2' } } },
     series: [
       { name: `${i.yearly_label} (each dot = one year)`, type: 'scatter', data: i.points, symbolSize: 7,
@@ -57,24 +72,24 @@ function trendOption(i: Insight): echarts.EChartsCoreOption {
 }
 
 /** Every tested record's two p-values on one log scale, against the 0.05 line. */
-function pOption(items: Insight[]): echarts.EChartsCoreOption {
+function pOption(items: Insight[], narrow = false): echarts.EChartsCoreOption {
   const ok = items.filter((i) => i.metrics.t_test_p_raw != null)
   const clamp = (p: number | null) => Math.max(p ?? 1, 0.0001)
   const color = (p: number | null) => ((p ?? 1) < 0.05 ? C.sig : C.grey)
   return {
     ...base,
-    grid: { left: 150, right: 24, top: 30, bottom: 40 },
-    legend: { top: 0, left: 150, textStyle: { fontSize: 10.5 } },
+    grid: narrow ? { left: 96, right: 14, top: 48, bottom: 40 } : { left: 150, right: 24, top: 30, bottom: 40 },
+    legend: narrow ? { top: 0, left: 0, orient: 'vertical', itemGap: 4, textStyle: { fontSize: 10 } } : { top: 0, left: 150, textStyle: { fontSize: 10.5 } },
     tooltip: { trigger: 'item', formatter: (p: { seriesName: string; value: [number, string] }) => `${p.value[1]}<br/>${p.seriesName}: p ${p.value[0] <= 0.0001 ? '< 0.001' : p.value[0].toPrecision(2)}` },
     xAxis: { type: 'log', min: 0.0001, max: 1, name: 'p-value (log scale)', nameLocation: 'middle', nameGap: 22, nameTextStyle: { fontSize: 10.5 },
-      axisLabel: { formatter: (v: number) => (v < 0.001 ? '<0.001' : String(v)) } },
-    yAxis: { type: 'category', data: ok.map((i) => i.name), inverse: true, axisLabel: { width: 140, overflow: 'truncate', fontSize: 11 },
+      axisLabel: { formatter: (v: number) => (v < 0.001 ? '<0.001' : String(v)), hideOverlap: true, fontSize: narrow ? 9.5 : 12 } },
+    yAxis: { type: 'category', data: ok.map((i) => i.name), inverse: true, axisLabel: { width: narrow ? 88 : 140, overflow: narrow ? 'break' : 'truncate', fontSize: narrow ? 10 : 11 },
       splitLine: { show: true, lineStyle: { color: '#f0e8d8' } } },
     series: [
       { name: 'Linear regression t-test (●)', type: 'scatter', symbol: 'circle', symbolSize: 13, itemStyle: { color: C.green },
         data: ok.map((i) => ({ value: [clamp(i.metrics.t_test_p_raw), i.name], itemStyle: { color: color(i.metrics.t_test_p_raw) } })),
         markLine: { symbol: 'none', silent: true, lineStyle: { color: C.red, type: 'dashed', width: 2 },
-          label: { formatter: '0.05', fontSize: 10.5, color: C.red }, data: [{ xAxis: 0.05 }] },
+          label: { formatter: '0.05', position: narrow ? 'start' : 'end', fontSize: 10.5, color: C.red }, data: [{ xAxis: 0.05 }] },
         markArea: { silent: true, itemStyle: { color: 'rgba(46,125,50,0.07)' }, label: { show: true, position: 'insideTopLeft', formatter: 'significant zone', fontSize: 10, color: C.sig },
           data: [[{ xAxis: 0.0001 }, { xAxis: 0.05 }]] } },
       { name: 'Mann-Kendall test (◆)', type: 'scatter', symbol: 'diamond', symbolSize: 14, itemStyle: { color: C.green },
@@ -105,6 +120,7 @@ function Metrics({ i }: { i: Insight }) {
 }
 
 function Figure({ i, n }: { i: Insight; n: number }) {
+  const narrow = useNarrow()
   return (
     <figure className={`xr-fig ${i.significant ? 'sig' : 'nsig'}`}>
       <figcaption className="xr-fig-head">
@@ -112,7 +128,7 @@ function Figure({ i, n }: { i: Insight; n: number }) {
         <strong>{i.name}</strong>
         <span className={`xr-stamp ${i.stamp}`}>{i.stamp_text}</span>
       </figcaption>
-      <Chart option={trendOption(i)} height={260} />
+      <Chart option={trendOption(i, narrow)} height={trendHeight(i, narrow)} />
       <div className="xr-fig-body">
         <p className="xr-caption">{i.caption}</p>
         <Metrics i={i} />
@@ -127,6 +143,7 @@ export function ExecReport({ f, s }: { f: CaseFile; s: ExecSummary }) {
   const rest = s.insights.filter((i) => !i.significant)
   const tested = s.insights.filter((i) => i.metrics.t_test_p_raw != null)
   const glance = tested.length > 1
+  const narrow = useNarrow()
   const figNo = (k: number) => k + (glance ? 2 : 1)   // figure numbers, in reading order
   return (
     <div className="xr">
@@ -171,7 +188,7 @@ export function ExecReport({ f, s }: { f: CaseFile; s: ExecSummary }) {
         {glance && (
           <figure className="xr-fig wide">
             <figcaption className="xr-fig-head"><span className="xr-fig-n">Figure 1</span><strong>Significance at a glance</strong></figcaption>
-            <Chart option={pOption(tested)} height={80 + tested.length * 42} />
+            <Chart option={pOption(tested, narrow)} height={(narrow ? 100 : 80) + tested.length * 42} />
             <p className="xr-caption">Each record's two p-values on a log scale: the circle is the linear-regression t-test, the diamond the Mann-Kendall test. Marks left of the dashed 0.05 line (green) are significant; grey marks are not. A record counts as a trend only when both of its marks are green and the two tests agree on direction.</p>
           </figure>
         )}
