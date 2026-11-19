@@ -14,6 +14,8 @@
 
 **Verified locally:** two fresh real-model summaries. One was written by the AI ("current data cannot yet confirm if fire seasons are worsening… or if 2026 was one bad year"). The other was caught by the guard ("are not worsening") and replaced by the template. `uv run pytest -q` 104 passed.
 
+**Deployed (Nathan asked):** commit `8d28ce0`, backend only, Cloud Run revision `sed-api-00008-5bk` (`ADMIN_TOKEN` kept). Before: 104 passed, `npm run build` passes. After: `/health` cloud, firestore, `mock_agents: false`; admin without the key 401; site 200. Three fresh live summaries for case 001 were all honest: one AI-written ("trends that stop being significant once El Nino is removed… cannot yet show… whether conditions are worsening"); two were caught by the guard and replaced by the template. Cloud Run logs show the model still wrote "was simply one bad year" and "was just one bad year" in the impact despite the new instruction, so the code guard, not the prompt, is what keeps the conclusion honest.
+
 **Lessons:** a guard on numbers is not a guard on conclusions. The exemplar's whole point is the conclusion, so that needs its own check.
 
 ## [2026-11-19] Stress-testing the grader; the executive summary becomes the case's exemplar
