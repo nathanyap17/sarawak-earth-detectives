@@ -1,6 +1,7 @@
 // Lite mode: the seven beats as flat pages (MASTER_SHEET §5.4, §19). Built first; the 3D
 // office will reuse the same beats and state.
 // AI-assisted: written with Claude Code.
+import { isHandheld } from '../office/orientation'
 import { useEffect, useState } from 'react'
 import { logQuiet } from '../api/client'
 import { Agency } from '../beats/Agency'
@@ -33,7 +34,7 @@ export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: stri
           <SettingsMenu />
         </span>
       </header>
-      {note && <p className="muted lite-note">{note}{onOffice && ' You can still try the 3D office.'}</p>}
+      {note && <p className="muted lite-note">{note}{onOffice && (isHandheld() ? ' Tap 3D and hold your device sideways to enter the 3D office.' : ' You can still try the 3D office.')}</p>}
       <nav className="beats" aria-label="Investigation progress">
         <ol>{BEATS.map((b, i) => (
           <li key={b} className={i < idx ? 'done' : i === idx ? 'now' : ''} aria-current={i === idx ? 'step' : undefined}>

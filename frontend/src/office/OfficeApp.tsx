@@ -21,7 +21,6 @@ import { Guide } from './Guide'
 import { SPOT, STATION } from './script'
 import { Hornbill } from './Hornbill'
 import { Inbox } from './Inbox'
-import { saveLearnt } from './learnt'
 import { MapTable, useScene } from './MapTable'
 import { Room } from './Room'
 import { Labels } from './Spot'
@@ -31,10 +30,12 @@ import { SettingsMenu } from '../sound/Settings'
 
 /** How far to move the view's centre while a window is open (matches .office-window in index.css):
  *  [x, y] in pixels; x > 0 moves it left of a drawer on the right, x < 0 moves it right, past Kenyalang;
- *  y moves it up above a bottom sheet (phones 62% of the height, upright tablets 58%). */
+ *  y moves it up above a bottom sheet (phones 62% of the height, upright tablets 58%).
+ *  Short landscape screens (phones held sideways) get a half-width drawer. */
 function windowArea(w: number, h: number): [number, number] {
   if (w <= 640) return [0, 0.62 * h]
   if (w <= 1100 && h > w) return [-0.36 * w, 0.58 * h]   // Kenyalang holds the left half of the strip
+  if (h <= 500) return [0.5 * w, 0]                        // phones held sideways: a half-width drawer
   return [Math.min(600, 0.42 * w), 0]
 }
 
@@ -169,21 +170,6 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
     if (!hadCase.current && activeCase && win === 'call') setWin(null)
     hadCase.current = !!activeCase
   }, [activeCase, win, setWin])
-
-  // file a solved case under "Learnt cases" (this browser only)
-  useEffect(() => {
-    if (!grade || grade.ending === 'sent_back' || !activeCase) return
-    const st = useSession.getState()
-    const TOOL: Record<string, string> = { magnifier: 'magnifier', season: 'season filter', ruler: 'ruler', scales: 'scales', elnino: 'El Niño lamp', twin: 'twin map' }
-    const tools = [...new Set(Object.values(st.results).flatMap((r) => Object.keys(r ?? {})))].map((t) => TOOL[t] ?? t)
-    saveLearnt({
-      id: activeCase.id, title: activeCase.title, score: grade.score,
-      ending: grade.ending === 'solved_not_enough' ? 'Solved: not enough evidence yet' : 'Solved',
-      date: new Date().toISOString().slice(0, 10),
-      variables: activeCase.evidence.filter((e) => st.chosen.includes(e.id)).map((e) => e.name), tools,
-      verdict: st.draft ? `${st.draft.direction.replace('_', ' ')}; is it real: ${{ yes: 'yes', no: 'no', cant_tell: "can't tell" }[st.draft.is_it_real]}` : '',
-    })
-  }, [grade, activeCase])
 
   // idle → show every label and let the guide nudge
   useEffect(() => {

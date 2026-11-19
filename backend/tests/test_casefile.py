@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app import casework
 from app.agents import reporter
 from app.main import app
-from app.reports import casefile
+from app.reports import casefile, insights
 from app.vault.store import root
 
 pytestmark = pytest.mark.skipif(not (root() / "index.json").exists(), reason="vault not built")
@@ -66,29 +66,39 @@ def test_summary_falls_back_to_template_and_is_kept():
 def test_reporter_invented_number_falls_back(monkeypatch):
     sid = _played(); _close(sid)
     from app.sessions import store
-    cf = casefile.build(store.get(sid), casework.load_case("001"))
+    c = casework.load_case("001")
+    items = insights.build(c)
 
     async def liar(*a, **k):
         return json.dumps({k: "Soil fell by 42.7 percent." for k in reporter.SECTIONS}), 0.4, ""
     monkeypatch.setattr(reporter, "run_once", liar)
-    out, source, note = asyncio.run(reporter.summarise(cf, casefile.facts(cf)))
+    out, source, note = asyncio.run(reporter.summarise(c, insights.facts(c, items), items))
     assert source == "code" and note.startswith("guard") and "42.7" not in json.dumps(out)
 
 
 def test_summary_has_story_sections_and_code_charts():
     sid = _played(); _close(sid)
     a = client.post(f"/sessions/{sid}/summary").json()
-    assert a["v"] == 2 and set(a["sections"]) == {"headline", "issue", "response", "insights", "impact"}
+    assert a["v"] == 3 and set(a["sections"]) == {"headline", "issue", "response", "insights", "impact"}
     items = a["insights"]
-    assert [i["card_id"] for i in items] == ["soil_dry3"]          # only what the detective tested
-    i = items[0]
+    # the exemplar: every record that bears on the question, tested by this student or not; no red herring
+    assert {i["card_id"] for i in items} == {"soil_dry3", "humidity_feb_apr", "rain_feb_apr", "dry_spell"}
+    groups = [i["group"] for i in items]
+    assert groups == sorted(groups, key=["robust", "elnino", "not"].index)     # robust, then El Niño-only, then not
+    assert "not" in groups and any(not i["significant"] for i in items)       # the insignificant ones are kept
+    i = next(i for i in items if i["card_id"] == "soil_dry3")
     assert i["points"] and i["metrics"]["t_test_p"] and i["metrics"]["mann_kendall_p"] and i["metrics"]["r2"]
     assert i["caption"] and "0.05" in i["caption"]
-    # the line runs past the record only for a significant trend, and is labelled as such
-    assert (len(i["line"]) == 3) == i["significant"] and (i["extend_years"] > 0) == i["significant"]
+    # the line runs past the record only for a trend that survives every check, and is labelled as such
+    for i in items:
+        robust = i["group"] == "robust"
+        assert (len(i["line"]) == 3) == robust and (i["extend_years"] > 0) == robust
     body = json.dumps(a)
-    for leak in ("red_herring", "main_cards", "answer_key", "elnino_stamp", "key_overall"):
+    for leak in ("red_herring", "main_cards", "answer_key", "elnino_stamp", "key_overall", "wind"):
         assert leak not in body
+    # an exemplar, not a report card: nothing about this student
+    for personal in ("Tester", "score", "badge", "attempt"):
+        assert personal not in body
 
 
 def test_captions_explain_significant_and_not():

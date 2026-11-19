@@ -13,7 +13,7 @@ from app import docs
 from app.agents import activity, chief, listener, partner, reporter, runtime, scout
 from app.reports import casefile, insights
 
-SUMMARY_V = 2   # executive report layout; an older stored summary is rewritten in the new layout
+SUMMARY_V = 3   # executive report layout; an older stored summary is rewritten in the new layout (3: the exemplar)
 from app.config import get_settings
 from app.grading import Attempt, grade
 from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChiefNote, ChooseCards, ChooseResult,
@@ -298,14 +298,14 @@ def case_file(session_id: str):
 
 @router.post("/sessions/{session_id}/summary")
 async def exec_summary(session_id: str):
-    """The executive report of a closed case, written once and kept: the Reporter's story text
-    (guarded) around the key-insight charts, whose numbers and captions are computed by code."""
+    """The executive report of a closed case, written once and kept: the agency's exemplar (every relevant
+    record, significant or not, and no marks; the case study has those). The Reporter's story text is
+    guarded; the key-insight charts, numbers and captions are computed by code."""
     s, c = _closed_case(session_id)
     if (s.grade.get("exec_summary") or {}).get("v") == SUMMARY_V:
         return s.grade["exec_summary"]
-    cf = casefile.build(s, c)
-    items = insights.build(s, c)
-    sections, source, note = await reporter.summarise(cf, casefile.facts(cf) + "\n" + insights.facts(items), items)
+    items = insights.build(c)    # the exemplar: every relevant record, nothing about this student
+    sections, source, note = await reporter.summarise(c, insights.facts(c, items), items)
     out = {"v": SUMMARY_V, "sections": sections, "source": source, "insights": items}
     s.grade["exec_summary"] = out
     s.record("summary", source=source, note=note)

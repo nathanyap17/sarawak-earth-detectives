@@ -1,11 +1,13 @@
 // App shell. "/" is the front page (LANDING.md); "/#/play" is the app: the 3D office by default,
 // lite (2D) mode when the device can't or shouldn't run 3D, and a manual switch both ways
 // (MASTER_SHEET §19). Both modes share one store, so switching keeps the investigation.
+// On phones and tablets the 3D office is held sideways and 2D upright (office/orientation.tsx).
 // The landing page and the office are code-split, so each loads only what it needs.
 // AI-assisted: written with Claude Code.
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { LiteApp } from './lite/LiteApp'
 import { liteReason, saveMode, savedMode, webglOk, type Mode } from './office/capability'
+import { fitOrientation, RotateGate } from './office/orientation'
 import { setScene, wireClicks } from './sound/audio'
 
 wireClicks()
@@ -29,8 +31,9 @@ export default function App() {
     return () => window.removeEventListener('hashchange', on)
   }, [])
   useEffect(() => { setScene(play && !review) }, [play, review])   // music in the app only
-  const pick = (m: Mode) => { saveMode(m); setMode(m) }
-  const home = () => { window.location.hash = '' }
+  const pick = (m: Mode) => { saveMode(m); setMode(m); void fitOrientation(m) }
+  const home = () => { void fitOrientation('lite'); window.location.hash = '' }
+  const gate = <RotateGate mode={mode} onSwitch={pick} canSwitch={mode === '3d' || webglOk()} />
 
   if (review) return <Suspense fallback={null}><Review /></Suspense>
   if (!play) {
@@ -40,10 +43,13 @@ export default function App() {
       </Suspense>
     )
   }
-  if (mode === 'lite') return <LiteApp onOffice={webglOk() ? () => pick('3d') : undefined} note={reason} />
+  if (mode === 'lite') return <>{gate}<LiteApp onOffice={webglOk() ? () => pick('3d') : undefined} note={reason} /></>
   return (
-    <Suspense fallback={<div className="office"><p className="stage-boot" role="status">Opening the office…</p></div>}>
-      <OfficeApp onLite={() => pick('lite')} onHome={home} />
-    </Suspense>
+    <>
+      {gate}
+      <Suspense fallback={<div className="office"><p className="stage-boot" role="status">Opening the office…</p></div>}>
+        <OfficeApp onLite={() => pick('lite')} onHome={home} />
+      </Suspense>
+    </>
   )
 }

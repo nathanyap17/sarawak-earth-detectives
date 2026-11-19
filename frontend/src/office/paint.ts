@@ -34,6 +34,24 @@ export function stampTexture(text: string, colour = '#c8102e') {
   return tex(c)
 }
 
+/** A medal face: a metal disc with a raised rim, the agency's nine-pointed star and the score. */
+export function medalTexture(score: number, metal: string, shine: string) {
+  const [c, g] = canvas(128, 128)
+  const grad = g.createRadialGradient(46, 40, 6, 64, 64, 64)
+  grad.addColorStop(0, shine); grad.addColorStop(0.55, metal); grad.addColorStop(1, '#3a2a10')
+  g.fillStyle = grad; g.beginPath(); g.arc(64, 64, 63, 0, Math.PI * 2); g.fill()
+  g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 4; g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.stroke()
+  g.fillStyle = 'rgba(60,40,10,.35)'; g.beginPath()
+  for (let i = 0; i < 18; i++) {
+    const r = i % 2 ? 18 : 40, a = -Math.PI / 2 + (i * Math.PI) / 9
+    g.lineTo(64 + r * Math.cos(a), 58 + r * Math.sin(a))
+  }
+  g.closePath(); g.fill()
+  g.fillStyle = '#2a1a05'; g.font = 'bold 30px system-ui, sans-serif'; g.textAlign = 'center'
+  g.fillText(String(Math.round(score)), 64, 108)
+  return tex(c)
+}
+
 function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number) {
   let line = ''
   for (const w of text.split(' ')) {

@@ -17,5 +17,5 @@ export const STATIONS: Record<SpotId, Station> = {
   lab:       { pos: [-1.75, 1.8, -1.0], look: [-4.4, 1.15, -1.0] },
   deduction: { pos: [-0.75, 1.35, -1.75], look: [-0.75, 0.82, -2.75] },
   agency:    { pos: [-2.3, 1.75, 1.25],  look: [-4.6, 1.45, 1.25] },
-  closed:    { pos: [3.9, 1.7, -0.9],    look: [3.9, 1.35, -3.75] },
+  closed:    { pos: [3.9, 1.5, -0.9],    look: [3.9, 1.05, -3.75] },   // low enough that the medal row clears Kenyalang's box
 }

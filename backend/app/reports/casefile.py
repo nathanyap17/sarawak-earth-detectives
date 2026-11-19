@@ -83,52 +83,10 @@ def build(s, c: CasePack) -> dict:
         "steps": steps, "tests": tests,
         "partner": [{"q": h.get("q") or "(asked for a hint)", "a": h.get("a"), "by": "AI" if h.get("source") == "ai" else "approved hint"}
                     for h in s.partner_chat],
-        "verdict": {k: v[k] for k in ("what", "where", "direction", "how_much", "is_it_real", "why_hypothesis", "confidence")} if v else None,
+        "verdict": ({k: v[k] for k in ("what", "where", "direction", "how_much", "is_it_real", "why_hypothesis", "confidence")}
+                    | {"reasoning": v.get("reasoning", "")}) if v else None,
         "attempts": len(s.verdicts),
         "grade": {"score": g.get("score"), "parts": g.get("parts"), "ending": ENDING.get(g.get("ending"), g.get("ending")),
-                  "feedback": g.get("feedback", []), "badges": g.get("badges", []), "chief_note": g.get("chief_note")},
+                  "feedback": g.get("feedback", []), "badges": g.get("badges", []), "chief_note": g.get("chief_note"),
+                  "checks": g.get("checks", [])},
     }
-
-
-def facts(cf: dict) -> str:
-    """The Reporter's only source: plain lines, every figure already formatted by code."""
-    c, g, v = cf["case"], cf["grade"], cf["verdict"] or {}
-    lines = [
-        f"Case {c['id']}: {c['title']}. Question: {c['question']}",
-        f"Brief: {c['brief']}",
-        f"Region: {c['region']}" + (f"; compared with {c['twin_region']}" if c["twin_region"] else "") + ".",
-        f"Detective (nickname): {cf['detective']}.",
-        "Evidence chosen: " + ("; ".join(f"{e['name']} ({e['mission']})" for e in cf["evidence"]) or "none") + ".",
-        f"Map pins inspected: {cf['pins']}.",
-    ]
-    for t in cf["tests"]:
-        bits = [f"{t['tool']} on {t['card']}"]
-        if t["n_years"]:
-            bits.append(f"{t['n_years']} years of {t['mission']} data to {t['data_as_of']}")
-        if t["rate"]:
-            bits.append(f"rate {t['rate']} {t['unit']}")
-        if t["range"]:
-            bits.append(f"95% range {t['range'][0]} to {t['range'][1]}")
-        if t["t_test_p"]:
-            bits.append(f"t-test p {t['t_test_p']}")
-        if t["mann_kendall_p"]:
-            bits.append(f"Mann-Kendall p {t['mann_kendall_p']}")
-        if t["elnino_r"]:
-            bits.append(f"correlation with El Nino {t['elnino_r']}")
-        if t["stamp"]:
-            bits.append(f"stamp: {t['stamp']}")
-        if t["years_needed"]:
-            bits.append(f"years needed to settle it: {t['years_needed']}")
-        lines.append("Test: " + "; ".join(bits) + ".")
-    if v:
-        lines.append(f"Student's verdict: what \"{v['what']}\"; where \"{v['where']}\"; direction {v['direction'].replace('_', ' ')}; "
-                     f"how much \"{v['how_much']}\"; is it real: {v['is_it_real'].replace('_', ' ')}; why \"{v['why_hypothesis']}\"; "
-                     f"confidence {v['confidence']} of 3.")
-    p = g.get("parts") or {}
-    lines.append(f"Outcome: {g['ending']} after {cf['attempts']} attempt(s). Score {g['score']:g} of 100 "
-                 f"(evidence {p.get('evidence', 0):g} of 25, method {p.get('method', 0):g} of 25, verdict {p.get('verdict', 0):g} of 30, "
-                 f"explanation {p.get('explanation', 0):g} of 20).")
-    if g["feedback"]:
-        lines.append("Grader's notes: " + " ".join(g["feedback"]))
-    lines.append("Limits: " + " ".join(c["limits"]))
-    return "\n".join(lines)

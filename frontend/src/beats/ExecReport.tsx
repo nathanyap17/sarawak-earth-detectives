@@ -1,5 +1,7 @@
-// The executive report of a closed case, told as a story: header, the issue, the detective's
-// response, key insights (charts with their statistics) and impact / next steps.
+// The executive report of a closed case: the agency's exemplar, told as a story. Header (topic, one line,
+// prepared by Sarawak Earth Detectives), the issue, the response, key insights and impact / next steps.
+// It charts every record that bears on the question, significant or not, and shows by which measures each
+// is judged. It carries no marks, badges or verdict of the student: the case study has those.
 // The prose comes from the Reporter agent (guarded) or the code template; every chart, number and
 // caption comes from the statistics code (POST /sessions/{id}/summary, reports/insights.py).
 // Charts use the SVG renderer so they stay sharp when printed or saved as PDF.
@@ -15,7 +17,6 @@ echarts.use([LineChart, ScatterChart, GridComponent, LegendComponent, MarkAreaCo
 
 const C = { ink: '#221a14', green: '#1f3a2c', brass: '#d2a94e', red: '#c8102e', grey: '#9a8f84', sig: '#2e7d32', teal: '#1f6f8b' }
 const myt = (iso: string) => new Date(iso).toLocaleDateString('en-MY', { timeZone: 'Asia/Kuching', day: 'numeric', month: 'long', year: 'numeric' })
-const words = (s: string) => s.replace(/_/g, ' ')
 
 function Chart({ option, height }: { option: echarts.EChartsCoreOption; height: number }) {
   const el = useRef<HTMLDivElement>(null)
@@ -94,8 +95,37 @@ function pOption(items: Insight[], narrow = false): echarts.EChartsCoreOption {
           data: [[{ xAxis: 0.0001 }, { xAxis: 0.05 }]] } },
       { name: 'Mann-Kendall test (◆)', type: 'scatter', symbol: 'diamond', symbolSize: 14, itemStyle: { color: C.green },
         data: ok.map((i) => ({ value: [clamp(i.metrics.mann_kendall_p_raw), i.name], itemStyle: { color: color(i.metrics.mann_kendall_p_raw), opacity: 0.75 } })) },
+      { name: 'Both tests again, El Niño removed (○ ◇)', type: 'scatter', symbol: 'circle', symbolSize: 11,
+        itemStyle: { color: 'transparent', borderColor: C.teal, borderWidth: 2 },
+        data: ok.filter((i) => i.metrics.after_elnino_t_p_raw != null).flatMap((i) => [
+          { value: [clamp(i.metrics.after_elnino_t_p_raw), i.name], symbol: 'circle' },
+          { value: [clamp(i.metrics.after_elnino_mk_p_raw), i.name], symbol: 'diamond' }]) },
     ],
   }
+}
+
+/** Every record against every measure, so the reader sees what makes each one significant or not. */
+function Scoreboard({ items }: { items: Insight[] }) {
+  const pass = (p: number | null) => p != null && p < 0.05
+  const cell = (txt: string | null, p: number | null) => <td className={`mono ${pass(p) ? 'pass' : 'fail'}`}>{txt ?? '—'}</td>
+  return (
+    <div className="xr-board-wrap">
+      <table className="xr-board">
+        <thead><tr><th>Record</th><th>Linear regression t-test p</th><th>Mann-Kendall p</th><th>Sen's slope per decade</th><th>R²</th>
+          <th>t-test p, El Niño removed</th><th>Mann-Kendall p, El Niño removed</th><th>Reading</th></tr></thead>
+        <tbody>{items.map((i) => (
+          <tr key={i.card_id}>
+            <th>{i.name}</th>
+            {cell(i.metrics.t_test_p, i.metrics.t_test_p_raw)}{cell(i.metrics.mann_kendall_p, i.metrics.mann_kendall_p_raw)}
+            <td className="mono">{i.metrics.sen ? `${i.metrics.sen} ${i.unit}` : '—'}</td><td className="mono">{i.metrics.r2 ?? '—'}</td>
+            {cell(i.metrics.after_elnino_t_p, i.metrics.after_elnino_t_p_raw)}{cell(i.metrics.after_elnino_mk_p, i.metrics.after_elnino_mk_p_raw)}
+            <td><span className={`xr-group ${i.group}`}>{i.group_text}</span></td>
+          </tr>
+        ))}</tbody>
+      </table>
+      <p className="xr-caption">Green p-values are below the 0.05 line. A record counts as a trend only when both tests are green and agree on direction; it is robust only if both stay green once the El Niño effect is removed.</p>
+    </div>
+  )
 }
 
 function Metrics({ i }: { i: Insight }) {
@@ -109,7 +139,7 @@ function Metrics({ i }: { i: Insight }) {
     ["Sen's slope", m.sen ? `${m.sen} ${i.unit}/decade` : null],
     ['R² of the line', m.r2],
     ['Correlation with El Niño (r)', m.elnino_r],
-    ['After El Niño removed', m.after_elnino],
+    ['After El Niño removed', m.after_elnino ? `${m.after_elnino}${m.after_elnino_t_p ? ` (t-test p ${m.after_elnino_t_p}, Mann-Kendall p ${m.after_elnino_mk_p})` : ''}` : null],
     ['“Too small to matter” band', `±${m.band} ${i.unit}/decade`],
   ]
   return (
@@ -122,7 +152,7 @@ function Metrics({ i }: { i: Insight }) {
 function Figure({ i, n }: { i: Insight; n: number }) {
   const narrow = useNarrow()
   return (
-    <figure className={`xr-fig ${i.significant ? 'sig' : 'nsig'}`}>
+    <figure className={`xr-fig ${i.group === 'robust' ? 'sig' : i.group === 'elnino' ? 'mid' : 'nsig'}`}>
       <figcaption className="xr-fig-head">
         <span className="xr-fig-n">Figure {n}</span>
         <strong>{i.name}</strong>
@@ -138,25 +168,36 @@ function Figure({ i, n }: { i: Insight; n: number }) {
   )
 }
 
+const GROUPS: { g: Insight['group']; title: string; cls: string; lede: string }[] = [
+  { g: 'robust', title: 'Significant, and it holds with El Niño removed', cls: 'ok',
+    lede: 'Both tests clear the 0.05 line, agree on direction, and still clear it once the El Niño years are accounted for.' },
+  { g: 'elnino', title: 'Significant at first, but not once El Niño is removed', cls: 'mid',
+    lede: 'Both tests clear the 0.05 line on the raw record, but the re-test with the El Niño effect removed does not: strong El Niño years may be making the trend.' },
+  { g: 'not', title: 'Not significant, and why', cls: '',
+    lede: 'The tilt of the line is within what year-to-year noise can produce: the tests stay above 0.05, or the 95% range of the slope includes zero.' },
+]
+
 export function ExecReport({ f, s }: { f: CaseFile; s: ExecSummary }) {
-  const sig = s.insights.filter((i) => i.significant)
-  const rest = s.insights.filter((i) => !i.significant)
   const tested = s.insights.filter((i) => i.metrics.t_test_p_raw != null)
   const glance = tested.length > 1
   const narrow = useNarrow()
-  const figNo = (k: number) => k + (glance ? 2 : 1)   // figure numbers, in reading order
+  const groups = GROUPS.map((x) => ({ ...x, items: s.insights.filter((i) => i.group === x.g) })).filter((x) => x.items.length)
+  let fig = glance ? 2 : 1
+  const years = s.insights.length ? `${Math.min(...s.insights.map((i) => i.metrics.first))}–${Math.max(...s.insights.map((i) => i.metrics.last))}` : '—'
+  const asOf = s.insights.map((i) => i.data_as_of).sort().at(-1)
   return (
     <div className="xr">
       <header className="xr-head">
         <img src="/brand/logo-128.webp" width="72" height="72" alt="" />
         <div>
-          <p className="doc-kicker">Executive summary · Case {f.case.id}</p>
+          <p className="doc-kicker">Executive summary · Case {f.case.id} · the agency's exemplar</p>
           <h1>{f.case.title}</h1>
           <p className="xr-lede">{s.sections.headline}</p>
-          <p className="xr-by">Prepared by <strong>Sarawak Earth Detectives</strong> · Detective {f.detective} · {f.case.region} · {myt(f.finished)}</p>
+          <p className="xr-by">Prepared by <strong>Sarawak Earth Detectives</strong> · {f.case.region} · {myt(f.finished)}</p>
         </div>
-        <div className={`xr-outcome ${f.grade.ending.startsWith('Sent') ? 'back' : ''}`}><span>{f.grade.ending}</span><strong>{f.grade.score}</strong><small>of 100</small></div>
       </header>
+      <p className="xr-note">This is the model report for the case: how every record that bears on the question reads under the tests.
+        Your own marks, badges and verdict are in your case study.</p>
 
       <section>
         <h2><span>1</span> The issue</h2>
@@ -168,16 +209,16 @@ export function ExecReport({ f, s }: { f: CaseFile; s: ExecSummary }) {
         <h2><span>2</span> The response</h2>
         <p>{s.sections.response}</p>
         <ul className="xr-chips">
-          <li><strong>{f.evidence.length}</strong> NASA records chosen</li>
-          <li><strong>{f.tests.length}</strong> lab tests run</li>
-          <li><strong>{f.pins}</strong> map pins</li>
-          <li><strong>{f.attempts}</strong> verdict attempt{f.attempts > 1 ? 's' : ''}</li>
+          <li><strong>{s.insights.length}</strong> NASA records analysed</li>
+          <li><strong>4</strong> checks on each record</li>
+          <li><strong>{years}</strong> years covered</li>
+          {asOf && <li>data to <strong>{asOf}</strong></li>}
         </ul>
         <div className="xr-method">
           <strong>How a trend is judged.</strong> Linear regression fits a straight line through the yearly values; its slope is the rate of
           change and its t-test (with errors widened for year-to-year memory) asks whether the slope could be zero. The Mann-Kendall
           test asks the same question without assuming a straight line, and Sen's slope is its median rate. A trend counts as
-          significant only when <em>both</em> p-values fall below 0.05 and agree on direction. The El Niño lamp removes the part of each
+          significant only when <em>both</em> p-values fall below 0.05 and agree on direction. The El Niño re-test removes the part of each
           year explained by the El Niño index, then tests again. R² is the share of year-to-year variation the line explains.
         </div>
       </section>
@@ -188,21 +229,19 @@ export function ExecReport({ f, s }: { f: CaseFile; s: ExecSummary }) {
         {glance && (
           <figure className="xr-fig wide">
             <figcaption className="xr-fig-head"><span className="xr-fig-n">Figure 1</span><strong>Significance at a glance</strong></figcaption>
-            <Chart option={pOption(tested, narrow)} height={(narrow ? 100 : 80) + tested.length * 42} />
-            <p className="xr-caption">Each record's two p-values on a log scale: the circle is the linear-regression t-test, the diamond the Mann-Kendall test. Marks left of the dashed 0.05 line (green) are significant; grey marks are not. A record counts as a trend only when both of its marks are green and the two tests agree on direction.</p>
+            <Chart option={pOption(tested, narrow)} height={(narrow ? 120 : 90) + tested.length * 46} />
+            <p className="xr-caption">Each record's p-values on a log scale: the filled circle is the linear-regression t-test, the filled diamond the Mann-Kendall test, and the hollow teal marks are the same two tests with the El Niño effect removed. Marks left of the dashed 0.05 line are significant. A record is a trend only when both filled marks are green; it is robust only if the hollow marks stay left of the line too.</p>
           </figure>
         )}
-        {sig.length > 0 && <h3 className="xr-sub ok">Significant trends</h3>}
-        {sig.map((i, k) => <Figure key={i.card_id} i={i} n={figNo(k)} />)}
-        {rest.length > 0 && <h3 className="xr-sub">Not significant, and why</h3>}
-        {rest.map((i, k) => <Figure key={i.card_id} i={i} n={figNo(sig.length + k)} />)}
-        {s.insights.length === 0 && <p className="muted">The detective ran no tests, so there are no charts to show.</p>}
-        {f.verdict && (
-          <div className="xr-verdict">
-            <strong>The detective's verdict:</strong> {f.verdict.what} ({f.verdict.where}) · direction {words(f.verdict.direction)} ·
-            is it real? {words(f.verdict.is_it_real)} · confidence {f.verdict.confidence} of 3.
+        {s.insights.length > 0 && <Scoreboard items={s.insights} />}
+        {groups.map((x) => (
+          <div key={x.g} className="xr-group-block">
+            <h3 className={`xr-sub ${x.cls}`}>{x.title}</h3>
+            <p className="xr-group-lede">{x.lede}</p>
+            {x.items.map((i) => <Figure key={i.card_id} i={i} n={fig++} />)}
           </div>
-        )}
+        ))}
+        {s.insights.length === 0 && <p className="muted">No record could be tested, so there are no charts to show.</p>}
       </section>
 
       <section>
@@ -219,3 +258,4 @@ export function ExecReport({ f, s }: { f: CaseFile; s: ExecSummary }) {
     </div>
   )
 }
+

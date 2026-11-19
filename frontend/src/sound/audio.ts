@@ -244,6 +244,70 @@ export function sfx(kind: Sfx) {
   }
 }
 
+// ---------------------------------------------------------------- the case-closed fanfare
+type Tier = 'gold' | 'silver' | 'bronze'
+
+/** A short brass fanfare when a case closes. Gold gets the full call with a shimmer on top,
+ *  silver a shorter one, bronze a bright three-note rise. About two seconds at most. */
+export function fanfare(tier: Tier) {
+  if (!prefs.sfx) return
+  const c = graph()
+  if (!c) return
+  if (c.state !== 'running') { c.resume().then(() => fanfare(tier), () => {}); return }
+  scoreFanfare(c, sfxBus, c.currentTime + 0.02, tier)
+}
+
+/** Render the fanfare offline through the same levels and compressor as the live effects, so it can be
+ *  measured (peak, loudness, length) or saved as a file without anyone listening. */
+export async function renderFanfare(tier: Tier, rate = 44100): Promise<AudioBuffer> {
+  const c = new OfflineAudioContext(1, Math.ceil(rate * 3), rate)
+  const out = c.createDynamicsCompressor(); out.threshold.value = -14; out.ratio.value = 3
+  const bus = c.createGain(); bus.gain.value = DEFAULTS.sfxVol * 0.7
+  bus.connect(out).connect(c.destination)
+  scoreFanfare(c, bus, 0.02, tier)
+  return c.startRendering()
+}
+
+function scoreFanfare(c: BaseAudioContext, dest: AudioNode, t: number, tier: Tier) {
+  const note = (n: number) => 440 * Math.pow(2, (n - 69) / 12)
+  const tone = (f0: number, f1: number, at: number, len: number, level: number, type: OscillatorType) => {
+    const o = c.createOscillator(); o.type = type
+    o.frequency.setValueAtTime(f0, at); o.frequency.exponentialRampToValueAtTime(f1, at + len)
+    const g = c.createGain(); env(g, at, level, 0.003, len)
+    o.connect(g).connect(dest)
+    o.start(at); o.stop(at + len + 0.05)
+  }
+  const brass = (n: number, at: number, len: number, level: number) => {
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2
+    lp.frequency.setValueAtTime(500, at); lp.frequency.exponentialRampToValueAtTime(3200, at + 0.06)
+    lp.frequency.exponentialRampToValueAtTime(1400, at + len)
+    const g = c.createGain(); env(g, at, level, 0.025, len)
+    lp.connect(g).connect(dest)
+    for (const det of [-6, 5]) {
+      const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = note(n); o.detune.value = det
+      o.connect(lp); o.start(at); o.stop(at + len + 0.1)
+    }
+  }
+  const sparkle = (at: number, count: number) => {
+    const scale = [84, 86, 88, 91, 93, 96, 98]   // C major pentatonic, high
+    for (let i = 0; i < count; i++) { const f = note(scale[(i * 3) % scale.length]); tone(f, f * 1.01, at + i * 0.07, 0.25, 0.05, 'sine') }
+  }
+  if (tier === 'gold') {
+    ;[67, 67, 67].forEach((n, i) => brass(n, t + i * 0.11, 0.09, 0.12))       // G G G
+    brass(72, t + 0.36, 0.5, 0.14); brass(76, t + 0.36, 0.5, 0.1)              // C-E
+    ;[72, 76, 79, 84].forEach((n) => brass(n, t + 0.9, 1.2, 0.1))              // the big C major chord
+    tone(note(96), note(96), t + 0.9, 1.4, 0.06, 'triangle')                   // a bell on top
+    sparkle(t + 1.0, 9)
+  } else if (tier === 'silver') {
+    ;[67, 72].forEach((n, i) => brass(n, t + i * 0.13, 0.11, 0.12))
+    ;[72, 76, 79].forEach((n) => brass(n, t + 0.3, 0.9, 0.1))
+    sparkle(t + 0.4, 5)
+  } else {
+    ;[60, 64, 67].forEach((n, i) => brass(n, t + i * 0.12, 0.12, 0.11))
+    ;[60, 64, 67, 72].forEach((n) => brass(n, t + 0.38, 0.7, 0.08))
+  }
+}
+
 // ---------------------------------------------------------------- one listener for every button
 const CLICKABLE = 'button, a[href], [role="button"], [role="tab"], [role="menuitem"], summary, select, input[type="checkbox"], input[type="radio"], input[type="range"]'
 let wired = false

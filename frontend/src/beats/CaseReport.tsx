@@ -76,7 +76,9 @@ function Study({ f }: { f: CaseFile }) {
           <dl className="doc-verdict">
             <dt>What</dt><dd>{v.what}</dd><dt>Where</dt><dd>{v.where}</dd>
             <dt>Direction</dt><dd>{words(v.direction)}</dd><dt>How much</dt><dd>{v.how_much}</dd>
-            <dt>Is it real?</dt><dd>{words(v.is_it_real)}</dd><dt>Why</dt><dd>{v.why_hypothesis}</dd>
+            <dt>Is it real?</dt><dd>{words(v.is_it_real)}</dd>
+            {v.reasoning && <><dt>Because</dt><dd>{v.reasoning}</dd></>}
+            <dt>Why</dt><dd>{v.why_hypothesis}</dd>
             <dt>Confidence</dt><dd>{v.confidence} of 3</dd>
           </dl>
         ) : <p>No verdict.</p>}
@@ -88,6 +90,11 @@ function Study({ f }: { f: CaseFile }) {
           evidence {f.grade.parts.evidence}/25 · method {f.grade.parts.method}/25 · verdict {f.grade.parts.verdict}/30 · explanation {f.grade.parts.explanation}/20</p>
         {f.grade.chief_note && <blockquote>{f.grade.chief_note} <small>(worded by AI from the code's grade)</small></blockquote>}
         <ul>{f.grade.feedback.map((x) => <li key={x}>{x}</li>)}</ul>
+        {f.grade.checks && f.grade.checks.length > 0 && (
+          <ul className="doc-checks" aria-label="How your reasoning was read">
+            {f.grade.checks.map((c) => <li key={c.id}>{c.ok ? '✔' : '✘'} <strong>{c.label}.</strong> {c.detail}</li>)}
+          </ul>
+        )}
         {f.grade.badges.length > 0 && <p>Badges: {f.grade.badges.map((b) => BADGE[b] ?? b).join(' · ')}</p>}
       </section>
       <section>

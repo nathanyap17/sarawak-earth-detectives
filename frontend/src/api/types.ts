@@ -40,10 +40,15 @@ export interface AnalysisResult {
 export interface Verdict {
   session_id: string; what: string; where: string; direction: 'worsening' | 'improving' | 'no_change'
   how_much: string; is_it_real: 'yes' | 'no' | 'cant_tell'; why_hypothesis: string; confidence: 1 | 2 | 3
+  /** what in the student's own evidence backs their answer to "is it real?" */
+  reasoning: string
 }
+/** How the grader read the student's written reasoning (about their own stand, never the answer key). */
+export interface ReasonCheck { id: 'what' | 'stance' | 'evidence' | 'consistent' | 'why'; ok: boolean; label: string; detail: string }
 export interface Grade {
   score: number; parts: { evidence: number; method: number; verdict: number; explanation: number }
   ending: Ending; feedback: string[]; badges: Badge[]; report_url: string | null
+  checks?: ReasonCheck[]
   attempt: number; can_retry: boolean; chief_note: string | null
 }
 export interface PartnerReply {
@@ -112,12 +117,17 @@ export interface Insight {
   metrics: { n_years: number; first: number; last: number; rate: string | null; range: [string, string] | null
     t_test_p: string | null; mann_kendall_p: string | null; t_test_p_raw: number | null; mann_kendall_p_raw: number | null
     sen: string | null; r2: string | null; elnino_r: string | null; after_elnino: string | null; after_elnino_rate: string | null
+    after_elnino_t_p: string | null; after_elnino_mk_p: string | null
+    after_elnino_t_p_raw: number | null; after_elnino_mk_p_raw: number | null
     band: string; years_needed: number | string | null }
   stamp: Stamp; stamp_text: string; direction: string | null; significant: boolean; caption: string
+  /** robust: significant and still with El Niño removed · elnino: significant only until El Niño is removed · not: not significant */
+  group: 'robust' | 'elnino' | 'not'; group_text: string
 }
-/** The executive report (POST /sessions/{id}/summary): story text by the Reporter (guarded), charts and captions by code. */
+/** The executive report (POST /sessions/{id}/summary): the agency's exemplar of the case (every relevant record, no marks).
+ *  Story text by the Reporter (guarded), charts and captions by code. */
 export interface ExecSummary {
-  v: 2
+  v: 3
   sections: { headline: string; issue: string; response: string; insights: string; impact: string }
   source: 'ai' | 'code'
   insights: Insight[]
@@ -131,8 +141,8 @@ export interface CaseFile {
   steps: { at: string; stage: string; what: string }[]
   tests: CaseFileTest[]
   partner: { q: string; a: string; by: string }[]
-  verdict: { what: string; where: string; direction: string; how_much: string; is_it_real: string; why_hypothesis: string; confidence: number } | null
+  verdict: { what: string; where: string; direction: string; how_much: string; is_it_real: string; why_hypothesis: string; confidence: number; reasoning?: string } | null
   attempts: number
-  grade: { score: number; parts: Grade["parts"]; ending: string; feedback: string[]; badges: string[]; chief_note: string | null }
+  grade: { score: number; parts: Grade["parts"]; ending: string; feedback: string[]; badges: string[]; chief_note: string | null; checks?: ReasonCheck[] }
   summary: ExecSummary | null
 }

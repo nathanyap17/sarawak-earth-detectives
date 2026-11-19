@@ -1,5 +1,79 @@
 # BUILD_LOG.md
 
+## [2026-11-19] Stress-testing the grader; the executive summary becomes the case's exemplar
+
+**Asked (Nathan):** check what was left unverified, try made-up answers ("I don't know"…) to see whether any wrong case closes, and make the executive summary cover the non-significant records too. Only the student's case study carries marks and badges; the executive summary is an exemplar.
+
+**Stress test** (`backend/tests/fuzz_verdicts.py`, run with `uv run python -m tests.fuzz_verdicts`): 21,456 made-up verdicts covering about 48 junk phrases ("idk", "I don't know", "because", keyboard mash, copied hints…), empty reasons, off-topic sentences, restated tick labels and keyword salad, each tried in every field with every direction and stand, against all four kinds of answer key. The first run found wrong closes, now fixed in `reasoning.py`:
+- 72 off-topic reasons passed: the reason must now mention the stand, a tool or test, or the case's own vocabulary, and the "why" must name a cause.
+- Restating the ticked option ("it is real and significant") counted as a reason: the option's own words no longer count.
+- For "yes", keyword salad rode on a number in "how much": the reason itself must now give a rate, a number or the ruler.
+Final run: **0 wrong closes and 0 argued, right answers sent back.** `test_grading.py` runs a quarter of the grid on every test run.
+
+**Fanfare** rendered offline with the same chain as the live sound (`renderFanfare` in `sound/audio.ts`): gold peaks at −15.7 dBFS and lasts 1.66 s; silver −17.8 dBFS and 0.81 s; bronze −17 dBFS and 0.79 s. None clips, and they sit about 10 dB above the success chime. WAVs are in `docs/media/fanfare/` for a listen.
+
+**Medal on a landscape phone:** the Kenyalang hid the shelf medal, so the Case Closed camera is now lower (`stations.ts`).
+
+**Executive summary = the exemplar** (contract change: `Insight.group`, `group_text` and `after_elnino_*` p-values, `ExecSummary v: 3`; `SUMMARY_V = 3` re-writes older summaries)
+- `insights.build(c)` charts every record that bears on the question (main and supporting, never red herrings), whatever the student chose, and sorts it into three groups: significant and robust, significant only until El Niño is removed, not significant. The line is drawn forward only for robust trends. `insights.facts(c, items)` gives the Reporter the records and tests only, nothing about the student. `casefile.facts()` was removed.
+- The Reporter writes in the third person about "the analysis", never mentions a student, score or badge, covers both significant and non-significant results and the measures that show them, and is told never to claim a cause (El Niño years "may be doing much of the work"). Its code template follows the same groups.
+- `ExecReport.tsx`: header with the topic, a one-line description and "Prepared by Sarawak Earth Detectives"; issue, response, a method box, Figure 1 with both tests before and after El Niño, a scoreboard table (t-test p, Mann-Kendall p, Sen's slope, R², the re-tests, pass/fail colours), a section per group with numbered figures, then impact, limits and provenance. Marks, badges and the verdict box are gone; a note points to the case study.
+
+**Verified:** `uv run pytest -q` 92 passed; `npm run build` passes; in the browser, case 001's summary shows air humidity, soil wetness and the longest dry spell as "significant at first, not once El Niño is removed" and early-year rain as "not significant", with no score or nickname.
+
+A fresh session's AI-written summary (source "ai") follows the rule: El Niño years "may be doing much of the work", the impact says the record cannot "prove direct causes", and no student, score or badge appears.
+
+**Nathan's own test verdict** (right ticks, El Niño reasoning, "Why: Can't tell, until we collect more data.") was sent back at 80/100: four checks passed and "offers a possible cause" failed, as designed. It also showed a bug: the feedback praised a cause ("Good idea for a cause. Say 'might'…") when none was named. `grading.py` now praises a cause only when one is named. With a hedged cause in "Why" the same verdict closes at 100. Kept as designed: a case still needs a possible cause to close.
+
+**Not verified:** the checks against real student writing beyond Nathan's test; how the fanfare sounds on a phone speaker.
+
+**Lessons:** a grader needs an adversary. The hand-picked tests passed while a grid of 20,000 found 72 holes in minutes.
+
+## [2026-11-19] A verdict has to be argued, not ticked; medals and a fanfare for closed cases
+
+**Problem (Nathan):** on case 001 (not enough evidence) a student who typed "Idk" or random words still got the case solved. Two causes: the verdict form started with "No change" and "Can't tell yet" already ticked, which is case 001's answer; and the grader never read the written parts (anything over 15 characters passed, and with no number in "how much" that part counted as right).
+
+**What changed: grading** (contract change: `Verdict.reasoning`, `Grade.checks`, `ReasonCheck` in `schemas.py`, mirrored in `api/types.ts`)
+- New `backend/app/reasoning.py`, plain code (no model, same result every time). It reads the student's own words and makes five checks, each about the student's own stand, never the answer key:
+  1. "What is changing?" is real words and names something the case is about.
+  2. The new required box "What in your evidence backs that answer?" gives a reason that fits the stand they ticked on "is it real?" (doubt: too few years, the tests disagree, the El Niño lamp changed the stamp…; yes: both tests, significant, a measured rate…; no: flat, not significant…).
+  3. The reasoning points to their own evidence (a chosen record, a tool or test, a number).
+  4. The ticks and the words don't contradict each other (e.g. "No change" with "Yes, it is significant").
+  5. "Why might it be?" offers a cause in their own words.
+  A field doesn't count if it is a non-answer ("idk", "no idea", "?"), mostly not real words (keyboard mash), too thin, repetitive, or copied from the case brief, question, hints or card definitions.
+- `grading.py`: a case closes (solved, or solved with honest doubt) only when every check passes. Right ticks with weak reasoning are sent back with "A verdict has to be argued, not just ticked." Verdict marks (30) are now: right stand 10 (3 if unbacked), direction 5 (2 if unbacked, 0 if contradicted), how much 5 (no figure only counts where there is nothing to measure *and* the words say so), stand backed 6, evidence cited 4. Explanation (20) is 0 for a non-answer, then cause named 6, hedged 6, no over-claim 4, enough substance 4.
+- The Chief's prompt gets the checks and is told to respond to the student's own stand and never praise an argument marked "not yet". The case study and the Reporter's facts include the reasoning and the checks.
+- Verdict form: "Which way?" and "Is it real?" start blank and are required; the new reasoning box is required (20 characters) and its placeholder is a question, not a copyable answer.
+- Case Closed shows "How your reasoning was read": the five checks with a ✔ or ✘ and a quote of the student's own words.
+
+**What changed: celebration** (frontend only)
+- Every closed case wins a medal: gold (85+), silver (70–84) or bronze, by score. The ribbon is Sarawak red for a solved trend and deep blue for honest doubt, and each skill badge has its own colour (a gem on the medal, a dot on screen). Shared in `beats/medal.ts`.
+- Case Closed (2D and 3D): the medal drops in with a shine, confetti in the medal's colours, and a synthesised brass fanfare by tier (`fanfare()` in `sound/audio.ts`; gold gets the full call, a chord and a shimmer). Reduced-motion users get no confetti or animation; the sound follows the effects setting.
+- 3D case shelf: up to five medals stand on brass stands beside the globe, newest first; the newest turns slowly in its own light. The Chief's stamp moved below them. The inbox's learnt cases show a medal chip and badge dots.
+- Filing a closed case moved from the 3D office into the shared Case Closed beat, so cases closed in 2D also reach the shelf. `learnt.ts` now notifies the shelf and inbox when a case is filed; older saved entries get a tier from their score.
+
+**Verified**
+- Backend: `uv run pytest -q` 88 passed (11 new in `test_grading.py`: five kinds of junk with the right ticks are sent back; right ticks with an empty reason are sent back; three honest-doubt reasons in a student's own words close the case; contradicting ticks are named; the checks never carry answer-key fields).
+- In the browser (2D, desktop): "Idk." plus junk words with the right ticks gave "Sent back", 55/100, four ✘ checks. An argued "can't tell yet" verdict gave "Solved, not enough evidence", 100/100, five ✔, a gold medal with a blue ribbon and five gems, and the Chief's note quoted the student's El Niño reasoning. 3D shelf checked with gold, silver and bronze medals side by side (the silver and bronze were sample entries, removed afterwards). `npm run build` passes.
+
+**Not verified:** how the fanfare sounds (nobody listened to it; it is code only); the checks against real student writing beyond the test phrases, so expect to tune the word lists; the medal in mobile landscape.
+
+**Lessons:** default answers in a form are answers. A grader that never reads the words rewards ticking.
+
+## [2026-11-19] Phones and tablets: 3D sideways, 2D upright
+
+**Idea (Nathan):** on a phone or tablet the 3D office is used in landscape and the 2D mode in portrait.
+
+**What changed** (frontend only)
+- New `office/orientation.tsx`. On a touch device (no hover, coarse pointer), if the 3D office is open while the device is upright, a full-screen card asks the student to turn it sideways, with a "Use the 2D office instead" button. If 2D is open while it is sideways, the card asks to turn it upright, with "Open the 3D office instead". The card disappears as soon as the device is turned; the case is kept either way. Computers are never asked.
+- Tapping 3D on a phone or tablet also asks the browser for full screen and a landscape lock (works in Android Chrome; iPhone Safari does not allow it, so the card does the work there). Tapping 2D or going back to the front page releases both.
+- In 2D on a phone the note now says "Tap 3D and hold your device sideways to enter the 3D office."
+- Phones held sideways (landscape, up to 500 px tall): slimmer top bar, the window drawer takes half the width (was 42%), a smaller Kenyalang box; the 3D camera framing matches the half-width drawer.
+
+**Verified** (built-in browser, touch emulation): 375×812 in 2D shows no card; tapping 3D shows "Turn your device sideways"; at 740×360 the office loads with no card and the inbox drawer leaves the tray visible; tapping 2D there shows "Turn your device upright"; 767×1024 (stand-in for an upright tablet) shows the sideways card in 3D and its button switches to 2D; on a desktop no card appears and nothing goes full screen. `npm run build` passes.
+
+**Not verified:** real phones and tablets, the Android landscape lock and full screen (needs a real device), iPads with a trackpad (they report hover, so they are treated like computers).
+
 ## [2026-11-19] One look on phones, tablets and desktops
 
 **What changed** (frontend only)

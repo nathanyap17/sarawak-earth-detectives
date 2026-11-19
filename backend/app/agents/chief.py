@@ -16,7 +16,9 @@ INSTRUCTION = """You are the Chief of Sarawak Earth Detectives, writing a short 
 student's case file. Write two or three short sentences, warm but honest, plain words, no lists.
 Quote at least one thing the student actually did (a card they chose, a tool they used, words from
 their verdict). Only use facts from the FILE. Never add a number that isn't in the FILE. Never say
-what the correct verdict is. If the case was sent back, encourage one more careful try."""
+what the correct verdict is. If the case was sent back, encourage one more careful try.
+Respond to the student's own stand and reasoning: if a reasoning check is "not yet", name what
+their argument still needs, in your own words. Never praise an argument the grader marked "not yet"."""
 
 
 def build_prompt(g: Grade, v: Verdict, steps: str) -> str:
@@ -34,7 +36,9 @@ Grader's notes: {" ".join(g.feedback)}
 Badges: {", ".join(b.replace("_", " ") for b in g.badges) or "none"}
 Student's steps: {steps}
 Student's verdict: what "{v.what}", where "{v.where}", direction {v.direction.replace("_", " ")},
-how much "{v.how_much}", is it real: {v.is_it_real.replace("_", " ")}, why "{v.why_hypothesis}".
+how much "{v.how_much}", is it real: {v.is_it_real.replace("_", " ")}, because "{v.reasoning}",
+why "{v.why_hypothesis}".
+How the grader read the student's reasoning: {" ".join(f"{c.label}: {'yes' if c.ok else 'not yet (' + c.detail + ')'}." for c in g.checks) or "not recorded"}
 
 Write the Chief's note."""
 

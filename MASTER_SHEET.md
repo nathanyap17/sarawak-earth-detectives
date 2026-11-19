@@ -98,8 +98,12 @@ A case takes 15 to 20 minutes. It has seven beats. Each beat happens at a differ
 |---|---|---|
 | Evidence choice | 25% | Relevant cards chosen, red herrings rejected |
 | Method | 25% | Seasons removed before testing; both tests run |
-| Verdict | 30% | Direction, rate and significance agree with the computed answer |
-| Explanation | 20% | The "why" is framed as a hypothesis, not a proven cause |
+| Verdict | 30% | Direction, rate and significance agree with the computed answer, **and the student's written reasoning backs the stand they took** |
+| Explanation | 20% | The "why" names a possible cause in the student's own words, framed as a hypothesis, not a proven cause |
+
+**A verdict has to be argued, not ticked (19 Nov).** The right ticks alone never close a case. Code reads the student's own words (`backend/app/reasoning.py`, no model) and makes five checks about the student's own stand, never the answer key: says what is changing; backs the "is it real?" answer with a reason in the reasoning box itself (not a restatement of the ticked option); points to their own evidence; ticks and words agree; offers a possible cause. Non-answers ("idk"), keyboard mash, off-topic sentences and text copied from the case or hints don't count. A stress test of 21,000+ made-up verdicts (`backend/tests/fuzz_verdicts.py`) closes none wrongly and sends back no argued, right answer.
+
+**Medals (19 Nov).** A closed case wins gold (85+), silver (70–84) or bronze; the ribbon is red for a solved trend and blue for honest doubt, and each badge has its own colour. Medals stand on the 3D case shelf; Case Closed plays a synthesised fanfare.
 
 **Badges** reward good habits: *Clean Signal* (removed seasons first), *Red Herring* (rejected irrelevant evidence), *Honest Doubt* (correctly said "not enough evidence"), *Second Opinion* (ran both tests), *Twin Trail* (compared two regions), *El Niño Eye* (checked the El Niño effect). Ranks run from Trainee to Chief Inspector.
 
@@ -466,7 +470,7 @@ flowchart TB
 | `POST /sessions/{id}/verdict` | Submit the verdict; returns the grade and report link |
 | `POST /sessions/{id}/transcribe` | Hold-to-talk fallback: a short audio clip in (max 1.5 MB), the words out; audio not stored |
 | `GET /sessions/{id}/casefile` | The student's full case study (brief, evidence, step-by-step trail, tests, Kenyalang Q&A, verdict, grade); 409 until the case is closed |
-| `POST /sessions/{id}/summary` | The executive report: header, issue, response, key insights, impact and next steps. Story text by the Reporter (guarded); charts, metrics and captions by code (`reports/insights.py`); written once and kept in `grade.exec_summary` |
+| `POST /sessions/{id}/summary` | The executive report, as the agency's exemplar of the case (19 Nov): header, issue, response, key insights, impact and next steps. Charts every record that bears on the question, whether the student tested it or not, grouped as significant and robust, significant only until El Niño is removed, and not significant, with a measure-by-measure scoreboard; no marks, badges or verdict of the student (the case study has those). Story text by the Reporter (guarded); charts, metrics and captions by code (`reports/insights.py`); written once and kept in `grade.exec_summary` |
 | `GET /vault/health` | Freshness of every source |
 | `GET /admin/cases` | Teacher's desk: every case with its full configuration (datasets and roles, vault records, hints, limits, sources) and the code's answer key; editor's key only |
 | `POST /admin/cases/{id}/review` | Approve, edit or reject a drafted case |
@@ -658,11 +662,13 @@ Both tracks build against these. Change them only by agreement.
 | Smoke and dust | Days above the 90th percentile of the baseline |
 | Vegetation greenness | Yearly mean |
 
-**How the verdict is graded.**
+**How the verdict is graded** (updated 19 Nov 2026).
 - Direction must match the answer key.
 - "Is it real" must match the stamp. "Can't tell" is correct when the key says not enough evidence.
-- "How much" is marked right if the student's figure lies inside the range.
-- The "why" earns its marks if it is worded as a possibility ("might", "could") and doesn't claim proof.
+- "How much" is marked right if the student's figure lies inside the range; with no figure, only where there is nothing to measure *and* the words say so.
+- The stand earns its full marks only when the reasoning box backs it (10 for the right stand, 3 if unbacked; 6 for backing it; 4 for citing evidence; direction 5, or 2 if unbacked and 0 if contradicted).
+- The "why" earns its marks if it names a possible cause, is worded as a possibility ("might", "could") and doesn't claim proof; a non-answer earns 0.
+- The case closes only when all five reasoning checks pass (see §5 "A verdict has to be argued").
 
 ## 17. Data path for the hackathon
 
@@ -782,6 +788,7 @@ If step 1 fails, stop and solve data access before building anything else.
 
 ## Change log
 
+- **v1.5, 19 Nov 2026 (finale polish):** grading reads the student's written reasoning (§5, §16); closed cases win medals with a fanfare; the executive summary is the case's exemplar, covering significant and non-significant records alike, with no marks; phones and tablets use 3D sideways and 2D upright.
 - **v1.4, 15 Nov 2026 (case desk):** Scout and Case Builder built with human review (§5.7, §5.9); the office gains a wire desk that shows agent activity; clue pins can be moved and removed; records can be viewed as heatmaps and stripes, and the lab shows the trend's 95% range, a p-value picture and an El Niño scatter chart. Still not built: Reporter agent, embeddings retrieval, ML models, Firebase sign-in, Cloud Storage vault, data-refresh job in the cloud.
 - **v1.3, 14 Nov 2026 (build review):** §5.7 and §5.9 now mark what is built and what is planned. Not built for the hackathon: Scout, Case Builder and Reporter agents, embeddings retrieval, ML models (scikit-learn, XGBoost, ruptures), Firebase sign-in, Cloud Storage vault, scheduled jobs. Built: Partner and Chief (ADK, guarded), statistics in code (statsmodels, pymannkendall), Firestore sessions.
 - **v1, 14 Nov 2026:** first full sheet. Name set to Sarawak Earth Detectives.

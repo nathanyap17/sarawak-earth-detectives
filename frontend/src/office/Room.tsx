@@ -9,10 +9,12 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { AdditiveBlending, DoubleSide, type Group, type MeshStandardMaterial, type Texture } from 'three'
 import { useSession } from '../state/session'
-import { ceilingTexture, corkTexture, crestTexture, flagTexture, leatherTexture, noteTexture, panelTexture, plankTexture, plasterTexture, rugTexture, shaftTexture, stampTexture, windowViewTexture, wireTexture, woodTexture } from './paint'
+import { ceilingTexture, corkTexture, crestTexture, flagTexture, leatherTexture, noteTexture, panelTexture, plankTexture, plasterTexture, rugTexture, shaftTexture, stampTexture, medalTexture, windowViewTexture, wireTexture, woodTexture } from './paint'
 import { LabBench } from './LabBench'
 import { Spot } from './Spot'
 import { useUI } from './ui'
+import { useLearnt, type Learnt } from './learnt'
+import { BADGES, RIBBON, TIER, tierOf } from '../beats/medal'
 
 const WOOD = '#8a5a2b', DARK = '#4a2f1a', BRASS = '#d2a94e', GREEN = '#3d5c4b', LEATHER = '#3b1f17'
 const H = 4.4                      // ceiling height: a tall, grand room
@@ -298,11 +300,49 @@ function Corkboard({ w }: { w: ReturnType<typeof useWoods> }) {
   )
 }
 
+/** One closed case on the shelf: a medal on a small brass stand. Metal = how well it was argued,
+ *  ribbon = how it ended, one coloured gem per skill badge. The newest one turns slowly in its own light. */
+function ShelfMedal({ l, x, fresh }: { l: Learnt; x: number; fresh: boolean }) {
+  const tier = TIER[l.tier ?? tierOf(l.score)]
+  const ribbon = RIBBON[l.kind ?? 'solved'].colour
+  const face = useMemo(() => medalTexture(l.score, tier.metal, tier.shine), [l.score, tier])
+  const spin = useRef<Group>(null)
+  useFrame(({ clock }) => {
+    if (spin.current && fresh) spin.current.rotation.y = Math.sin(clock.elapsedTime * 1.4) * 0.5
+  })
+  const gems = (l.badges ?? []).slice(0, 6)
+  return (
+    <group position={[x, 0.725, 0.04]} scale={1.4}>
+      <Brass p={[0, 0.012, 0]} s={[0.15, 0.024, 0.09]} />
+      <Box p={[0, 0.07, -0.02]} s={[0.012, 0.1, 0.012]} c="#6b5320" r={0.3} metal={0.8} />
+      <group ref={spin} position={[0, 0.16, 0]}>
+        {/* the ribbon: two strips meeting above the medal */}
+        <Box p={[-0.028, 0.115, -0.006]} s={[0.04, 0.13, 0.004]} c={ribbon} r={0.6} rot={[0, 0, -0.32]} />
+        <Box p={[0.028, 0.115, -0.006]} s={[0.04, 0.13, 0.004]} c={ribbon} r={0.6} rot={[0, 0, 0.32]} />
+        <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.07, 0.07, 0.012, 40]} />
+          <meshStandardMaterial color={tier.metal} metalness={0.9} roughness={0.28} />
+        </mesh>
+        <mesh position={[0, 0, 0.0065]}><circleGeometry args={[0.064, 40]} /><meshStandardMaterial map={face} metalness={0.55} roughness={0.35} /></mesh>
+      </group>
+      {gems.map((b, i) => (
+        <mesh key={b} position={[(i - (gems.length - 1) / 2) * 0.024, 0.03, 0.05]}>
+          <sphereGeometry args={[0.011, 12, 10]} />
+          <meshStandardMaterial color={BADGES[b].colour} emissive={BADGES[b].colour} emissiveIntensity={0.45} roughness={0.2} />
+        </mesh>
+      ))}
+      {fresh && <pointLight position={[0, 0.2, 0.25]} color={tier.shine} intensity={0.9} distance={0.9} decay={2} />}
+    </group>
+  )
+}
+
 function Shelf({ w }: { w: ReturnType<typeof useWoods> }) {
-  const { grade } = useSession()
+  const { grade, activeCase } = useSession()
   const stamp = useMemo(() => grade && stampTexture(grade.ending === 'sent_back' ? 'Sent back' : 'Solved',
     grade.ending === 'sent_back' ? '#b26a00' : '#2e7d32'), [grade])
   const spines = ['#7a1f1f', '#1a1a1a', '#c9a35a', '#22392d', '#4b2a1a']
+  const medals = useLearnt().slice(0, 5)   // newest first, left to right beside the globe
+  const freshId = grade && grade.ending !== 'sent_back' ? activeCase?.id : undefined
   return (
     <Spot id="closed" at={[3.9, 2.75, -3.6]}>
       <group position={[3.9, 0, -3.75]}>
@@ -317,7 +357,8 @@ function Shelf({ w }: { w: ReturnType<typeof useWoods> }) {
         )))}
         <mesh position={[-0.45, 0.93, 0]} castShadow><sphereGeometry args={[0.17, 24, 18]} /><meshStandardMaterial color="#3d6f8f" roughness={0.45} /></mesh>
         <Brass p={[-0.45, 0.76, 0]} s={[0.16, 0.03, 0.16]} />
-        {stamp && <mesh position={[0.3, 0.92, 0.22]}><planeGeometry args={[0.6, 0.225]} /><meshBasicMaterial map={stamp} transparent /></mesh>}
+        {medals.map((l, i) => <ShelfMedal key={l.id} l={l} x={-0.13 + i * 0.2} fresh={l.id === freshId} />)}
+        {stamp && <mesh position={[0.3, 0.4, 0.2]}><planeGeometry args={[0.56, 0.21]} /><meshBasicMaterial map={stamp} transparent /></mesh>}
       </group>
     </Spot>
   )

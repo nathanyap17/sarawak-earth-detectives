@@ -1,6 +1,7 @@
 """Grading in plain code (MASTER_SHEET §5.2 "What is graded", §16 "How the verdict is graded").
 
 Reasoning, not speed: evidence 25, method 25, verdict 30, explanation 20.
+The right ticks alone never close a case: the written reasoning must back them (reasoning.py).
 Feedback here is deterministic; the Chief agent may later reword it but never changes a score.
 AI-assisted: written with Claude Code."""
 from __future__ import annotations
@@ -8,6 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app import reasoning
 from app.schemas import AnswerKey, CasePack, Grade, GradeParts, Verdict
 from app.vault.cards import CARDS
 
@@ -83,7 +85,10 @@ def grade(case: CasePack, key: AnswerKey, attempt: Attempt, v: Verdict, final: b
     if not lamp_on & main:
         fb.append("Strong El Nino years can fake a trend. The lamp would have told you.")
 
-    # --- verdict (30)
+    # --- the student's own words (reasoning.py): read before any marks are given for the ticks
+    r = reasoning.read(case, attempt.chosen, v)
+
+    # --- verdict (30): the stand itself, then whether the words back it
     dirs, real = _expected(key)
     if key.overall == "not_enough_evidence":
         dirs = _lean(case, key)
@@ -93,27 +98,38 @@ def grade(case: CasePack, key: AnswerKey, attempt: Attempt, v: Verdict, final: b
     ranges = [key.per_card[c].range for c in case.main_cards]
     if nums:
         much_ok = any(lo <= n <= hi for n in nums for lo, hi in ranges)
-    else:
-        much_ok = key.overall in ("not_enough_evidence", "no_change")
-    verdict = 10 * dir_ok + 10 * real_ok + 10 * much_ok
+    else:   # no figure is right only where there is no change to measure, and only if it says so in words
+        much_ok = key.overall in ("not_enough_evidence", "no_change") and r.how_much.ok
+    backed = next(c.ok for c in r.checks if c.id == "stance")
+    # a stand earns its full marks only when the student's words back it
+    verdict = (real_ok * (10 if backed else 3) + (dir_ok and not r.contradictions) * (5 if backed else 2)
+               + 5 * much_ok + 6 * backed + 4 * bool(r.cites))
     if not real_ok:
         fb.append("Your answer to 'is it real?' doesn't match the stamps on your own evidence. "
                   "Look again at what the scales and the lamp said.")
     if not much_ok:
-        fb.append("Your 'how much' figure sits outside the range your ruler gave.")
+        fb.append("Your 'how much' figure sits outside the range your ruler gave." if nums else
+                  "Answer 'how much' properly: give the rate from your ruler, or say in words why the record can't measure one.")
 
-    # --- explanation (20)
-    why = v.why_hypothesis.strip()
-    hedged = bool(HEDGES.search(why))
-    over = bool(OVERCLAIM.search(why))
-    explanation = 0.0 if len(why) < 15 else (12 * hedged + 8 * (not over))
+    # --- explanation (20): a cause offered as a possibility, in the student's own words
+    hedged = bool(HEDGES.search(v.why_hypothesis))
+    over = bool(OVERCLAIM.search(v.why_hypothesis))
+    if not r.why.ok or not r.cause_named:
+        explanation = 0.0
+    else:
+        explanation = 6 * r.cause_named + 6 * hedged + 4 * (not over) + 4 * (len(r.why.content) >= 7)
     if over:
         fb.append("A trend can't prove a cause. Word your 'why' as a possibility.")
-    elif not hedged and len(why) >= 15:
+    elif r.why.ok and r.cause_named and not hedged:   # praise a cause only when one was named
         fb.append("Good idea for a cause. Say 'might' or 'could': it's a hypothesis.")
 
-    # --- ending
-    if key.overall == "not_enough_evidence" and real_ok:
+    # what the reading found wrong goes out as Grade.checks (shown on its own), not repeated here
+
+    # --- ending: the right ticks only close a case when the student's words hold them up
+    if not r.sound:
+        ending = "sent_back"
+        fb.insert(0, "A verdict has to be argued, not just ticked. Your written reasoning doesn't hold it up yet.")
+    elif key.overall == "not_enough_evidence" and real_ok:
         ending = "solved_not_enough"
     elif real_ok and dir_ok:
         ending = "solved"
@@ -143,4 +159,4 @@ def grade(case: CasePack, key: AnswerKey, attempt: Attempt, v: Verdict, final: b
     parts = GradeParts(evidence=round(evidence, 1), method=round(method, 1),
                        verdict=round(verdict, 1), explanation=round(explanation, 1))
     score = round(parts.evidence + parts.method + parts.verdict + parts.explanation, 1)
-    return Grade(score=score, parts=parts, ending=ending, feedback=fb, badges=badges)
+    return Grade(score=score, parts=parts, ending=ending, feedback=fb, badges=badges, checks=r.checks)

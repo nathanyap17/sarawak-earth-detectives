@@ -6,7 +6,8 @@ import { api } from '../api/client'
 import type { CasePublic } from '../api/types'
 import { BEATS, frontier, useSession } from '../state/session'
 import { stampedCount } from './script'
-import { loadLearnt } from './learnt'
+import { useLearnt } from './learnt'
+import { BADGES, TIER, tierOf } from '../beats/medal'
 import { useUI } from './ui'
 
 const STEPS = [
@@ -22,7 +23,7 @@ export function Inbox() {
   const now = BEATS[frontier({ reached, grade })]
   const [cases, setCases] = useState<CasePublic[] | null>(null)
   const [err, setErr] = useState('')
-  const learnt = loadLearnt()
+  const learnt = useLearnt()
   useEffect(() => { api.cases().then(setCases).catch(() => setErr('The agency line is down. Is the backend running?')) }, [])
 
   const measured = chosen.some((id) => results[id]?.ruler || results[id]?.scales)
@@ -60,13 +61,16 @@ export function Inbox() {
       {learnt.length === 0 && <p className="muted">Nothing filed yet. Solved cases land here with what you practised.</p>}
       {learnt.map((l) => (
         <article key={l.id + l.date} className="mail learnt">
-          <header><strong>Case {l.id}: {l.title}</strong><span className="mail-state ok">{l.score}/100</span></header>
+          <header><strong>Case {l.id}: {l.title}</strong>
+            <span className={`medal-chip tier-${l.tier ?? tierOf(l.score)}`}>{TIER[l.tier ?? tierOf(l.score)].name} · {l.score}/100</span></header>
           <p className="mail-q">{l.ending} · {l.date}</p>
           <ul className="practised">
             <li><strong>Variables selected:</strong> {l.variables.join(', ')}</li>
             <li><strong>Change over time:</strong> looked at each record across the years</li>
             <li><strong>Tools used:</strong> {l.tools.join(', ') || 'none'}</li>
             <li><strong>Your verdict:</strong> {l.verdict}</li>
+            {(l.badges ?? []).length > 0 && <li><strong>Badges:</strong> {(l.badges ?? []).map((b) => (
+              <span key={b} className="badge-dot" style={{ ['--badge' as string]: BADGES[b].colour }}>{BADGES[b].name}</span>))}</li>}
           </ul>
         </article>
       ))}

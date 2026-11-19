@@ -247,6 +247,17 @@ class Verdict(BaseModel):
     is_it_real: IsItReal
     why_hypothesis: str = Field(max_length=600)
     confidence: Literal[1, 2, 3]
+    # what in the student's own evidence backs their answer to "is it real?" (added 2026-11-19;
+    # empty from older clients, which then can't close a case on a bare tick)
+    reasoning: str = Field(default="", max_length=600)
+
+
+class ReasonCheck(BaseModel):
+    """One reading of the student's written reasoning (reasoning.py). About their own stand, never the key."""
+    id: Literal["what", "stance", "evidence", "consistent", "why"]
+    ok: bool
+    label: str
+    detail: str
 
 
 class GradeParts(BaseModel):
@@ -262,6 +273,7 @@ class Grade(BaseModel):
     ending: Ending
     feedback: list[str]
     badges: list[Badge]
+    checks: list[ReasonCheck] = Field(default_factory=list)  # how the written reasoning was read
     report_url: str | None = None
     attempt: int = 1
     can_retry: bool = False

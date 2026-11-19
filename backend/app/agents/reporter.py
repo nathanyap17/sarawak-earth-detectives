@@ -1,11 +1,13 @@
-"""The Reporter: a standard, professional executive summary of a closed case, for a teacher, a
-parent or a judge.
+"""The Reporter: the executive summary of a case, written as the agency's exemplar report, for a
+teacher, a parent, a judge or the student who just closed the case.
 
-Why a new agent (not the Chief): the Chief writes two or three warm sentences to the student,
-right after grading. The Reporter writes for another reader, in fixed sections, after the case is
-closed. Same leash as the others: its only source is the facts sheet built by code
-(reports/casefile.facts), every figure must already be in that sheet (number guard), and when the
-model is slow, off or blocked, the summary is written by a code template instead.
+Changed 2026-11-19: the summary is an exemplar, not the student's report card. It covers every record
+that bears on the question (insights.py), tells the story of what is significant and what is not and
+why, and says nothing about the student's marks, badges or verdict (the case study has those).
+Why a separate agent (not the Chief): the Chief writes two or three warm sentences to the student,
+right after grading. The Reporter writes for another reader, in fixed sections. Same leash as the
+others: its only source is the facts sheet built by code (insights.facts), every figure must already
+be in that sheet (number guard), and when the model is slow, off or blocked, a code template writes it.
 AI-assisted: written with Claude Code."""
 from __future__ import annotations
 
@@ -13,76 +15,91 @@ import json
 
 from app.agents import guard
 from app.agents.runtime import run_once
+from app.schemas import CasePack
 
-REAL = {"yes": "real", "no": "not real", "cant_tell": "not yet provable from the evidence"}
 SECTIONS = ("headline", "issue", "response", "insights", "impact")
 
-INSTRUCTION = """You are the Reporter of Sarawak Earth Detectives. Write the text of a short executive report
-on one student's closed case, for a teacher, a parent or a competition judge. The report tells a story:
-the issue, how the detective responded, what the evidence showed, and what it means next.
+INSTRUCTION = """You are the Reporter of Sarawak Earth Detectives. Write the text of the agency's exemplar
+executive report on one case: a model answer showing how the evidence should be read, for a teacher, a
+parent, a competition judge or a student. It tells a story: the issue, how the analysis responded, what
+the evidence showed, and what it means next.
 Use ONLY the FACTS. Never add a number, date or name that is not in the FACTS. Never do a calculation.
-Write in the third person about "the detective" (use the nickname once). Clear and formal, but vivid.
-Charts with their own captions sit under "insights", so interpret them; do not list every figure.
-Say which trends are significant and which are not, and why (the 0.05 line, the two tests, El Nino).
-Use each chart's stamps exactly as written (for example "Not significant" is not "Needs more years"); never generalise
-a result to records it was not stated for.
+Write in the third person about "the analysis" or "the agency". Never mention any student, score, mark or badge.
+Clear and formal, but vivid. Charts with their own captions sit under "insights", so interpret them.
+In "insights", cover BOTH kinds of result: which records are significant and what the line and the tests say
+(rate, Sen's slope, R²), and which are not significant or stop being significant once El Nino is removed, and
+by which measures that is shown (linear regression t-test, Mann-Kendall, the 0.05 line, the 95% range, the El
+Nino re-test). Use each chart's stamps and groups exactly as written; never generalise a result to records it
+was not stated for. A significant line drawn forward is an illustration, never a forecast.
+Never claim a cause: a trend that stops being significant once El Nino is removed means El Nino years MAY be
+doing much of the work, not that El Nino "drives" or "causes" it. Say what the evidence supports and what it
+cannot yet show.
 Return JSON with exactly these keys, each a string:
-"headline": one sentence (under 25 words) that sums up the case and its finding;
+"headline": one sentence (under 25 words) that sums up the case and what the evidence supports;
 "issue": two or three sentences on the problem in the region and the question asked;
-"response": two or three sentences on what the detective did (evidence chosen, tests, tools);
-"insights": three or four sentences interpreting the results across the charts;
-"impact": two or three sentences on what this means and sensible next steps (more years, other
-regions or records), without promising anything the facts do not support."""
+"response": two or three sentences on the records analysed and the tests run on each;
+"insights": four to six sentences interpreting the results across the charts, significant and not;
+"impact": two or three sentences on what the evidence supports, what it does not, and sensible next steps
+(more years, a second region, other records), without promising anything the facts do not support."""
 
 
-def template(cf: dict, items: list[dict] | None = None) -> dict[str, str]:
-    """The code-written report text: used when the model is not."""
-    c, g, v = cf["case"], cf["grade"], cf["verdict"] or {}
-    items = items or []
-    sig = [i["name"] for i in items if i["significant"]]
-    not_sig = [i["name"] for i in items if not i["significant"]]
-    tools = sorted({t["tool"].split(" (")[0] for t in cf["tests"]})
-    if sig:
-        head = f"{', '.join(sig)} in {c['region']} show a significant trend; the detective tested it with two independent tests."
+def _names(items: list[dict], group: str) -> list[str]:
+    return [i["name"] for i in items if i["group"] == group]
+
+
+def template(c: CasePack, items: list[dict]) -> dict[str, str]:
+    """The code-written exemplar text: used when the model is not."""
+    robust, elnino, nots = _names(items, "robust"), _names(items, "elnino"), _names(items, "not")
+    region = c.region.name
+    if robust:
+        head = (f"{', '.join(robust)} in {region} show a trend that passes both tests and survives the El Niño check.")
+    elif elnino:
+        head = (f"Trends in {region} pass both tests at first but not once El Niño years are accounted for: "
+                "the record cannot yet settle the question.")
     elif items:
-        head = f"No tested record in {c['region']} shows a trend strong enough to rule out chance: an honest-doubt finding."
+        head = f"No record in {region} shows a trend strong enough to rule out chance."
     else:
-        head = f"Case {c['id']}, {c['title']}: the detective's investigation of {c['region']}."
-    insights = []
-    if sig:
-        insights.append(f"Significant (both tests below 0.05): {', '.join(sig)}.")
-    if not_sig:
-        insights.append(f"Not significant: {', '.join(not_sig)}; their tilts are within what year-to-year noise can produce.")
+        head = f"Case {c.id}, {c.title}."
+    ins = []
+    if robust:
+        ins.append(f"Significant and robust: {', '.join(robust)}. Linear regression and the Mann-Kendall test both fall "
+                   "below the 0.05 line, agree on direction, and still pass with the El Niño effect removed.")
+    if elnino:
+        ins.append(f"Significant at first, but not once El Niño is removed: {', '.join(elnino)}. Both tests pass on the raw "
+                   "record, yet after the El Niño years are accounted for the re-test no longer clears the 0.05 line, so "
+                   "El Niño years may be doing much of the work.")
+    if nots:
+        ins.append(f"Not significant: {', '.join(nots)}. The tests stay above the 0.05 line or the 95% range of the slope "
+                   "includes zero, so the tilt could be year-to-year noise.")
     if not items:
-        insights.append("No significance tests were recorded.")
+        ins.append("No record could be tested.")
+    supports = ("a real change in " + ", ".join(robust)) if robust else "no change that survives every check"
     return {
         "headline": head,
-        "issue": f"{c['brief']} The case asked: {c['question']}",
-        "response": f"The detective {cf['detective']} chose {len(cf['evidence'])} NASA records "
-                    f"({', '.join(e['name'] for e in cf['evidence']) or 'none'}) and ran {len(cf['tests'])} checks in the lab"
-                    + (f" ({', '.join(tools)})" if tools else "") + ", weighing each trend with linear regression and the Mann-Kendall test.",
-        "insights": " ".join(insights),
-        "impact": ((f"The detective concluded \"{v.get('what', '')}\" and judged the change "
-                    f"{REAL.get(v.get('is_it_real'), v.get('is_it_real'))}. ") if v else "")
-                  + "Next steps: re-test as new satellite years arrive, compare a second region, and check the record against "
-                    "the case's limits: " + " ".join(c["limits"][:1]),
+        "issue": f"{c.brief} The case asked: {c.question}",
+        "response": (f"The analysis took {len(items)} NASA records ({', '.join(i['name'] for i in items) or 'none'}) and ran "
+                     "the same checks on each: a linear regression with a t-test, the Mann-Kendall rank test with Sen's "
+                     "slope, R² of the line, and the same tests again with the El Niño effect removed."),
+        "insights": " ".join(ins),
+        "impact": (f"The evidence supports {supports}. Next steps: re-test as new satellite years arrive, compare a second "
+                   "region, and keep the case's limits in view: " + " ".join(c.limits[:1])),
     }
 
 
-async def summarise(cf: dict, facts: str, items: list[dict] | None = None) -> tuple[dict[str, str], str, str]:
+async def summarise(c: CasePack, facts: str, items: list[dict]) -> tuple[dict[str, str], str, str]:
     """(sections, source "ai" | "code", note)."""
     text, _, err = await run_once("reporter", INSTRUCTION, f"FACTS\n{facts}\n\nWrite the summary as JSON.",
                                   timeout=25, max_tokens=1200, as_json=True)
     if text is None:
-        return template(cf, items), "code", err
+        return template(c, items), "code", err
     try:
         data = json.loads(text.strip().removeprefix("```json").removesuffix("```"))
         out = {k: str(data[k]).strip() for k in SECTIONS}
     except (ValueError, KeyError, TypeError):
-        return template(cf, items), "code", "bad json"
+        return template(c, items), "code", "bad json"
     allowed = facts + " 95 0.05 1991 2020"
     for k, t in out.items():
         chk = guard.check_numbers(t, allowed)
         if not chk.ok or not t:
-            return template(cf, items), "code", f"guard ({k}): {chk.reason or 'empty'}"
+            return template(c, items), "code", f"guard ({k}): {chk.reason or 'empty'}"
     return out, "ai", ""
