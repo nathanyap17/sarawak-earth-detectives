@@ -4,6 +4,7 @@
 import { logQuiet } from '../api/client'
 import type { SceneManifest } from '../api/types'
 import { useSession } from '../state/session'
+import { sfx } from '../sound/audio'
 
 export const MAX_PINS = 3
 
@@ -15,9 +16,10 @@ function sync() {
 /** A click on the map: moves the pin being moved, or adds a new one if there is room. */
 export function placePin(p: [number, number]) {
   const s = useSession.getState()
-  if (s.movingPin != null) { s.movePin(s.movingPin, p); sync(); return }
+  if (s.movingPin != null) { s.movePin(s.movingPin, p); sync(); sfx('pin'); return }
   if (s.cluePins.length >= MAX_PINS) return
   s.addPin(p)
+  sfx('pin')
   logQuiet(s.sessionId, { kind: 'clue', lonlat: p })
 }
 

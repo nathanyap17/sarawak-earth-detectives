@@ -200,6 +200,46 @@ def build_answer_key_for(c: CasePack) -> AnswerKey:
                      computed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 
+def stored_key(case_id: str) -> dict | None:
+    """A hand-made case's answer key as written by `python -m app.casework` (teacher's desk only)."""
+    p = store.root() / "answer_keys" / f"{case_id}.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
+MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+
+
+def dataset_config(c: CasePack) -> list[dict]:
+    """Every dataset a case uses, how it is configured and what the vault holds for it, for the
+    teacher's desk. Roles come from the case pack: main (decides the verdict), supporting, or red
+    herring (planted to be rejected)."""
+    rows = []
+    for cid in c.evidence:
+        card = CARDS.get(cid)
+        if card is None:
+            rows.append({"id": cid, "name": cid, "missing": True})
+            continue
+        vault_rows = {}
+        for region in [c.region] + ([c.twin_region] if c.twin_region else []):
+            try:
+                ser = store.load_series(region.id, cid)
+                yrs = [p.y for p in ser.yearly if p.v is not None]
+                vault_rows[region.id] = {"region": region.name, "first": min(yrs) if yrs else None,
+                                         "last": max(yrs) if yrs else None, "n_years": len(yrs),
+                                         "data_as_of": ser.data_as_of}
+            except (FileNotFoundError, KeyError):
+                vault_rows[region.id] = {"region": region.name, "missing": True}
+        rows.append({
+            "id": cid, "name": card.name, "definition": card.definition, "mission": card.mission,
+            "unit": card.unit, "yearly_label": card.yearly_label, "from_year": card.from_year,
+            "grid_km": card.grid_km, "months": [MONTHS[m - 1] for m in card.months],
+            "worse_when": card.worse_when, "band_per_decade": card.band, "provisional": card.provisional,
+            "role": "main" if cid in c.main_cards else "red_herring" if cid in c.red_herrings else "supporting",
+            "vault": vault_rows,
+        })
+    return rows
+
+
 def write_answer_key(case_id: str) -> AnswerKey:
     key = build_answer_key(case_id)
     d = store.root() / "answer_keys"

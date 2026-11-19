@@ -6,6 +6,9 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { LiteApp } from './lite/LiteApp'
 import { liteReason, saveMode, savedMode, webglOk, type Mode } from './office/capability'
+import { setScene, wireClicks } from './sound/audio'
+
+wireClicks()
 
 const OfficeApp = lazy(() => import('./office/OfficeApp').then((m) => ({ default: m.OfficeApp })))
 const Landing = lazy(() => import('./landing/Landing').then((m) => ({ default: m.Landing })))
@@ -25,6 +28,7 @@ export default function App() {
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
+  useEffect(() => { setScene(play && !review) }, [play, review])   // music in the app only
   const pick = (m: Mode) => { saveMode(m); setMode(m) }
   const home = () => { window.location.hash = '' }
 

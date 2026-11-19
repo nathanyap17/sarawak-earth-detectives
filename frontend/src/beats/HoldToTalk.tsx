@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { useSession } from '../state/session'
+import { duck } from '../sound/audio'
 
 type Rec = {
   lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number
@@ -39,7 +40,7 @@ export function HoldToTalk({ onText, onDone, disabled }: { onText: (t: string) =
   const [on, setOn] = useState(false)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
-  useEffect(() => () => { rec.current?.abort(); media.current?.stream.getTracks().forEach((t) => t.stop()) }, [])
+  useEffect(() => () => { rec.current?.abort(); media.current?.stream.getTracks().forEach((t) => t.stop()); duck(false) }, [])
   if (!canTalk()) return null
   const off = disabled || !sid || busy
 
@@ -102,11 +103,13 @@ export function HoldToTalk({ onText, onDone, disabled }: { onText: (t: string) =
   function start() {
     if (off || rec.current || media.current) return
     held.current = true; setMsg('')
+    duck(true)               // the music steps aside so the microphone hears only the student
     if (ctor() && !browserSpeechBroken) viaBrowser()
     else void viaRecorder()
   }
   function stop() {
     held.current = false
+    setTimeout(() => duck(false), 400)
     rec.current?.stop()
     if (media.current?.state === 'recording') media.current.stop()
   }

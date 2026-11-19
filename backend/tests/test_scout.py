@@ -13,6 +13,8 @@ from app.main import app
 from app.vault.store import root
 
 pytestmark = pytest.mark.skipif(not (root() / "index.json").exists(), reason="vault not built")
+from tests.conftest import ADMIN
+
 client = TestClient(app)
 
 HEADS = [
@@ -51,12 +53,12 @@ def test_run_drafts_a_case_that_students_cannot_see_until_a_human_approves():
     assert client.get(f"/cases/{cid}").status_code == 404
     assert client.post("/sessions", json={"case_id": cid, "nickname": "T"}).status_code == 404
 
-    drafts = client.get("/admin/cases").json()
+    drafts = client.get("/admin/cases", headers=ADMIN).json()
     mine = next(d for d in drafts if d["case"]["id"] == cid)
     assert mine["case"]["status"] == "draft" and mine["key_overall"]
     assert mine["case"]["sources"][0]["url"] == "https://example.org/a"
 
-    assert client.post(f"/admin/cases/{cid}/approve").json()["status"] == "open"
+    assert client.post(f"/admin/cases/{cid}/approve", headers=ADMIN).json()["status"] == "open"
     pub = client.get(f"/cases/{cid}")
     assert pub.status_code == 200
     body = json.dumps(pub.json())
@@ -78,7 +80,7 @@ def test_quiet_news_lets_an_unusual_reading_open_a_case(monkeypatch):
                                                       "data_as_of": "2026-11-10", "stale": False})
     out = asyncio.run(scout.run([]))
     assert [(d["type"], d["region"]) for d in out["drafted"]] == [("dry", "north-peat")]
-    drafts = client.get("/admin/cases").json()
+    drafts = client.get("/admin/cases", headers=ADMIN).json()
     src = next(d for d in drafts if d["case"]["id"] == out["drafted"][0]["id"])["case"]["sources"][0]
     assert "NASA record" in src["title"] and src["url"].startswith("https://power.larc.nasa.gov")
 
@@ -95,16 +97,23 @@ def test_activity_feed_is_public_and_carries_no_secrets():
     assert {"Scout", "Case Builder", "Editor", "Data desk"} <= agents
 
 
-def test_admin_needs_the_key_in_cloud(monkeypatch):
+def test_admin_always_needs_the_key(monkeypatch):
+    """No key, a wrong key, or no key configured: the desk stays shut, locally and in the cloud."""
     from app.config import get_settings
 
     st = get_settings()
-    monkeypatch.setattr(st, "admin_token", "s3cret")
-    assert client.get("/admin/cases").status_code == 401
-    assert client.get("/admin/cases", headers={"X-Admin-Token": "s3cret"}).status_code == 200
-    monkeypatch.setattr(st, "admin_token", None)
-    monkeypatch.setattr(st, "app_env", "cloud")
-    assert client.post("/admin/scout/run").status_code == 503
+    for env in ("local", "cloud"):
+        monkeypatch.setattr(st, "app_env", env)
+        monkeypatch.setattr(st, "admin_token", "s3cret")
+        assert client.get("/admin/cases").status_code == 401
+        assert client.get("/admin/cases", headers={"X-Admin-Token": "wrong"}).status_code == 401
+        assert client.post("/admin/cases/x/approve").status_code == 401
+        assert client.post("/admin/scout/run").status_code == 401
+        assert client.get("/admin/cases", headers={"X-Admin-Token": "s3cret"}).status_code == 200
+        monkeypatch.setattr(st, "admin_token", None)
+        assert client.get("/admin/cases").status_code == 503
+        assert client.get("/admin/cases", headers={"X-Admin-Token": ""}).status_code == 503
+        assert client.post("/admin/scout/run").status_code == 503
 
 
 def test_pins_can_be_replaced():

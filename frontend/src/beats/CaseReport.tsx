@@ -1,4 +1,4 @@
-// The case study and the executive summary of a closed case, as printable documents.
+// The case study and the executive summary (ExecReport.tsx) of a closed case, as printable documents.
 // "Print or save as PDF" uses the browser's own print dialog (Save as PDF), so nothing extra is
 // downloaded. Everything shown comes from GET /sessions/{id}/casefile (built by code from the
 // session) and, for the summary, POST /sessions/{id}/summary (the Reporter agent, guarded).
@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../api/client'
 import type { CaseFile, ExecSummary } from '../api/types'
+import { ExecReport } from './ExecReport'
 
 export type ReportKind = 'study' | 'summary'
 
@@ -98,21 +99,6 @@ function Study({ f }: { f: CaseFile }) {
   )
 }
 
-function Summary({ f, s }: { f: CaseFile; s: ExecSummary }) {
-  const rows: [keyof ExecSummary['sections'], string][] = [['purpose', 'Purpose'], ['method', 'Method'], ['findings', 'Findings'], ['conclusion', 'Conclusion'], ['limitations', 'Limitations']]
-  return (
-    <>
-      <Head f={f} title="Executive summary" />
-      <dl className="doc-memo">
-        <dt>Case</dt><dd>{f.case.id}, {f.case.title}</dd>
-        <dt>Outcome</dt><dd>{f.grade.ending} · {f.grade.score}/100</dd>
-        <dt>Prepared by</dt><dd>{s.source === 'ai' ? 'The Reporter agent (AI), from the statistics code’s facts sheet; every figure checked by the number guard' : 'The case desk’s code template'}</dd>
-      </dl>
-      {rows.map(([k, label]) => <section key={k}><h2>{label}</h2><p>{s.sections[k]}</p></section>)}
-    </>
-  )
-}
-
 export function CaseReport({ sid, kind, onClose }: { sid: string; kind: ReportKind; onClose: () => void }) {
   const [f, setF] = useState<CaseFile | null>(null)
   const [s, setS] = useState<ExecSummary | null>(null)
@@ -144,9 +130,9 @@ export function CaseReport({ sid, kind, onClose }: { sid: string; kind: ReportKi
       </div>
       <article className="report-doc">
         {err && <p className="error">{err}</p>}
-        {!err && !ready && <p className="muted" role="status">{kind === 'summary' && f ? 'The Reporter is writing the summary…' : 'Opening the case file…'}</p>}
+        {!err && !ready && <p className="muted" role="status">{kind === 'summary' && f ? 'The Reporter is writing the report and the code is drawing the charts…' : 'Opening the case file…'}</p>}
         {f && kind === 'study' && <Study f={f} />}
-        {f && kind === 'summary' && s && <Summary f={f} s={s} />}
+        {f && kind === 'summary' && s && <ExecReport f={f} s={s} />}
         {ready && <footer className="doc-foot">Sarawak Earth Detectives · NASA Space Apps 2026 · Data: NASA POWER (MERRA-2), NASA GIBS (VIIRS), NOAA ONI · Numbers come from statistics code, not AI.</footer>}
       </article>
     </div>,

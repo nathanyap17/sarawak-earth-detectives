@@ -9,6 +9,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useRef, type ReactNode } from 'react'
 import { Vector3, type Group } from 'three'
 import { BEATS, useSession, type Beat } from '../state/session'
+import { sfx } from '../sound/audio'
 import { SPOT, target } from './script'
 import { useGuideState } from './useGuideState'
 import { useUI, type SpotId } from './ui'
@@ -56,7 +57,7 @@ export function Spot({ id, at, children, clickThrough = false }: {
   })
   return (
     <group
-      onClick={(e) => { if (clickThrough && win === id) return; e.stopPropagation(); open(id) }}
+      onClick={(e) => { if (clickThrough && win === id) return; e.stopPropagation(); if (enabled(id) && win !== id) sfx('open'); open(id) }}
       onPointerOver={(e) => { e.stopPropagation(); setHover(id); if (win === null) document.body.style.cursor = enabled(id) ? 'pointer' : 'not-allowed' }}
       onPointerOut={() => { setHover(null); document.body.style.cursor = '' }}>
       {children}

@@ -14,6 +14,8 @@ from app.reports import casefile
 from app.vault.store import root
 
 pytestmark = pytest.mark.skipif(not (root() / "index.json").exists(), reason="vault not built")
+from tests.conftest import ADMIN
+
 client = TestClient(app)
 VERDICT = {"what": "Peat dried out", "where": "Northern Sarawak", "direction": "worsening", "how_much": "a little",
            "is_it_real": "yes", "why_hypothesis": "drier soil each year", "confidence": 2}
@@ -71,3 +73,44 @@ def test_reporter_invented_number_falls_back(monkeypatch):
     monkeypatch.setattr(reporter, "run_once", liar)
     out, source, note = asyncio.run(reporter.summarise(cf, casefile.facts(cf)))
     assert source == "code" and note.startswith("guard") and "42.7" not in json.dumps(out)
+
+
+def test_summary_has_story_sections_and_code_charts():
+    sid = _played(); _close(sid)
+    a = client.post(f"/sessions/{sid}/summary").json()
+    assert a["v"] == 2 and set(a["sections"]) == {"headline", "issue", "response", "insights", "impact"}
+    items = a["insights"]
+    assert [i["card_id"] for i in items] == ["soil_dry3"]          # only what the detective tested
+    i = items[0]
+    assert i["points"] and i["metrics"]["t_test_p"] and i["metrics"]["mann_kendall_p"] and i["metrics"]["r2"]
+    assert i["caption"] and "0.05" in i["caption"]
+    # the line runs past the record only for a significant trend, and is labelled as such
+    assert (len(i["line"]) == 3) == i["significant"] and (i["extend_years"] > 0) == i["significant"]
+    body = json.dumps(a)
+    for leak in ("red_herring", "main_cards", "answer_key", "elnino_stamp", "key_overall"):
+        assert leak not in body
+
+
+def test_captions_explain_significant_and_not():
+    from app.analysis.trend import TrendTest
+    from app.reports.insights import caption
+    sig = TrendTest(30, 2.0, (1.0, 3.0), 0.001, 0.002, 1.9, "significant", "rising", None)
+    lamp_gone = TrendTest(30, 0.5, (-0.5, 1.5), 0.3, 0.4, 0.4, "needs_more_years", "rising", 40)
+    c1 = caption("Fire days", "days", sig, lamp_gone, 1995, 2024, 0.42, 0.5)
+    assert "rose" in c1 and "Mann-Kendall" in c1 and "El Niño" in c1 and "no longer passes" in c1 and "42%" in c1
+    flat = TrendTest(30, 0.01, (-0.1, 0.1), 0.8, 0.7, 0.0, "not_significant", "flat", None)
+    assert "too small to matter" in caption("Rain", "mm", flat, None, 1995, 2024, 0.01, 0.5)
+    more = TrendTest(30, 1.0, (-0.5, 2.5), 0.2, 0.3, 0.9, "needs_more_years", "rising", 60)
+    assert "more than 50 years" in caption("Rain", "mm", more, None, 1995, 2024, 0.05, 0.5)
+
+
+def test_teacher_desk_shows_every_case_with_its_configuration():
+    assert client.get("/admin/cases").status_code == 401        # never open without the key
+    rows = client.get("/admin/cases", headers=ADMIN).json()
+    one = next(r for r in rows if r["case"]["id"] == "001")
+    assert one["origin"] == "repository" and one["key_overall"] and one["key_cards"]
+    roles = {d["id"]: d["role"] for d in one["datasets"]}
+    assert set(roles) == set(one["case"]["evidence"])
+    assert {"main", "red_herring"} <= set(roles.values())
+    d = next(d for d in one["datasets"] if d["role"] == "main")
+    assert d["mission"] and d["months"] and d["vault"][one["case"]["region"]["id"]]["n_years"] >= 20

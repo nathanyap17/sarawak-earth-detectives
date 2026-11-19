@@ -13,6 +13,7 @@ import { LockerBeat } from '../beats/LockerBeat'
 import { Partner } from '../beats/Partner'
 import { SceneBeat } from '../beats/SceneBeat'
 import { BEAT_LABEL, BEATS, useSession, type Beat } from '../state/session'
+import { SettingsMenu } from '../sound/Settings'
 
 export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: string | null } = {}) {
   const { beat, setBeat, sessionId, activeCase, reset } = useSession()
@@ -29,6 +30,7 @@ export function LiteApp({ onOffice, note }: { onOffice?: () => void; note?: stri
           {activeCase && <span className="case-chip">Case {activeCase.id}</span>}
           <button className="mode" onClick={() => setWire(!wire)} aria-expanded={wire}>📠 Agents at work</button>
           {onOffice && <button className="mode" onClick={onOffice} aria-label="Switch to the 3D office">3D office</button>}
+          <SettingsMenu />
         </span>
       </header>
       {note && <p className="muted lite-note">{note}{onOffice && ' You can still try the 3D office.'}</p>}

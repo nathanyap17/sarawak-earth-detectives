@@ -11,7 +11,9 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from app import casework
 from app import docs
 from app.agents import activity, chief, listener, partner, reporter, runtime, scout
-from app.reports import casefile
+from app.reports import casefile, insights
+
+SUMMARY_V = 2   # executive report layout; an older stored summary is rewritten in the new layout
 from app.config import get_settings
 from app.grading import Attempt, grade
 from app.schemas import (AnalysisRequest, AnalysisResult, CasePublic, ChiefNote, ChooseCards, ChooseResult,
@@ -289,19 +291,22 @@ def case_file(session_id: str):
     Built from the session only (never the answer key), and only after the case is closed."""
     s, c = _closed_case(session_id)
     cf = casefile.build(s, c)
-    cf["summary"] = (s.grade or {}).get("exec_summary")
+    kept = (s.grade or {}).get("exec_summary")
+    cf["summary"] = kept if (kept or {}).get("v") == SUMMARY_V else None
     return cf
 
 
 @router.post("/sessions/{session_id}/summary")
 async def exec_summary(session_id: str):
-    """The Reporter's executive summary of a closed case, written once and kept."""
+    """The executive report of a closed case, written once and kept: the Reporter's story text
+    (guarded) around the key-insight charts, whose numbers and captions are computed by code."""
     s, c = _closed_case(session_id)
-    if s.grade.get("exec_summary"):
+    if (s.grade.get("exec_summary") or {}).get("v") == SUMMARY_V:
         return s.grade["exec_summary"]
     cf = casefile.build(s, c)
-    sections, source, note = await reporter.summarise(cf, casefile.facts(cf))
-    out = {"sections": sections, "source": source}
+    items = insights.build(s, c)
+    sections, source, note = await reporter.summarise(cf, casefile.facts(cf) + "\n" + insights.facts(items), items)
+    out = {"v": SUMMARY_V, "sections": sections, "source": source, "insights": items}
     s.grade["exec_summary"] = out
     s.record("summary", source=source, note=note)
     sessions.save(s, "grade")
@@ -335,12 +340,13 @@ def agency_activity():
 
 # ---------------------------------------------------------------- admin: the editor's desk
 def _admin(token: str | None) -> None:
+    """Every admin route needs the editor's key, locally too. With no ADMIN_TOKEN configured the
+    desk stays locked: cases, configurations and answer keys are never open by default."""
     st = get_settings()
-    if st.admin_token:
-        if not token or not hmac.compare_digest(token.encode(), st.admin_token.encode()):
-            raise HTTPException(401, "editor's key needed")
-    elif st.app_env != "local":
-        raise HTTPException(503, "editor's desk is not set up (ADMIN_TOKEN missing)")
+    if not st.admin_token:
+        raise HTTPException(503, "The teacher's desk is locked: no editor's key is set up on the server (ADMIN_TOKEN).")
+    if not token or not hmac.compare_digest(token.encode(), st.admin_token.encode()):
+        raise HTTPException(401, "That editor's key is not right.")
 
 
 @router.post("/admin/scout/run")
@@ -352,15 +358,19 @@ async def scout_run(x_admin_token: str | None = Header(default=None)):
 
 @router.get("/admin/cases")
 def admin_cases(x_admin_token: str | None = Header(default=None)):
+    """The teacher's desk: every case, open or waiting, with its full configuration (region,
+    scene, datasets and their roles, hints, limits, sources) and the code's answer key.
+    Behind the editor's key only; students never reach this route (rule 3)."""
     _admin(x_admin_token)
     out = []
     for c in casework.list_cases(status=None):
-        d = docs.store().get("cases", c.id)
-        if d is None:
-            continue  # hand-made cases are edited in the repository, not here
-        key = docs.store().get("answer_keys", c.id) or {}
-        out.append({"case": c.model_dump(by_alias=True), "key_overall": key.get("overall"),
-                    "key_stamps": {k: [v["stamp"], v["elnino_stamp"]] for k, v in key.get("per_card", {}).items()}})
+        desk = docs.store().get("cases", c.id) is not None
+        key = (docs.store().get("answer_keys", c.id) if desk else casework.stored_key(c.id)) or {}
+        out.append({"case": c.model_dump(by_alias=True), "origin": "desk" if desk else "repository",
+                    "key_overall": key.get("overall"), "key_computed_at": key.get("computed_at"),
+                    "key_stamps": {k: [v["stamp"], v["elnino_stamp"]] for k, v in key.get("per_card", {}).items()},
+                    "key_cards": key.get("per_card", {}),
+                    "datasets": casework.dataset_config(c)})
     return out
 
 

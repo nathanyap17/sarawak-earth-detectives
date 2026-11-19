@@ -27,6 +27,7 @@ import { Room } from './Room'
 import { Labels } from './Spot'
 import { OVERVIEW, STATIONS } from './stations'
 import { useUI } from './ui'
+import { SettingsMenu } from '../sound/Settings'
 
 /** Pixel width the window covers on the right (matches .office-window in index.css). */
 function windowPx(w: number) { return w <= 640 ? 0 : Math.min(600, 0.42 * w) }   // ≤640 px: bottom sheet, no side shift
@@ -221,6 +222,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
         <button className="mode" onClick={() => setWin(win === 'inbox' ? null : 'inbox')}>✉ Inbox</button>
         <button className="mode" onClick={() => setWin(win === 'agency' ? null : 'agency')}>📠 Agents at work</button>
         <button className="mode" onClick={onLite} aria-label="Switch to the 2D lite mode">2D</button>
+        <SettingsMenu />
       </header>
       {slow && (
         <p className="office-note" role="status">The office is running slowly on this device.

@@ -64,7 +64,23 @@ export interface Agency {
   counts: { open: number; waiting: number }; events: AgencyEvent[]
 }
 /** Editor's desk (admin only). */
-export interface DraftRow { case: Omit<CasePublic, 'evidence'> & { red_herrings: string[]; main_cards: string[]; evidence: string[] }; key_overall: string | null; key_stamps: Record<string, [string, string]> }
+export interface DatasetConfig {
+  id: string; name: string; missing?: boolean
+  definition?: string; mission?: string; unit?: string; yearly_label?: string; from_year?: number; grid_km?: number
+  months?: string[]; worse_when?: string | null; band_per_decade?: number; provisional?: string | null
+  role?: 'main' | 'supporting' | 'red_herring'
+  vault?: Record<string, { region: string; first?: number | null; last?: number | null; n_years?: number; data_as_of?: string; missing?: boolean }>
+}
+export interface KeyCard { direction: string | null; stamp: string; rate_per_decade: number; range: [number, number]; elnino_stamp: string }
+/** The teacher's desk (GET /admin/cases, editor's key only): every case with its full configuration. */
+export interface DraftRow {
+  case: Omit<CasePublic, 'evidence'> & { red_herrings: string[]; main_cards: string[]; evidence: string[]
+    hints: { evidence: string[]; method: string[]; verdict: string[] } }
+  origin: 'repository' | 'desk'
+  key_overall: string | null; key_computed_at: string | null
+  key_stamps: Record<string, [string, string]>; key_cards: Record<string, KeyCard>
+  datasets: DatasetConfig[]
+}
 export interface SceneManifest {
   bbox: [number, number, number, number]; width: number; height: number; base: string
   base_source: string; fires_source: string; fire_days: string[]; missing_days: string[]
@@ -90,9 +106,21 @@ export interface CaseFileTest {
   t_test_p: string | null; mann_kendall_p: string | null; stamp: string | null; direction: string | null
   years_needed: number | string | null; elnino_r: string | null
 }
+export interface Insight {
+  card_id: string; name: string; definition: string; unit: string; yearly_label: string; mission: string; data_as_of: string
+  points: [number, number][]; line: [number, number][] | null; extend_years: number; elnino_points: [number, number][] | null
+  metrics: { n_years: number; first: number; last: number; rate: string | null; range: [string, string] | null
+    t_test_p: string | null; mann_kendall_p: string | null; t_test_p_raw: number | null; mann_kendall_p_raw: number | null
+    sen: string | null; r2: string | null; elnino_r: string | null; after_elnino: string | null; after_elnino_rate: string | null
+    band: string; years_needed: number | string | null }
+  stamp: Stamp; stamp_text: string; direction: string | null; significant: boolean; caption: string
+}
+/** The executive report (POST /sessions/{id}/summary): story text by the Reporter (guarded), charts and captions by code. */
 export interface ExecSummary {
-  sections: { purpose: string; method: string; findings: string; conclusion: string; limitations: string }
+  v: 2
+  sections: { headline: string; issue: string; response: string; insights: string; impact: string }
   source: 'ai' | 'code'
+  insights: Insight[]
 }
 export interface CaseFile {
   case: { id: string; title: string; question: string; brief: string; region: string; twin_region: string | null

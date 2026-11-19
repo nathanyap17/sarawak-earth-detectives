@@ -95,6 +95,7 @@ def facts(cf: dict) -> str:
     c, g, v = cf["case"], cf["grade"], cf["verdict"] or {}
     lines = [
         f"Case {c['id']}: {c['title']}. Question: {c['question']}",
+        f"Brief: {c['brief']}",
         f"Region: {c['region']}" + (f"; compared with {c['twin_region']}" if c["twin_region"] else "") + ".",
         f"Detective (nickname): {cf['detective']}.",
         "Evidence chosen: " + ("; ".join(f"{e['name']} ({e['mission']})" for e in cf["evidence"]) or "none") + ".",

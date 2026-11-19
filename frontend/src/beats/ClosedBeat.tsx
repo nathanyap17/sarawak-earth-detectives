@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { Badge, ChiefNote } from '../api/types'
 import { useSession } from '../state/session'
+import { sfx } from '../sound/audio'
 import { CaseReport, type ReportKind } from './CaseReport'
 
 const BADGES: Record<Badge, [string, string]> = {
@@ -55,6 +56,12 @@ export function ClosedBeat({ onRetry, onShelf }: { onRetry: () => void; onShelf:
   const { grade: g, activeCase: c, sessionId } = useSession()
   const writing = useChiefNote()
   const [report, setReport] = useState<ReportKind | null>(null)
+  const stamped = g ? `${sessionId}:${g.attempt}` : null
+  useEffect(() => {          // the Chief's stamp lands; a closed case gets a short fanfare
+    if (!stamped || !g) return
+    sfx('stamp')
+    if (g.ending !== 'sent_back') { const t = setTimeout(() => sfx('success'), 260); return () => clearTimeout(t) }
+  }, [stamped]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!g) return null
   return (
     <section className="beat">

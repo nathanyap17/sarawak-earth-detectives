@@ -14,3 +14,14 @@ def _agency_docs(tmp_path_factory):
 
     docs.use(docs.FileDocs(tmp_path_factory.mktemp("agency")))
     yield
+
+
+ADMIN = {"X-Admin-Token": "test-editor-key"}   # a test value; the real key lives only in .env / Cloud Run
+
+
+@pytest.fixture(autouse=True)
+def _editor_key(monkeypatch):
+    """Admin routes always need the editor's key; tests use a throwaway one."""
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "admin_token", ADMIN["X-Admin-Token"])
