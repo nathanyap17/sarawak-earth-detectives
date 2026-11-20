@@ -23,6 +23,8 @@
 - **Other sizes:** 915×412, 1024×768 (bird 54px in a 64px disc), 820×1180 portrait and desktop (canvas still 1.5×) look right.
 - **Build and tests:** `npm run build` passes; backend `pytest` 104 passed.
 
+**Deployed (Nathan asked):** commit `df795cc`, frontend only (`firebase deploy --only hosting`). The live page serves the same bundle as the build (`index-CyYvBegq.js`) and contains the recovery card. API `/health` is unchanged and OK. Checked live at 740×360 with touch: the bird is 30px inside its disc, the disc ends at y=352 of 360, the panel is 230px, the canvas is 925×450, and there are no console errors.
+
 **Not verified:** on a real phone or tablet. Whether the light chain keeps the context from being lost on Nathan's phone can only be seen there.
 
 ## [2026-11-20] Deployed bd8bdf2; the live summary called a "can't tell" case "one bad year", now guarded

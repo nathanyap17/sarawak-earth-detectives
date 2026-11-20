@@ -71,6 +71,7 @@ cd frontend && npm run build
 The seven beats for case 001, real statistics in code, the student-written verdict, the Partner's "no answers" rule, lite mode.
 
 ## Shipping status
+2026-11-20, DEPLOYED frontend only (commit df795cc, Firebase Hosting; backend unchanged at sed-api-00008-5bk): phones held sideways (Kenyalang's bird fits its disc, speech stays in view, fewer labels, "3D view paused" recovery, lighter effects on phones and tablets).
 2026-11-20, DEPLOYED backend only (commit 8d28ce0, Cloud Run sed-api-00008-5bk, ADMIN_TOKEN kept): the executive summary's guard against "one bad year" and cause claims.
 2026-11-20, DEPLOYED (commit bd8bdf2, Cloud Run sed-api-00007-bgb plus Firebase Hosting, ADMIN_TOKEN kept via --update-env-vars): argued verdicts (reasoning checks), medals and fanfare, exemplar executive summary, rotate gate for phones and tablets.
 2026-11-15 ~19:45 MYT, DEPLOYED (commit b7398d5, Cloud Run sed-api-00005-wmx, ADMIN_TOKEN kept): Kenyalang explains methods with rhetorical hints, hold-to-talk, brand logo, case study and Reporter executive summary for closed cases. Deploy the backend from the repo root (the Dockerfile is there; from `backend/` buildpacks fail on Python 3.12).
