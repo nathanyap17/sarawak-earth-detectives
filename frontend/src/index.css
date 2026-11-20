@@ -214,6 +214,10 @@ button.mode { padding: 4px 10px; font-size: .85rem; }
 .office-top h1, .office-top .brand { font-size: 1.15rem; font-weight: 700; margin: 0; color: #f4ead8; background: none; border: 0; padding: 0; text-shadow: 0 1px 4px #000; }
 .office-note { position: absolute; left: 16px; top: 56px; margin: 0; padding: 8px 12px; background: rgba(255, 250, 240, .95); border-radius: 8px; z-index: 30; }
 .office-note button { margin-left: 8px; }
+/* the 3D context was lost (phones short of graphics memory): over the black stage, Kenyalang and the labels */
+.office-lost { position: absolute; inset: 0; z-index: 40; display: grid; place-content: center; gap: 4px; padding: 16px; text-align: center; background: rgba(7, 9, 15, .82); color: #f4ead2; }
+.office-lost p { margin: 0 0 8px; max-width: 34em; }
+.office-lost button { margin: 0 4px; }
 
 /* object labels */
 .spot-label { display: grid; gap: 1px; text-align: left; white-space: nowrap; padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .25);
@@ -239,7 +243,9 @@ button.mode { padding: 4px 10px; font-size: .85rem; }
 
 /* Kenyalang, the guide */
 .guide { position: absolute; left: 16px; bottom: 16px; z-index: 35; display: flex; gap: 10px; align-items: flex-end; max-width: min(460px, calc(54vw - 32px)); }
-.guide-bird { flex: none; width: 64px; height: 64px; border-radius: 50%; background: var(--yellow); display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); animation: bob 3s ease-in-out infinite; }
+.guide-bird { flex: none; width: 64px; height: 64px; border-radius: 50%; background: var(--yellow); display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); animation: bob 3s ease-in-out infinite; overflow: hidden; }
+/* the drawing follows the disc: a fixed 56px bird spilled out of the 38–44px discs on phones and tablets */
+.guide-bird > .bird { width: 88%; height: 88%; }
 .guide.nudge .guide-bird { animation: hop .7s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-4px) rotate(-3deg); } }
 @keyframes hop { 50% { transform: translateY(-10px) rotate(8deg); } }
@@ -656,7 +662,14 @@ button.mode { white-space: nowrap; }
   .win-bar { padding: 6px 8px 6px 14px; }
   .guide { max-width: min(300px, calc(50vw - 24px)); left: 8px; bottom: 8px; }
   .guide-bird { width: 38px; height: 38px; }
-  .guide-body { max-height: 36vh; font-size: .82rem; }
+  /* room for the header and what Kenyalang says: below the top bar, above the bottom edge */
+  .guide-body { max-height: min(64vh, calc(100vh - 72px)); max-height: min(64dvh, calc(100dvh - 72px)); font-size: .82rem; }
+  .guide-say { margin-bottom: 4px; }
+  .guide-row { margin-top: 4px; gap: 4px; }
+  /* every label at once buried the room on a phone: only the ones that open, and smaller */
+  .spot-label.locked:not(.next) { display: none; }
+  .spot-label { padding: 3px 8px; font-size: .78rem; }
+  .spot-label strong { font-size: .76rem; }
   .guide-min { left: 8px; bottom: 8px; }
   .office-note { top: 48px; }
 }

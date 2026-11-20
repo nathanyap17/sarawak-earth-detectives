@@ -12,6 +12,7 @@ import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei'
 import { Bloom, EffectComposer, N8AO, Noise, ToneMapping } from '@react-three/postprocessing'
 import { BlendFunction, ToneMappingMode } from 'postprocessing'
 import { useEffect, useState } from 'react'
+import { isHandheld } from './orientation'
 
 /** Reflections only: a warm window, a lamp-lit ceiling and dark walls, rendered once. */
 function Reflections() {
@@ -47,8 +48,12 @@ function Light() {
 }
 
 export function Grade({ armed }: { armed: boolean }) {
-  const forced = (() => { try { return localStorage.getItem('sed-fx') === 'on' } catch { return false } })()   // screenshots on slow test machines
-  const [rich, setRich] = useState(true)
+  const fx = (() => { try { return localStorage.getItem('sed-fx') } catch { return null } })()
+  const forced = fx === 'on'   // screenshots on slow test machines
+  // phones and tablets start on the light chain: ambient occlusion, glow and 4x multisampling are the
+  // biggest GPU memory users, and running out of it is what blanks the 3D view on a phone.
+  // 'off' forces the light chain on any device (tests the slow-device path).
+  const [rich, setRich] = useState(fx !== 'off' && !isHandheld())
   const [watching, setWatching] = useState(false)
   useEffect(() => {
     if (!armed) return

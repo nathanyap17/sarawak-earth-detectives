@@ -24,6 +24,7 @@ import { Inbox } from './Inbox'
 import { MapTable, useScene } from './MapTable'
 import { Room } from './Room'
 import { Labels } from './Spot'
+import { isHandheld } from './orientation'
 import { OVERVIEW, STATIONS } from './stations'
 import { useUI } from './ui'
 import { SettingsMenu } from '../sound/Settings'
@@ -148,6 +149,13 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
   const scene = useScene(activeCase?.id)
   const [slow, setSlow] = useState(false)
   const [ready, setReady] = useState(false)
+  // A phone short of graphics memory can drop the 3D context: the room goes black while the labels and
+  // Kenyalang stay. The browser may give it back on its own; if not, the student restarts the view
+  // (a fresh canvas, the case is kept) or switches to 2D.
+  const [lost, setLost] = useState(false)
+  const [gen, setGen] = useState(0)
+  const handheld = isHandheld()
+  function restart3D() { setLost(false); setReady(false); setGen((g) => g + 1) }
   // a link can open straight at the inbox or the wire desk: /#/play?at=agency
   useEffect(() => {
     const at = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('at')
@@ -196,8 +204,13 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
     <div className="office">
       <div className={`stage cinema ${ready ? 'ready' : ''}`}>
         {!ready && <p className="stage-boot" role="status">Opening the office…</p>}
-        <Canvas shadows="soft" dpr={[1, 1.5]} camera={{ fov: 52, position: OVERVIEW.pos, near: 0.05, far: 60 }}
-          gl={{ antialias: true, powerPreference: 'high-performance' }}>
+        <Canvas key={gen} shadows="soft" dpr={handheld ? [1, 1.25] : [1, 1.5]} camera={{ fov: 52, position: OVERVIEW.pos, near: 0.05, far: 60 }}
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          onCreated={({ gl }) => {
+            const c = gl.domElement
+            c.addEventListener('webglcontextlost', (e) => { e.preventDefault(); setLost(true) })   // preventDefault lets it be restored
+            c.addEventListener('webglcontextrestored', () => setLost(false))
+          }}>
           <color attach="background" args={['#0d0907']} />
           <Room />
           <Hornbill />
@@ -218,6 +231,12 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
         <button className="mode" onClick={onLite} aria-label="Switch to the 2D lite mode">2D</button>
         <SettingsMenu />
       </header>
+      {lost && (
+        <div className="office-lost" role="alert">
+          <p><strong>The 3D view paused.</strong> Your device needed its graphics memory back. Your case is kept.</p>
+          <p><button className="primary" onClick={restart3D}>Restart the 3D view</button> <button onClick={onLite}>Switch to 2D</button></p>
+        </div>
+      )}
       {slow && (
         <p className="office-note" role="status">The office is running slowly on this device.
           <button onClick={onLite}>Switch to 2D</button></p>

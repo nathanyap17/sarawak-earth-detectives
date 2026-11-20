@@ -4,7 +4,7 @@
 // While the Partner thinks, the bubble says so; if a reply had to be swapped for an approved hint
 // (it broke a rule, or the model was slow), the bubble says that too, so no question vanishes.
 // AI-assisted: written with Claude Code.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { partnerNote } from '../beats/partnerNote'
 import { useSession } from '../state/session'
@@ -55,6 +55,9 @@ export function Guide() {
   const bubble = thinking ?? extra
   const shown = bubble ? bubble.text : script.text
   const typed = useTyped(shown, bubble ? `b${bubble.id}` : `s${scriptId}:${script.text}`)
+  // a new line from Kenyalang scrolls the panel back to the top, so a short phone screen shows what was said
+  const body = useRef<HTMLDivElement>(null)
+  useEffect(() => { body.current?.scrollTo({ top: 0 }) }, [shown])
   const group = GROUP[beat]
   const used = hintRung[group] ?? 0
   const canAsk = !!sessionId && beat !== 'call' && (beat !== 'closed' || !!grade?.can_retry)
@@ -85,7 +88,7 @@ export function Guide() {
   return (
     <aside className={`guide ${idle && gs.win === null ? 'nudge' : ''} ${busy ? 'thinking' : ''}`} aria-label="Kenyalang, your guide" aria-busy={!!busy}>
       <div className="guide-bird"><Bird size={56} /></div>
-      <div className="guide-body">
+      <div className="guide-body" ref={body}>
         <header>
           <strong>Kenyalang</strong><span className="muted"> · your partner</span>
           <button className="guide-x" onClick={() => setSmall(true)} aria-label="Hide the guide">–</button>

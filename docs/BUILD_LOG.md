@@ -1,5 +1,30 @@
 # BUILD_LOG.md
 
+## [2026-11-20] Phones held sideways: Kenyalang's bird, a hidden speech, a black room
+
+**Reported (Nathan, phone in landscape):** the Kenyalang icon's parts slid out of place, the panel showed only its bottom rows, and the 3D room was black with only the "Evidence cabinet" label floating.
+
+**Causes, measured at 740×360 with touch emulation:**
+- The hornbill drawing was a fixed 56px, but on short landscape screens its yellow disc shrinks to 38px. The drawing started at the disc's corner and spilled 19px right and down, past the bottom of the screen (to y=372 on a 360px screen).
+- The panel was capped at 36vh (130px) with 279px of content, so the header and Kenyalang's words scrolled out of view.
+- A black room with labels still floating is what a lost WebGL context looks like: reproduced with `WEBGL_lose_context`. Phones drop the context when short of graphics memory, and the app had no handler, so if the browser did not give it back, the room stayed black. (Not seen on Nathan's phone directly; this is the only cause found that matches the screenshot.)
+- Also found: when the student is idle, every station label shows, and on a phone the nine labels buried the room and Kenyalang.
+
+**What changed** (frontend only)
+- `index.css`: the bird is 88% of its disc at every size (and the disc clips it). On short landscape screens the panel gets `min(64dvh, 100dvh − 72px)` with tighter rows, locked "Later in the case" labels are hidden, and labels are smaller.
+- `Guide.tsx`: each new line from Kenyalang scrolls the panel back to the top.
+- `OfficeApp.tsx`: on `webglcontextlost` the app lets the browser restore it and shows "The 3D view paused", with **Restart the 3D view** (a fresh canvas; the case is kept) and **Switch to 2D**. Phones and tablets draw at up to 1.25× resolution instead of 1.5×.
+- `Grade.tsx`: phones and tablets start on the light effect chain (no ambient occlusion, glow or 4× multisampling, the biggest GPU memory users). `localStorage sed-fx=off` forces it on any device for testing.
+
+**Verified locally:**
+- **740×360 touch:** the bird is 34px inside its disc and the disc ends at y=345. The panel is 230px and shows the header, speech and chips. Only the three usable labels show. Canvas 925×450 (1.25×).
+- **Mid-case:** with the inbox open, a new line scrolls to the top.
+- **Lost context:** the card appears above Kenyalang; Restart brings the room back with one canvas and no lost context.
+- **Other sizes:** 915×412, 1024×768 (bird 54px in a 64px disc), 820×1180 portrait and desktop (canvas still 1.5×) look right.
+- **Build and tests:** `npm run build` passes; backend `pytest` 104 passed.
+
+**Not verified:** on a real phone or tablet. Whether the light chain keeps the context from being lost on Nathan's phone can only be seen there.
+
 ## [2026-11-20] Deployed bd8bdf2; the live summary called a "can't tell" case "one bad year", now guarded
 
 **Deployed (Nathan asked):** commit `bd8bdf2`. Before: `uv run pytest -q` 92 passed, vault and answer key present. Backend: Cloud Run revision `sed-api-00007-bgb` from the repo root, with `--update-env-vars` so `ADMIN_TOKEN` was kept. Frontend: `npm run build` (API base checked in the bundle), `firebase deploy --only hosting`. After: `/health` says cloud, firestore, `gemini-3.5-flash-lite`, `mock_agents: false`; `/admin/scout/run` without the key answers 401; the live app lists cases 001–003; case 001 closed through the live API ends "solved, not enough evidence", 100.
