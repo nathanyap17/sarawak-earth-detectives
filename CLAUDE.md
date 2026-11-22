@@ -71,6 +71,7 @@ cd frontend && npm run build
 The seven beats for case 001, real statistics in code, the student-written verdict, the Partner's "no answers" rule, lite mode.
 
 ## Shipping status
+2026-11-22, DEPLOYED (commit 8eeb939, Cloud Run sed-api-00009-88v plus Firebase Hosting, ADMIN_TOKEN kept via --update-env-vars): flood and rain cases, weather on the map table, zoomable map, sea-aware fire layer, refresh keeps the case; data audit passed (`sandbox/audit_data_sources.py`). Local draft 004 (flood) is local only; cloud drafts still wait at `/#/review`.
 2026-11-20, DEPLOYED frontend only (commit df795cc, Firebase Hosting; backend unchanged at sed-api-00008-5bk): phones held sideways (Kenyalang's bird fits its disc, speech stays in view, fewer labels, "3D view paused" recovery, lighter effects on phones and tablets).
 2026-11-20, DEPLOYED backend only (commit 8d28ce0, Cloud Run sed-api-00008-5bk, ADMIN_TOKEN kept): the executive summary's guard against "one bad year" and cause claims.
 2026-11-20, DEPLOYED (commit bd8bdf2, Cloud Run sed-api-00007-bgb plus Firebase Hosting, ADMIN_TOKEN kept via --update-env-vars): argued verdicts (reasoning checks), medals and fanfare, exemplar executive summary, rotate gate for phones and tablets.
