@@ -53,6 +53,14 @@ NO_CHANGE = re.compile(
     r"tiny|level off|levelled|leveled|hardly (changed|moved)", re.I)
 WORSE = re.compile(r"getting worse|worsen|worse|more (fires?|danger|severe|risk)|drier|drying", re.I)
 BETTER = re.compile(r"getting better|improv|better|less (fires?|danger|severe|risk)|wetter", re.I)
+# In a flood case wetter is the worse direction, so the wet and dry words swap sides.
+WORSE_WET = re.compile(r"getting worse|worsen|worse|more (floods?|flooding|danger|severe|risk|rain)|wetter|heavier rain", re.I)
+BETTER_WET = re.compile(r"getting better|improv|better|less (floods?|flooding|danger|severe|risk|rain)|drier", re.I)
+
+
+def direction_words(case_type: str) -> tuple[re.Pattern, re.Pattern]:
+    """(words for worse, words for better) for this kind of case."""
+    return (WORSE_WET, BETTER_WET) if case_type == "flood" else (WORSE, BETTER)
 TOOLS = re.compile(
     r"scales?|tests?|mann|kendall|t-test|season(s|al)? (filter|removed?|lens)|removed? the seasons?|ruler|lamp|el ?ni[nñ]o|"
     r"twin|stamps?|trend ?line|p-?value|per decade|\brate\b|\brange\b|record|\bdata\b|satellite|merra|nasa|graph|chart",
@@ -252,9 +260,10 @@ def read(case: CasePack, chosen: list[str], v: Verdict) -> Reading:
     if v.is_it_real == "yes" and STRONG_DOUBT.search(words_all):
         contra.append("you ticked 'Yes, it is significant' but wrote that the record can't tell")
     if v.is_it_real != "cant_tell":
-        if v.direction == "improving" and WORSE.search(words_all) and not BETTER.search(words_all):
+        worse, better = direction_words(case.type)
+        if v.direction == "improving" and worse.search(words_all) and not better.search(words_all):
             contra.append("you ticked 'Improving' but your words describe things getting worse")
-        if v.direction == "worsening" and BETTER.search(words_all) and not WORSE.search(words_all):
+        if v.direction == "worsening" and better.search(words_all) and not worse.search(words_all):
             contra.append("you ticked 'Worsening' but your words describe things getting better")
 
     def chk(id_: str, ok: bool, label: str, good: str, bad: str) -> ReasonCheck:

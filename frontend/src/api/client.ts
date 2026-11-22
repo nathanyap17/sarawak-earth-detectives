@@ -1,6 +1,6 @@
 // The ONLY module that calls the backend. AI-assisted: written with Claude Code.
 import type {
-  Agency, AnalysisResult, CaseFile, CasePublic, DraftRow, ChiefNote, ExecSummary, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
+  Agency, AnalysisResult, SceneRain, CaseFile, CasePublic, DraftRow, ChiefNote, ExecSummary, ChooseResult, MyLineResult, ShuffleResult, Grade, LogEvent, PartnerReply, Series, SessionOut, Tool, Verdict,
 } from './types'
 
 const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
@@ -48,6 +48,7 @@ export const api = {
   cases: () => call<CasePublic[]>('GET', '/cases'),
   series: (caseId: string, cardId: string, regionId?: string) =>
     call<Series>('GET', `/cases/${caseId}/series/${cardId}${regionId ? `?region_id=${regionId}` : ''}`),
+  rain: (caseId: string) => call<SceneRain>('GET', `/cases/${caseId}/rain`),
   startSession: (caseId: string, nickname: string) =>
     call<SessionOut>('POST', '/sessions', { case_id: caseId, nickname }),
   choose: (sid: string, cards: string[]) =>
@@ -69,6 +70,8 @@ export const api = {
   admin: {
     drafts: (key: string) => call<DraftRow[]>('GET', '/admin/cases', undefined, true, TIMEOUT_MS, { 'X-Admin-Token': key }),
     decide: (key: string, id: string, d: 'approve' | 'reject') => call<{ id: string; status: string }>('POST', `/admin/cases/${id}/${d}`, undefined, true, TIMEOUT_MS, { 'X-Admin-Token': key }),
+    report: (key: string, tip: { title: string; url: string; date: string; summary?: string }) =>
+      call<{ drafted: { id: string; type: string; region: string }[]; headlines: number; set_aside?: string }>('POST', '/admin/scout/report', tip, true, 180_000, { 'X-Admin-Token': key }),
     scout: (key: string) => call<{ drafted: { id: string }[]; headlines: number }>('POST', '/admin/scout/run', undefined, true, 180_000, { 'X-Admin-Token': key }),
   },
   chief: (sid: string) => call<ChiefNote>('POST', `/sessions/${sid}/chief`, undefined, false, SLOW_MS),

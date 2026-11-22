@@ -11,6 +11,6 @@ export function useGuideState(): GuideState {
   return {
     hasCase: !!s.activeCase, beat: BEATS[frontier(s)], win, pins: s.cluePins.length, chosen: s.chosen.length,
     opened: s.opened.length, stamped: stampedCount(s.results, s.chosen), herring: s.herringWarning,
-    graded: !!s.grade, sentBack: s.grade?.ending === 'sent_back', inboxSeen,
+    graded: !!s.grade, sentBack: s.grade?.ending === 'sent_back', inboxSeen, caseType: s.activeCase?.type,
   }
 }

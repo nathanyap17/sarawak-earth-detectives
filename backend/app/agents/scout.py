@@ -33,7 +33,7 @@ from app.agents.runtime import run_once
 from app.config import get_settings
 from app.schemas import CasePack, Hints, Region, Scene, Source
 from app.vault import store as vault
-from app.vault.cards import CARDS
+from app.vault.cards import CARDS, provisional_for
 
 log = logging.getLogger("scout")
 UA = "SarawakEarthDetectives-Scout/1.0 (student project; reads RSS headlines weekly)"
@@ -103,7 +103,7 @@ def data_watch() -> dict:
     checked, unusual, as_of = 0, [], ""
     for rid, reg in idx.get("regions", {}).items():
         for cid, card in CARDS.items():
-            if card.provisional or not card.worse_when:
+            if provisional_for(card, rid) or not card.worse_when:
                 continue
             try:
                 ser = vault.load_series(rid, cid)
@@ -131,7 +131,8 @@ TYPES: list[tuple[str, re.Pattern]] = [(t, re.compile(p, re.I)) for t, p in [
     ("haze", r"\b(haze|hazy|jerebu|air pollutant index|air quality|unhealthy api)\b"),
     ("dry", r"\b(drought|dry spell|dry season|water shortage|water rationing|water crisis|kemarau)\b"),
     ("heat", r"\b(heat\s?wave|hot weather|hot spell|extreme heat|heat stroke|gelombang haba|cuaca panas)\b"),
-    ("flood", r"\b(floods?|flooded|flooding|banjir|inundated|water levels?)\b"),
+    ("flood", (r"\b(floods?|flooded|flooding|flash floods?|banjir|inundated|water levels?|heavy rain|downpours?|torrential|"
+               r"continuous rain|hujan lebat|landslides?|tanah runtuh)\b")),
 ]]
 PLACES = {
     "north-peat": r"\b(miri|bintulu|tatau|marudi|niah|sebauh|subis|beluru|baram|lambir|bekenu|suai|kuala baram|northern sarawak)\b",
@@ -155,12 +156,31 @@ TEMPLATES: dict[str, dict] = {
              "main": ["hot_days", "hot_nights"], "herring": ["wind"],
              "question": "Are hot days and hot nights in {place} becoming more common, or was {year} one hot year?",
              "thing": "how often it gets very hot"},
+    "flood": {"evidence": ["rain_nov_feb", "soil_wet3", "heavy_rain_days", "wettest_5day", "wind"],
+              "main": ["rain_nov_feb", "soil_wet3"], "herring": ["wind"],
+              "question": "Are wet seasons in {place} getting wetter, or was this just one wet spell?",
+              "thing": "how much rain the wet season brings"},
 }
-UNSUPPORTED = {"flood": "floods: our rain record is not cross-checked yet"}
+
+
+def can_build(kind: str, region_id: str) -> str:
+    """Can the records we hold for this region decide this kind of case? '' when they can, else why not.
+    Code checks every main record: it must be in the vault for the region and checked (not provisional)."""
+    held = vault.load_index().get("regions", {}).get(region_id, {}).get("cards", {})
+    for cid in TEMPLATES[kind]["main"]:
+        if cid not in held:
+            return f"no {CARDS[cid].name.lower()} record for that region yet"
+        if provisional_for(CARDS[cid], region_id):
+            return f"the {CARDS[cid].name.lower()} record for that region has not passed its cross-check"
+    return ""
+EVIDENCE_EXAMPLE = {
+    "flood": "Example: for a made-up heat case, a detective would pick hot days, not rain.",
+    "default": "Example: for a made-up flood case, a detective would pick heavy-rain days, not air temperature.",
+}
 HINTS = Hints(
     evidence=["What has to change in the air or the ground before this can happen?",
               "Look for cards that measure that change directly. One card in the locker does not belong.",
-              "Example: for a made-up flood case, a detective would pick heavy-rain days, not air temperature."],
+              EVIDENCE_EXAMPLE["default"]],
     method=["Some months are always wetter or hotter than others. Could that fool your ruler?",
             "Try the season filter first, then the scales. And ask: was El Nino strong in the bad years?",
             "Example: a made-up record rises only in El Nino years. With the El Nino lamp on, the rise disappears, so the trend wasn't real."],
@@ -175,8 +195,23 @@ LIMITS = [
 ]
 
 
+FLOOD_LIMIT = ("Rain is a stand-in for floods: rivers, tides, drains and how the land is used decide whether "
+               "heavy rain becomes a flood.")
+
+
+def hints_for(kind: str) -> Hints:
+    ev = list(HINTS.evidence)
+    ev[2] = EVIDENCE_EXAMPLE.get(kind, EVIDENCE_EXAMPLE["default"])
+    return HINTS.model_copy(update={"evidence": ev})
+
+
+def limits_for(kind: str) -> list[str]:
+    return LIMITS[:3] + [FLOOD_LIMIT] + LIMITS[3:] if kind == "flood" else list(LIMITS)
+
+
 # A reading far from normal can open a case too (a "data-triggered" case), when the news is quiet.
-DATA_CASE = {"hot_days": "heat", "hot_nights": "heat", "temp_mean": "heat", "soil_dry3": "dry"}
+DATA_CASE = {"hot_days": "heat", "hot_nights": "heat", "temp_mean": "heat", "soil_dry3": "dry",
+             "rain_nov_feb": "flood", "soil_wet3": "flood"}
 
 
 def data_headline(u: dict, as_of: str) -> Headline:
@@ -196,20 +231,22 @@ def classify(h: Headline) -> tuple[str | None, str | None, str]:
         return None, None, "not a weather or land event"
     if not re.search(r"\bsarawak\b", text, re.I) and not any(re.search(p, text, re.I) for p in PLACES.values()):
         return kind, None, "not in Sarawak"
-    if kind in UNSUPPORTED:
-        return kind, None, UNSUPPORTED[kind]
+    if kind not in TEMPLATES:
+        return kind, None, "no case template for this kind of event"
     have = set(vault.load_index().get("regions", {}))
     region = next((rid for rid, p in PLACES.items() if rid in have and re.search(p, h.title, re.I)), None) \
         or next((rid for rid, p in PLACES.items() if rid in have and re.search(p, text, re.I)), None)
     if not region:
         return kind, None, "no region we hold records for"
+    if why := can_build(kind, region):
+        return kind, None, why
     return kind, region, ""
 
 
 # ------------------------------------------------------------------ QUALIFY: the Scout agent (AI)
 SCOUT_INSTRUCTION = """You are the Scout of Sarawak Earth Detectives, a science game for students aged 10 to 15.
 You are given numbered news items. For each one decide whether it reports a real weather or land
-event that actually happened in Sarawak (a fire, haze, a dry spell, a heat wave) that students
+event that actually happened in Sarawak (a fire, haze, a dry spell, a heat wave, a flood or heavy rain) that students
 could investigate with climate records. Say keep=false for politics, funding announcements,
 court cases, opinion pieces, events outside Sarawak, or items that dwell on deaths or injuries.
 Reply with JSON only: [{"i": 0, "keep": true, "why": "at most twelve words"}]"""
@@ -250,7 +287,8 @@ def _short(name: str) -> str:
 def _fallback_text(h: Headline, kind: str, place: str, question: str) -> tuple[str, str]:
     used = {c.title for c in casework.list_cases(status=None)}
     options = {"fire": ["The Smouldering Ground", "The Ember Trail"], "haze": ["The Grey Sky", "The Missing Horizon"],
-               "dry": ["The Empty Tank", "The Cracked Field"], "heat": ["The Long Hot Night", "The Restless Heat"]}[kind]
+               "dry": ["The Empty Tank", "The Cracked Field"], "heat": ["The Long Hot Night", "The Restless Heat"],
+               "flood": ["The Rising Water", "The Swollen River"]}[kind]
     title = next((t for t in options if t not in used), f"{options[0]}: {place}")
     if h.year:  # raised by the data desk, not by the news
         brief = (f"Detective, we have a case. The agency's data desk has flagged something in the NASA record "
@@ -314,7 +352,7 @@ def assemble(h: Headline, kind: str, region_id: str, title: str, brief: str, cas
         region=region(region_id), twin_region=region(twin) if twin else None,
         scene=Scene(layers=[], **{"from": (d - timedelta(days=30)).isoformat(), "to": h.date}),
         evidence=t["evidence"], red_herrings=t["herring"], main_cards=t["main"],
-        hints=HINTS, limits=LIMITS, data_as_of=as_of)
+        hints=hints_for(kind), limits=limits_for(kind), data_as_of=as_of)
 
 
 def save_draft(pack: CasePack) -> str:
@@ -334,8 +372,9 @@ def _tally(reasons: list[str]) -> str:
     return "; ".join(f"{n} {r}" for r, n in sorted(counts.items(), key=lambda x: -x[1]))
 
 
-async def run(headlines: list[Headline] | None = None) -> dict:
-    """One full pass. `headlines` lets tests (and a dry run) skip the network."""
+async def run(headlines: list[Headline] | None = None, from_editor: bool = False) -> dict:
+    """One full pass. `headlines` lets tests (and a dry run) skip the network; `from_editor` is a
+    report a human editor handed in, so the data desk does not add cases of its own to that run."""
     st = get_settings()
     started = datetime.now(timezone.utc)
 
@@ -359,6 +398,9 @@ async def run(headlines: list[Headline] | None = None) -> dict:
         headlines, failed = fetch_headlines(feeds)
         activity.record("Scout", "code", f"Read {len(headlines)} headlines from {len(feeds) - len(failed)} news feeds"
                         + (f" ({len(failed)} feed did not answer)." if failed else "."), "news")
+    elif from_editor:
+        activity.record("Scout", "code", f"A human editor handed in {len(headlines)} news report"
+                        f"{'s' if len(headlines) != 1 else ''} to check.", "news")
     else:
         activity.record("Scout", "code", f"Read {len(headlines)} headlines handed to it for a test run.", "news")
 
@@ -389,7 +431,7 @@ async def run(headlines: list[Headline] | None = None) -> dict:
 
     # When the news is quiet, an unusual reading can open a case instead (code decides, not AI)
     from_data = 0
-    for u in w["unusual"]:
+    for u in ([] if from_editor else w["unusual"]):
         kind = DATA_CASE.get(u["card_id"])
         taken = existing | {(k, r) for _, k, r in kept}
         if len(kept) >= st.scout_max_drafts or not kind or (kind, u["region_id"]) in taken:

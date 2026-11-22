@@ -86,11 +86,16 @@ export interface DraftRow {
   key_stamps: Record<string, [string, string]>; key_cards: Record<string, KeyCard>
   datasets: DatasetConfig[]
 }
+/** Daily rain over the case region (GET /cases/{id}/rain): drives the map's rain and rising water. */
+export interface SceneRain { region: string; days: { d: string; mm: number }[]; source: string; note: string; data_as_of: string | null }
+
 export interface SceneManifest {
   bbox: [number, number, number, number]; width: number; height: number; base: string
   base_source: string; fires_source: string; fire_days: string[]; missing_days: string[]
   terrain?: { file: string; size: number; max_m: number; source: string }
-  fire_points?: { file: string; count: number }
+  fire_points?: { file: string; count: number; sea_removed?: number }
+  /** land/sea mask on the picture's pixel grid: white is sea */
+  sea?: { file: string; source: string }
 }
 
 /** Workbench (learning tools, never graded). Mirrors backend MyLineResult / ShuffleResult. */

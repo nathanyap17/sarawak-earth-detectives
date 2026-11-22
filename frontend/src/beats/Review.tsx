@@ -106,6 +106,27 @@ function CaseCard({ r, busy, decide }: { r: DraftRow; busy: boolean; decide: (id
   )
 }
 
+/** The editor hands the Scout one news report it missed. The same checklist runs: the event must be in
+ *  Sarawak, of a kind the desk has a template for, and the records it needs must have passed their checks. */
+function ReportTip({ busy, send }: { busy: boolean; send: (t: { title: string; url: string; date: string; summary: string }) => void }) {
+  const [t, setT] = useState({ title: '', url: '', date: '', summary: '' })
+  const ok = t.title.trim().length >= 8 && /^https:\/\//.test(t.url.trim()) && /^\d{4}-\d{2}-\d{2}$/.test(t.date)
+  return (
+    <details className="tip-form">
+      <summary>Hand the Scout a news report</summary>
+      <p className="muted">A flood, a haze or a heat wave in Sarawak the feeds missed? Paste its headline and link. The Scout runs the same checklist,
+        and a draft still waits here for your approval.</p>
+      <form onSubmit={(e) => { e.preventDefault(); if (ok) send({ title: t.title.trim(), url: t.url.trim(), date: t.date, summary: t.summary.trim() }) }}>
+        <label>Headline <input value={t.title} maxLength={200} onChange={(e) => setT({ ...t, title: e.target.value })} /></label>
+        <label>Link (https) <input value={t.url} type="url" onChange={(e) => setT({ ...t, url: e.target.value })} /></label>
+        <label>Date of the report <input value={t.date} type="date" onChange={(e) => setT({ ...t, date: e.target.value })} /></label>
+        <label>One-line summary (optional) <input value={t.summary} maxLength={320} onChange={(e) => setT({ ...t, summary: e.target.value })} /></label>
+        <button type="submit" disabled={busy || !ok}>Send to the Scout</button>
+      </form>
+    </details>
+  )
+}
+
 export function Review() {
   const [key, setKey] = useState('')
   const [rows, setRows] = useState<DraftRow[] | null>(null)
@@ -126,6 +147,15 @@ export function Review() {
     try { const r = await api.admin.scout(key); setMsg(`Scan done: ${r.headlines} headlines read, ${r.drafted.length} new draft(s).`); await load() }
     catch (e) { setMsg((e as Error).message) } finally { setBusy(false) }
   }
+  async function tip(t: { title: string; url: string; date: string; summary: string }) {
+    setBusy(true); setMsg('The Scout is checking the report…')
+    try {
+      const r = await api.admin.report(key, t)
+      setMsg(r.drafted.length ? `New draft: case ${r.drafted[0].id}, a ${r.drafted[0].type} case for ${r.drafted[0].region}. Review it below.`
+        : `No draft. The Scout set it aside: ${r.set_aside || 'it did not pass the checklist'}.`)
+      await load(); setFilter('draft')
+    } catch (e) { setMsg((e as Error).message) } finally { setBusy(false) }
+  }
   const count = useMemo(() => {
     const n = { draft: 0, open: 0, closed: 0, all: rows?.length ?? 0 } as Record<Filter, number>
     rows?.forEach((r) => { const s = r.case.status as Filter; if (s in n) n[s]++ })
@@ -143,6 +173,7 @@ export function Review() {
           <button className="primary" type="submit" disabled={!key.trim()}>Open the desk</button>
           <button type="button" disabled={busy || !rows} onClick={scan}>Run the Scout now</button>
         </form>
+        {rows && <ReportTip busy={busy} send={tip} />}
         {msg && <p className={rows ? 'muted' : 'error'} role="status">{msg}</p>}
         {rows && (
           <nav className="desk-tabs" aria-label="Filter cases">

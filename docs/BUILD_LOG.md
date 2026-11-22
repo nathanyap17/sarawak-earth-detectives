@@ -1,5 +1,64 @@
 # BUILD_LOG.md
 
+## [2026-11-22, release] Data audit before deploy: every source used, every number traced (read this first)
+
+**Asked (Nathan):** check one last time that every data source is used and every number is real, then commit, push and deploy.
+
+**Audit** (`sandbox/audit_data_sources.py`, independent of `app.vault`'s own averaging; 14 checks, all pass):
+- NASA POWER: each region's daily vault is exactly the mean of its raw POWER land cells (16,750 days x 8 variables, max difference 0; file headers say NASA/POWER, sources MERRA2, GEOSIT). The dropped cells behave like sea (day/night range 0.8-2.4 C). All 13 yearly series per region recompute from the daily vault (difference 0). A fresh POWER download (2024, 114.375E 3.0N) matches the saved file exactly.
+- NOAA RONI: the vault matches `RONI.ascii.txt` season for season (921/921), and today's NOAA file matches too.
+- NASA GIBS VIIRS: every one of the 2,045 fire points sits on a lit land pixel of its own day's frame; re-thinning the 88 frames gives exactly `fires.json` and the 931 sea hot spots. A fresh GIBS frame (2026-03-03) matches the saved one pixel for pixel.
+- GPCP v2.3: EXP-11 re-run from the local file reproduces its saved result exactly. It decides which rain records may settle a verdict, but its note was never shown: rain cards that passed now say "Cross-checked against GPCP v2.3 ..." (`casework.public_card`), and GPCP is credited in the README and on the landing page.
+- Random numbers appear only in visuals (raindrops, cloud noise, sound), the seeded shuffle test, and sample charts labelled "made up".
+- News facts: the landing's "710 schools, 238,303 students" are the sums of the Malay Mail / Bernama figures (617 primary schools with 130,953 students + 93 secondary with 107,350); FMT says 26 schools stayed closed by floods.
+- Correction: southern Sarawak's EXP-11 correlations are r 0.68-0.89 (Jun-Sep 0.89), not 0.68-0.79; it failed on the trend verdict. Fixed in `cards.py`, here and in EXPERIMENTS.md.
+- Downloaded but unused: `data/raw/power_imerg` (POWER's IMERG returned only fill values) and `oni.ascii.txt` (kept for comparison with RONI). Neither is claimed anywhere.
+
+**Checks:** backend 116 passed; frontend build and oxlint clean (2 old warnings). Ruff on the whole backend shows 69 findings already present at eaf4ffe (newer ruff rules) plus 2 of the same `re.I` style in `reasoning.py`; none is a bug.
+
+## [2026-11-22, later] Sea "fires", sea pins, case-type scenes, and a refresh that keeps the case
+
+**Reported (Nathan):** (1) after a refresh the flood cases were gone; (2) a rain case still showed fire trends; (3) fire symbols over the sea, and a pin on the water reported land, so the map seemed out of line with lon/lat.
+
+**Findings:**
+- (1) Only cases 001 (fire) and 002 (heat) are open. The flood case 004 is a draft waiting for a human at `/#/review`; the flood map seen earlier was a browser-only preview built on case 001. Separately, a refresh dropped any case in progress: the session store lived only in memory.
+- (2) That preview reused case 001's fire evidence. The real flood draft's cards are rain, soil wetness, heavy-rain days, wettest five days and wind. But the guide's scene lines, the map table's "What is this?", the data footnote and the ember layer assumed a fire case for every case.
+- (3) EXP-12 (`sandbox/exp12_map_alignment.py`): the picture and the relief agree on land and sea for 98.6% of pixels, best shift about 1 pixel (0.007°), so the map is aligned. The sea "fires" were real VIIRS hot spots: 931 of 2,976 detections were on the sea, clustered at fixed offshore spots (about 5°N 113°E, off Bintulu and off Miri) and at Bintulu's coast (Tanjung Kidurong), returning day after day: gas flares, not fires. Pins had no land/sea check, and sea heights were clipped to 0 m, so a sea pin read as "low, flat land".
+
+**Changes:**
+- `vault/terrain.py`: a land/sea mask (`sea.png`) on the picture's own pixel grid, from the same terrarium heights with sea depths (zoom 9); fire points on a sea pixel are left out and counted (`fire_points.sea_removed`). Case 001 rebuilt: 2,045 fire points, 931 hot spots left out; `height.bin` unchanged. The base scene points at the same mask.
+- Frontend: `beats/scenekit.ts` picks the map layer by case type (fire, haze: fire detections; flood: rain; heat, dry, land: plain map) and loads the mask. Embers, the fire slider, fire pin reports, the guide's scene lines, the station text and the footnote follow the layer. A pin on the sea gets a sea report with its distance to the coast. The 2D map draws fire dots from the same cleaned point list instead of the raw GIBS frames. Source lines say how many sea hot spots were left out and why.
+- The case in progress is kept in the tab's sessionStorage (`sed-case`), so a refresh keeps the case, step, pins, cards and results; `state/recover.ts` still replays them if the backend forgot the session.
+- Tests: `tests/test_scene_map.py` (3). Suite: 116 passed. Build and oxlint clean.
+
+**Verified in the browser:** case 001 on its busiest day (134 detections): no ember or 2D dot on the sea; sea pins report "on the sea, about N km from the nearest coast"; refresh keeps case 001 with its three pins; case 002 (heat) shows no fire wording.
+
+**Still open:** case 004 (Bintulu flood) needs an editor's approval before it appears. Desk-drafted fire and haze cases have no fire layer of their own yet (only case 001 has saved daily frames).
+
+## [2026-11-22] Flood cases, weather on the map table, and a zoomable map
+
+**Asked (Nathan):** cases beyond haze and fire (floods, rain), with agents checking whether the records can support one; rain and flood visuals on the map; a zoomable map with no stock +/- buttons and a caption that says how to move it.
+
+**Data check first (EXP-11, now done):** POWER rain vs GPCP v2.3 (IMERG was unreachable without an Earthdata token). North passes on every record (r 0.91–0.96, same verdict); south-west fails (r 0.68–0.89; POWER's post-2001 jump gives rises GPCP does not). So rain is "checked" per region: `RAIN_CHECKED` + `provisional_for()` in `vault/cards.py`. Daily rain stays provisional everywhere.
+
+**Backend:**
+- New cards: `rain_nov_feb` (wet season, wraps the new year, named by the year it ends in; ENSO lamp averages the same way), `soil_wet3`, `heavy_rain_days`, `wettest_5day` (daily, provisional). Vault rebuilt: 13 cards per region, as of 2026-11-10.
+- Scout: a flood template (main `rain_nov_feb` + `soil_wet3`, wind as red herring, flood-specific limits and hints). `can_build(kind, region)` sets a report aside, and says why, when the region's main records are missing or failed their cross-check. Data desk can open a flood case from an unusual wet season.
+- An answer key cannot be built on a provisional main card for that region (raises).
+- Reasoning checks read "wetter" as the worse direction in a flood case (`direction_words`).
+- Routes: `GET /cases/{id}/rain` (daily rain over the region for the scene's days) and `POST /admin/scout/report` (an editor hands the Scout one report).
+- Tests: `tests/test_floods.py` (9). Suite: 113 passed.
+
+**Frontend:**
+- Map table, flood cases (`office/Storm.tsx`): rain streaks as dense as the day's rain over the yellow box, a cloud deck that darkens with it and casts a storm shadow, lightning on days of 60 mm or more (off with reduced motion), and water that rises in the low ground with the last five days' rain (a flat plane cut by the real relief, at most ~45 m). Labelled "Illustration, not a flood map". The panel (`FloodPanel` + `beats/RainScene.tsx`) has Play, a slider, a daily bar chart, the day's mm in words, the five-day total, and the source and its not-cross-checked note. Pin reports talk about where water gathers.
+- 2D lite: the same slider and bars; rain, cloud and a rising tint drawn in CSS inside the yellow box.
+- Zoom and pan (`office/MapControls.tsx`): scroll or pinch to zoom toward the pointer (1–4.5×), drag to move, `+` `-` `0` and arrow keys; a click still drops a pin, and a click that ends a drag or pinch does not. No buttons: a small caption over the map (mouse or touch wording) shortens once each gesture is used, shows the zoom and a "Whole map" link, and fades when idle. The view resets when the scene closes.
+- Editor's desk: "Hand the Scout a news report" form (`/#/review`).
+
+**Verified:** backend tests, `npm run build`, oxlint (no errors). In the browser at 1400×860 and a narrow pane: zoom, pan and caption; the storm at the vault's real northern rain for 30 Dec 2024–29 Jan 2025 (250 mm on the 29th, 502 mm over five days); 2D lite. The visual check used case 001 shown as a flood case in the browser only; nothing in the data was changed for it.
+
+**Local draft waiting for a human:** the Scout drafted **case 004, "The Bintulu Flood Mystery"** (flood, north-peat, scene 2024-12-30 → 2025-01-29) from The Borneo Post, 29 Jan 2025, "Devastating floods hit Bintulu, forcing hundreds to evacuate". It is a local draft in `data/agency/` and needs an editor's approval at `/#/review`. Not committed or deployed. In the cloud, hand the same report in through the editor's desk after deploying.
+
 ## [2026-11-20] Phones held sideways: Kenyalang's bird, a hidden speech, a black room
 
 **Reported (Nathan, phone in landscape):** the Kenyalang icon's parts slid out of place, the panel showed only its bottom rows, and the 3D room was black with only the "Evidence cabinet" label floating.

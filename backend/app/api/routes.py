@@ -6,7 +6,10 @@ import hmac
 import logging
 import time
 
+from urllib.parse import urlparse
+
 from fastapi import APIRouter, Header, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from app import casework
 from app import docs
@@ -68,6 +71,20 @@ def get_series(case_id: str, card_id: str, region_id: str | None = None):
     if rid not in allowed:
         raise HTTPException(400, "region not part of this case")
     return vault.load_series(rid, card_id)
+
+
+@router.get("/cases/{case_id}/rain")
+def get_scene_rain(case_id: str):
+    """Daily rain over the case region for the scene's days (code reads the vault; nothing is fetched).
+    Drives the map table's rain and rising water. Daily rain is not cross-checked, and says so."""
+    c = _case(case_id)
+    try:
+        days = vault.scene_rain(c.region.id, c.scene.from_, c.scene.to)
+    except FileNotFoundError:
+        raise HTTPException(404, "no daily record for this region")
+    return {"region": c.region.name, "days": days, "source": "NASA POWER daily rain (MERRA-2 bias-corrected)",
+            "note": "Daily rain averaged over the yellow box. Daily values are not cross-checked against rain gauges yet.",
+            "data_as_of": max((d["d"] for d in days), default=None)}
 
 
 @router.post("/sessions", response_model=SessionOut)
@@ -354,6 +371,22 @@ async def scout_run(x_admin_token: str | None = Header(default=None)):
     """The weekly pass (Cloud Scheduler calls this). Drafts only: students see nothing until approval."""
     _admin(x_admin_token)
     return await scout.run()
+
+
+class ReportTip(BaseModel):
+    title: str = Field(min_length=8, max_length=200)
+    url: str = Field(pattern=r"^https://", max_length=500)
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    summary: str = Field(default="", max_length=320)
+
+
+@router.post("/admin/scout/report")
+async def scout_report(tip: ReportTip, x_admin_token: str | None = Header(default=None)):
+    """The editor hands the Scout one news report (for example from a search). It goes through the
+    same checklist, agents and guards as the weekly run, and ends as a draft for human approval."""
+    _admin(x_admin_token)
+    h = scout.Headline(tip.title.strip(), tip.url.strip(), tip.date, urlparse(tip.url).netloc, tip.summary.strip())
+    return await scout.run([h], from_editor=True)
 
 
 @router.get("/admin/cases")

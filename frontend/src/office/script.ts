@@ -2,7 +2,8 @@
 // go to next, and a small vetted glossary. This is plain, human-written text, so it never
 // contains a number or a result for the case. AI replies come only from the backend Partner.
 // AI-assisted: written with Claude Code.
-import type { AnalysisResult } from '../api/types'
+import type { AnalysisResult, CaseType } from '../api/types'
+import { sceneLayer } from '../beats/scenekit'
 import { BEATS, type Beat } from '../state/session'
 import type { SpotId } from './ui'
 
@@ -21,6 +22,8 @@ export const SPOT: Record<SpotId, { name: string; todo: string }> = {
 export interface GuideState {
   hasCase: boolean; beat: Beat; win: SpotId | null; pins: number; chosen: number
   opened: number; stamped: number; herring: boolean; graded: boolean; sentBack: boolean; inboxSeen: boolean
+  /** the kind of case: the scene's words follow it (fires, rain, or the plain map) */
+  caseType?: CaseType
 }
 
 /** The object the student should go to now. */
@@ -43,9 +46,7 @@ export function say(s: GuideState): { text: string; words: string[] } {
   switch (s.win) {
     case 'inbox': return { text: 'Happenings are real events in Sarawak that we can investigate with NASA data. Solved cases move to Learnt cases. Pick a happening and open its folder.', words: ['happening', 'NASA data'] }
     case 'call': return { text: "Read the client's brief. Every case asks the same thing: is this getting worse, or was it one bad year? Type a detective name (not your real one) and sign.", words: ['trend'] }
-    case 'scene': return s.pins < 1
-      ? { text: 'This is Sarawak from space. Press Play to watch the fires through the season. Then click the map where something puzzles you to drop a clue pin. Each pin tells you what the satellite saw there.', words: ['satellite', 'fire detection', 'clue pin'] }
-      : { text: `${s.pins} of 3 pins placed. Read each clue report: how many fires, on how many days? Compare a busy place with a quiet one, then head to the Evidence Locker.`, words: ['fire detection', 'peat', 'VIIRS'] }
+    case 'scene': return sceneLine(s)
     case 'locker': return s.herring
       ? { text: "Hmm. One of those cards made me tilt my head. What does it have to do with the question? Change it, or keep it if you're sure.", words: ['red herring', 'evidence card'] }
       : { text: `Pick three to five records that could answer the question (${s.chosen} picked). Careful: not every card belongs to this case.`, words: ['evidence card', 'red herring', 'record'] }
@@ -58,6 +59,30 @@ export function say(s: GuideState): { text: string; words: string[] } {
       : { text: "Case closed! Read the Chief's notes. Your case is filed under Learnt cases in the inbox.", words: [] }
   }
   return { text: '', words: [] }
+}
+
+/** The map table's words depend on the kind of case: a flood case never says "watch the fires". */
+function sceneLine(s: GuideState): { text: string; words: string[] } {
+  const layer = sceneLayer(s.caseType)
+  if (layer === 'fires') return s.pins < 1
+    ? { text: 'This is Sarawak from space. Press Play to watch the fires through the season. Then click the map where something puzzles you to drop a clue pin. Each pin tells you what the satellite saw there.', words: ['satellite', 'fire detection', 'clue pin'] }
+    : { text: `${s.pins} of 3 pins placed. Read each clue report: how many fires, on how many days? Compare a busy place with a quiet one, then head to the Evidence Locker.`, words: ['fire detection', 'peat', 'VIIRS'] }
+  if (layer === 'rain') return s.pins < 1
+    ? { text: 'This is Sarawak from space. Press Play to walk through the days of rain over the yellow box: the cloud darkens and the water rises with it. Then click the map to drop a clue pin: try low ground by a river, the coast and the hills.', words: ['satellite', 'clue pin'] }
+    : { text: `${s.pins} of 3 pins placed. Which place would water reach first, and why? One wet spell is weather; your records will test the years. Then head to the Evidence Locker.`, words: ['clue pin', 'record', 'trend'] }
+  return s.pins < 1
+    ? { text: 'This is Sarawak from space, with its real hills and valleys. The yellow box is the region this case is about. Click the map to drop up to three clue pins: inside the box, outside it, and on high ground.', words: ['satellite', 'clue pin'] }
+    : { text: `${s.pins} of 3 pins placed. Compare the places: coast or hills, inside the box or outside? Then head to the Evidence Locker.`, words: ['clue pin', 'record'] }
+}
+
+/** The map table's "What is this?" line for the kind of case. */
+export function stationFor(win: SpotId, type?: CaseType) {
+  const st = STATION[win]
+  if (win !== 'scene') return st
+  const layer = sceneLayer(type)
+  return { ...st, what: layer === 'fires' ? st.what
+    : layer === 'rain' ? 'A model of Sarawak made from satellite pictures. You can watch the rain over the case region day by day.'
+    : 'A model of Sarawak made from satellite pictures, with its real hills and valleys.' }
 }
 
 const WORDS: Partial<Record<SpotId, string[]>> = {
@@ -85,7 +110,7 @@ export const GLOSSARY: Record<string, string> = {
   'twin region': 'A second part of Sarawak tested the same way. If both show the same change, the evidence is stronger.',
   hypothesis: 'Your best explanation for why something is happening. Use careful words like "may" or "could", because data shows what changed, not always why.',
   confidence: 'How sure you are. Good detectives are less sure when the tests disagree or the record is short.',
-  'clue pin': 'A marker you drop on the map to ask: what did the satellite see right here? Each pin gives you a report of the fires seen nearby.',
+  'clue pin': 'A marker you drop on the map to ask: what did the satellite see right here? Each pin gives you a clue report about that place.',
   'trend line': 'One straight line drawn through the middle of all the dots. If it tilts up, the thing is growing. If it tilts down, it is shrinking.',
   regression: 'A way of finding the best straight line through scattered dots. The computer tries lines until the gaps between the line and the dots are as small as they can be.',
   wobble: 'The random ups and downs from one year to the next. Scientists call it noise. A real change has to be bigger than the wobble to count.',

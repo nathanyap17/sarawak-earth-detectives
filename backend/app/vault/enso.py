@@ -26,8 +26,16 @@ def monthly(path: Path) -> pd.Series:
     return pd.Series(t.ANOM.to_numpy(), index=idx).sort_index()
 
 
-def for_months(roni_monthly: pd.Series, months: list[int]) -> pd.Series:
+def season_year(index: pd.DatetimeIndex, months: list[int], wraps: bool) -> list[int]:
+    """The year each date counts towards. A season that wraps the new year (Nov-Feb) is named by
+    the year it ends in, so Nov and Dec 2025 count towards the 2026 season."""
+    if not wraps:
+        return list(index.year)
+    return [t.year + 1 if t.month >= months[0] else t.year for t in index]
+
+
+def for_months(roni_monthly: pd.Series, months: list[int], wraps: bool = False) -> pd.Series:
     """Per-year mean of RONI over the card's months."""
     m = roni_monthly[roni_monthly.index.month.isin(months)]
-    g = m.groupby(m.index.year)
+    g = m.groupby(season_year(m.index, months, wraps))
     return g.mean()[g.size() == len(months)]

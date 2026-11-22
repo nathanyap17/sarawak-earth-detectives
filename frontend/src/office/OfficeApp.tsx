@@ -18,10 +18,14 @@ import { LockerBeat } from '../beats/LockerBeat'
 import { BEATS, frontier, useSession, type Beat } from '../state/session'
 import { Grade } from './Grade'
 import { Guide } from './Guide'
-import { SPOT, STATION } from './script'
+import { SPOT, stationFor } from './script'
 import { Hornbill } from './Hornbill'
 import { Inbox } from './Inbox'
+import { MapGestures, MapHint } from './MapControls'
 import { MapTable, useScene } from './MapTable'
+import { RainDays } from '../beats/RainScene'
+import { sceneLayer } from '../beats/scenekit'
+import { firesNote } from '../beats/PinReport'
 import { Room } from './Room'
 import { Labels } from './Spot'
 import { isHandheld } from './orientation'
@@ -68,7 +72,13 @@ function CameraRig() {
     // stations are framed for a free area about as wide as it is tall; step back on narrower ones
     const free = Math.max(1, size.width - Math.max(want, 0))
     const back = win ? (wantY ? 1.5 : Math.min(1.6, Math.max(1, size.height / free))) : Math.min(1.5, Math.max(1, (1.5 * size.height) / free))
-    goalP.current.set(...st.pos).sub(goalL.current).multiplyScalar(back).add(goalL.current)
+    goalP.current.set(...st.pos).sub(goalL.current).multiplyScalar(back)
+    if (win === 'scene') {   // the map table's own zoom and pan (MapControls): closer along the same line, then slide
+      const v = useUI.getState().mapView
+      goalP.current.divideScalar(v.zoom)
+      goalL.current.x += v.x; goalL.current.z += v.z
+    }
+    goalP.current.add(goalL.current)
     camera.position.lerp(goalP.current, k)
     look.current.lerp(goalL.current, k)
     camera.lookAt(look.current)
@@ -111,8 +121,10 @@ function ScenePanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onD
     return () => clearInterval(t)
   }, [playing, m, setSceneDay])
   if (!m) return <p className="muted">Flying to the scene…</p>
+  if (scene.rain) return <FloodPanel scene={scene} onDone={onDone} />
   const count = scene.fires.filter((f) => f[0] === sceneDay).length
-  const hasDays = m.fire_days.length > 0
+  const layer = sceneLayer(c?.type)
+  const hasDays = layer === 'fires' && m.fire_days.length > 0
   return (
     <section className="beat">
       {hasDays ? <p>The map table is Sarawak seen from space, with real hills and valleys. Every glowing ember is a fire a NASA satellite
@@ -128,10 +140,39 @@ function ScenePanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onD
         <output>{m.fire_days[sceneDay]}</output>
       </div>}
       <p className="muted">{hasDays && `${count} fire detections that day. `}Yellow box: {c!.region.name}.</p>
-      <p className="source">Imagery: {m.base_source}.{hasDays && ` Fires: ${m.fires_source}.`} Relief: {m.terrain?.source ?? 'flat'}, height exaggerated.
-        {m.missing_days.length > 0 && ` No fire image for ${m.missing_days.join(', ')}.`}</p>
+      <p className="source">Imagery: {m.base_source}.{hasDays && ` Fires: ${m.fires_source}.${firesNote(m)}`} Relief: {m.terrain?.source ?? 'flat'}, height exaggerated.
+        {hasDays && m.missing_days.length > 0 && ` No fire image for ${m.missing_days.join(', ')}.`}</p>
       <p><strong>Clue pins: {cluePins.length}/3</strong></p>
       <PinReports pins={cluePins} fires={scene.fires} m={m} region={c!.region} day={sceneDay} onJump={(d) => { setPlaying(false); setSceneDay(d) }}
+        layer={layer} sea={scene.sea}
+        heightAt={scene.heights && m.terrain ? (lon, lat) => {
+          const [W, S, E, N] = m.bbox, n = m.terrain!.size
+          const j = Math.min(n - 1, Math.max(0, Math.round(((lon - W) / (E - W)) * (n - 1))))
+          const i = Math.min(n - 1, Math.max(0, Math.round(((N - lat) / (N - S)) * (n - 1))))
+          return scene.heights![i * n + j]
+        } : undefined} />
+      <button className="primary" disabled={cluePins.length < 1} onClick={onDone}>Done here: back to the office</button>
+    </section>
+  )
+}
+
+/** The scene for a flood or heavy-rain case: walk the days of rain over the region, then pin places. */
+function FloodPanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onDone: () => void }) {
+  const { activeCase: c, cluePins, sceneDay, setSceneDay } = useSession()
+  const [playing, setPlaying] = useState(false)
+  const m = scene.m!, rain = scene.rain!
+  if (!c) return null
+  return (
+    <section className="beat">
+      <p>The map table is Sarawak seen from space, with real hills and valleys. Over the yellow box, the sky follows NASA's daily rain
+        record for {c!.scene.from} to {c!.scene.to}: the heavier the rain that day, the darker the cloud and the denser the rain. Water rises
+        in the low ground with the rain of the last five days. Press <strong>Play</strong>, then <strong>click the map</strong> to pin up to
+        three places: low ground by a river, the coast, the hills. Each pin gives you a clue report.</p>
+      <RainDays rain={rain} day={sceneDay} setDay={setSceneDay} playing={playing} setPlaying={setPlaying} />
+      <p className="muted">Yellow box: {c!.region.name}. One wet spell is weather; whether wet seasons are getting wetter is what your records will test.</p>
+      <p className="source">Imagery: {m.base_source}. Relief: {m.terrain?.source ?? 'flat'}, height exaggerated.</p>
+      <p><strong>Clue pins: {cluePins.length}/3</strong></p>
+      <PinReports pins={cluePins} fires={[]} m={m} region={c!.region} day={0} onJump={() => undefined} layer="rain" sea={scene.sea}
         heightAt={scene.heights && m.terrain ? (lon, lat) => {
           const [W, S, E, N] = m.bbox, n = m.terrain!.size
           const j = Math.min(n - 1, Math.max(0, Math.round(((lon - W) / (E - W)) * (n - 1))))
@@ -146,7 +187,7 @@ function ScenePanel({ scene, onDone }: { scene: ReturnType<typeof useScene>; onD
 export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () => void }) {
   const { beat, setBeat, sessionId, activeCase, reached, reset, grade } = useSession()
   const { win, setWin, setIdle } = useUI()
-  const scene = useScene(activeCase?.id)
+  const scene = useScene(activeCase?.id, activeCase?.type)
   const [slow, setSlow] = useState(false)
   const [ready, setReady] = useState(false)
   // A phone short of graphics memory can drop the 3D context: the room goes black while the labels and
@@ -216,12 +257,14 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
           <Hornbill />
           <MapTable scene={scene} />
           <CameraRig />
+          <MapGestures />
           <Grade armed={ready} />
           <FirstFrames onReady={() => setReady(true)} />
           <FpsProbe onLow={() => setSlow(true)} />
         </Canvas>
       </div>
       <Labels />
+      <MapHint />
       <header className="office-top">
         <img className="crest" src="/brand/logo-128.webp" width="34" height="34" alt="" />
         {onHome ? <button className="brand" onClick={onHome} title="Back to the front page">Sarawak Earth Detectives</button> : <h1>Sarawak Earth Detectives</h1>}
@@ -248,8 +291,8 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
             <button onClick={close} aria-label={`Close the ${SPOT[win].name.toLowerCase()} and go back to the office`}>✕</button>
           </header>
           <div className="win-body">
-            <p className="station"><span aria-hidden="true">{STATION[win].icon}</span>
-              <span><strong>What is this?</strong> {STATION[win].what} <em>{STATION[win].why}</em></span></p>
+            <p className="station"><span aria-hidden="true">{stationFor(win, activeCase?.type).icon}</span>
+              <span><strong>What is this?</strong> {stationFor(win, activeCase?.type).what} <em>{stationFor(win, activeCase?.type).why}</em></span></p>
             {win === 'inbox' && <Inbox />}
             {win === 'agency' && <Agency />}
             {win === 'call' && (!activeCase ? <CallBeat /> : (
@@ -265,7 +308,7 @@ export function OfficeApp({ onLite, onHome }: { onLite: () => void; onHome?: () 
             {win === 'closed' && (grade
               ? <ClosedBeat onRetry={() => { setBeat('deduction'); setWin('deduction') }} onShelf={() => { reset(); setWin('inbox') }} />
               : <p className="muted">Nothing filed yet. The Chief stamps your case after you write the verdict.</p>)}
-            <p className="source foot-note">Data: NASA POWER (MERRA-2), NASA GIBS (VIIRS), NOAA RONI. Numbers come from statistics code, not AI.</p>
+            <p className="source foot-note">Data: NASA POWER (MERRA-2), NASA GIBS ({sceneLayer(activeCase?.type) === 'fires' ? 'VIIRS fire detections' : 'imagery'}), NOAA RONI. Numbers come from statistics code, not AI.</p>
           </div>
         </aside>
       )}

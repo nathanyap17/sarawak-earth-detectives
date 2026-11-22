@@ -69,3 +69,14 @@ def load_answer_key(case_id: str) -> AnswerKey:
 def clear_caches() -> None:
     load_series.cache_clear()
     load_roni.cache_clear()
+
+
+def scene_rain(region_id: str, start: str, end: str) -> list[dict]:
+    """Daily rain (mm) averaged over the region's land cells, start..end inclusive."""
+
+    f = root() / "daily" / f"{region_id}.parquet"
+    if not f.exists():
+        raise FileNotFoundError(f)
+    d = pd.read_parquet(f, columns=["PRECTOTCORR"]).PRECTOTCORR.loc[start:end].dropna()
+    return [{"d": t.strftime("%Y-%m-%d"), "mm": round(float(v), 1)} for t, v in d.items()]
+

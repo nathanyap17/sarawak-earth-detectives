@@ -49,7 +49,7 @@ const ASKS = [
 ] as const
 
 const STACK: [string, string[]][] = [
-  ['Earth data', ['NASA POWER (MERRA-2)', 'NASA GIBS: VIIRS fire detections', 'NASA GIBS: Blue Marble', 'NOAA RONI (El Niño)', 'SRTM-derived terrain']],
+  ['Earth data', ['NASA POWER (MERRA-2)', 'NASA GIBS: VIIRS fire detections', 'NASA GIBS: Blue Marble', 'NOAA RONI (El Niño)', 'SRTM-derived terrain', 'GPCP v2.3 (rain cross-check)']],
   ['Statistics in code', ['Python', 'statsmodels', 'pymannkendall', 'pandas', 'NumPy']],
   ['AI with guard rails', ['Gemini on Vertex AI', 'Google ADK', 'Scout and Case Builder', 'Number guard', 'Answer guard', 'Human approval']],
   ['App', ['React', 'TypeScript', 'three.js', 'Apache ECharts', 'anime.js', 'FastAPI', 'Cloud Run', 'Firebase Hosting', 'Cloud Firestore']],
@@ -241,7 +241,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       </section>
 
       <footer className="foot-land">
-        <p><strong>Data:</strong> NASA POWER (MERRA-2), NASA GIBS (VIIRS on Suomi NPP, Blue Marble), NOAA Relative Oceanic Niño Index, SRTM-derived terrain tiles.</p>
+        <p><strong>Data:</strong> NASA POWER (MERRA-2), NASA GIBS (VIIRS on Suomi NPP, Blue Marble), NOAA Relative Oceanic Niño Index, SRTM-derived terrain tiles; GPCP v2.3 rain as a cross-check.</p>
         <p><strong>Sources for the figures:</strong> Malay Mail, 6 Sep 2026 (haze school closures); UNICEF Malaysia, 28 Jul 2026 (youth climate survey).</p>
         <p><strong>AI disclosure:</strong> built with AI assistance (Claude Code). In the app, Gemini writes hints and feedback; every number comes from statistics code.</p>
         <p>Built for NASA Space Apps 2026. Not endorsed by NASA.</p>

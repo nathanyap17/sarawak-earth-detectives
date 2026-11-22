@@ -30,7 +30,7 @@ def test_checklist_sorts_headlines():
     kinds = [scout.classify(h) for h in HEADS]
     assert kinds[0][:2] == ("heat", "south-west") and kinds[0][2] == ""
     assert kinds[1][:2] == ("fire", "north-peat")
-    assert "rain record" in kinds[2][2]
+    assert kinds[2] == ("flood", "north-peat", "")   # the north's rain record passed its cross-check (EXP-11)
     assert kinds[3][2] == "not a weather or land event"
     assert kinds[4][2] == "not in Sarawak"
 

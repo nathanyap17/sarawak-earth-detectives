@@ -1,6 +1,9 @@
-// Investigation state (Zustand). Shared by lite mode and, later, the 3D office.
+// Investigation state (Zustand). Shared by lite mode and the 3D office. The case in progress is kept
+// in this tab's sessionStorage, so a refresh does not lose it (state/recover.ts replays the work if the
+// backend forgot the session). Nothing personal: a made-up nickname and the student's own steps.
 // AI-assisted: written with Claude Code.
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import type { AnalysisResult, CasePublic, Grade, Series, Verdict } from '../api/types'
 
 export type Draft = Omit<Verdict, 'session_id'>
@@ -65,7 +68,7 @@ const fresh = {
   hintRung: {} as Record<string, number>, chat: [] as ChatLine[],
 }
 
-export const useSession = create<State>((set) => ({
+export const useSession = create<State>()(persist((set) => ({
   nickname: `Detective-${Math.floor(1000 + Math.random() * 9000)}`,
   ...fresh,
   setNickname: (nickname) => set({ nickname }),
@@ -87,4 +90,9 @@ export const useSession = create<State>((set) => ({
   setSessionId: (sessionId) => set({ sessionId }),
   addChat: (c, group, rung) => set((s) => ({ chat: [...s.chat, c].slice(-8), hintRung: { ...s.hintRung, [group]: Math.max(s.hintRung[group] ?? 0, rung) } })),
   reset: () => set({ ...fresh }),
+}), {
+  name: 'sed-case', version: 1,
+  storage: createJSONStorage(() => sessionStorage),
+  // everything but the pin being moved (a half-finished gesture)
+  partialize: ({ movingPin: _m, ...rest }) => Object.fromEntries(Object.entries(rest).filter(([, v]) => typeof v !== 'function')) as Partial<State>,
 }))

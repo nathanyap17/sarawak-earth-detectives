@@ -21,7 +21,7 @@ Built for the NASA Space Apps Challenge 2026, challenge "Be An Earth System Tren
 Every number comes from statistics code (OLS trend + Mann-Kendall, both must agree), never from the AI. Each record can be seen as a line chart, a year-by-month heatmap or yearly stripes; the lab adds the trend line with its 95% range, the two p-values, a shuffle-test histogram, the normal year as bars and an El Niño scatter chart. Clue pins on the map can be moved or removed at any time.
 
 ## Data
-Used in the build: NASA POWER (MERRA-2: soil wetness, humidity, rain, wind), NASA GIBS (VIIRS fire detections, Blue Marble imagery), NOAA's Relative Oceanic Niño Index (RONI), and SRTM-derived terrain (AWS Terrain Tiles). Planned sources and full links: `MASTER_SHEET.md` §6–7.
+Used in the build: NASA POWER (MERRA-2: soil wetness, humidity, rain, wind), NASA GIBS (VIIRS fire detections, Blue Marble imagery), NOAA's Relative Oceanic Niño Index (RONI), and SRTM-derived terrain (AWS Terrain Tiles). GPCP v2.3 monthly rain (NASA GSFC / NOAA, satellites and rain gauges) cross-checks POWER rain at build time: only rain records that agree with it may decide a verdict (EXP-11). Planned sources and full links: `MASTER_SHEET.md` §6–7.
 
 ## Run locally
 ```bash

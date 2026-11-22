@@ -17,5 +17,9 @@
   "size": 256,
   "max_m": 2071,
   "source": "SRTM-derived heights (AWS Terrain Tiles, terrarium)"
+ },
+ "sea": {
+  "file": "../001/sea.png",
+  "source": "Land and sea from the same heights with sea depths: 0 m or below is sea"
  }
 }

@@ -18,7 +18,7 @@ from app.config import get_settings
 from app.schemas import (AnalysisResult, AnswerKey, CardKey, CasePack, CasePublic, EvidenceCard,
                          MonthlyPoint, YearlyPoint)
 from app.vault import enso, store
-from app.vault.cards import CARDS, CardDef
+from app.vault.cards import CARDS, RAIN_CHECK_NOTE, RAIN_PROVISIONAL, CardDef, provisional_for
 
 
 # ---------------------------------------------------------------- case packs
@@ -68,18 +68,21 @@ def list_cases(status: str | None = "open") -> list[CasePack]:
     return sorted((c for c in out if status is None or c.status == status), key=lambda c: c.id)
 
 
-def public_card(card: CardDef) -> EvidenceCard:
-    return EvidenceCard(id=card.id, name=card.name, definition=card.definition,
+def public_card(card: CardDef, region_id: str | None = None) -> EvidenceCard:
+    caveat = provisional_for(card, region_id)
+    # a rain record that passed EXP-11 here says what it was checked against
+    checked = card.provisional == RAIN_PROVISIONAL and caveat is None
+    return EvidenceCard(id=card.id, name=card.name,
+                        definition=f"{card.definition} {RAIN_CHECK_NOTE}." if checked else card.definition,
                         mission=card.mission, unit=card.unit, yearly_label=card.yearly_label,
-                        **{"from": card.from_year}, grid_km=card.grid_km,
-                        provisional=card.provisional)
+                        **{"from": card.from_year}, grid_km=card.grid_km, provisional=caveat)
 
 
 def public_case(c: CasePack) -> CasePublic:
     return CasePublic(
         id=c.id, title=c.title, type=c.type, status=c.status, question=c.question,
         brief=c.brief, sources=c.sources, region=c.region, twin_region=c.twin_region,
-        scene=c.scene, evidence=[public_card(CARDS[i]) for i in c.evidence],
+        scene=c.scene, evidence=[public_card(CARDS[i], c.region.id) for i in c.evidence],
         limits=c.limits, data_as_of=c.data_as_of)
 
 
@@ -101,7 +104,7 @@ def _from_test(base: dict, t: trend.TrendTest) -> dict:
 
 
 def enso_for(card: CardDef) -> pd.Series:
-    return enso.for_months(store.load_roni(), card.months)
+    return enso.for_months(store.load_roni(), card.months, card.wraps)
 
 
 def run_tool(card_id: str, region_id: str, tool: str, options: dict | None = None
@@ -179,7 +182,7 @@ def build_answer_key(case_id: str) -> AnswerKey:
 
 def build_answer_key_for(c: CasePack) -> AnswerKey:
     case_id = c.id
-    bad = [m for m in c.main_cards if CARDS[m].provisional]
+    bad = [m for m in c.main_cards if provisional_for(CARDS[m], c.region.id)]
     if bad:
         raise ValueError(f"provisional cards cannot be main cards: {bad}")
     per_card, outcomes = {}, []
@@ -233,7 +236,7 @@ def dataset_config(c: CasePack) -> list[dict]:
             "id": cid, "name": card.name, "definition": card.definition, "mission": card.mission,
             "unit": card.unit, "yearly_label": card.yearly_label, "from_year": card.from_year,
             "grid_km": card.grid_km, "months": [MONTHS[m - 1] for m in card.months],
-            "worse_when": card.worse_when, "band_per_decade": card.band, "provisional": card.provisional,
+            "worse_when": card.worse_when, "band_per_decade": card.band, "provisional": provisional_for(card, c.region.id),
             "role": "main" if cid in c.main_cards else "red_herring" if cid in c.red_herrings else "supporting",
             "vault": vault_rows,
         })

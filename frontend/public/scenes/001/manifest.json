@@ -111,6 +111,11 @@
  },
  "fire_points": {
   "file": "fires.json",
-  "count": 2976
+  "count": 2045,
+  "sea_removed": 931
+ },
+ "sea": {
+  "file": "sea.png",
+  "source": "Land and sea from the same heights with sea depths: 0 m or below is sea"
  }
 }

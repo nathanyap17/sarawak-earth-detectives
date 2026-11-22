@@ -673,3 +673,53 @@ button.mode { white-space: nowrap; }
   .guide-min { left: 8px; bottom: 8px; }
   .office-note { top: 48px; }
 }
+/* Map table controls: no +/- buttons. A small caption in the free area above the map says how to move it
+   (scroll or pinch to zoom, drag to move, click to pin), shortens once tried, and fades while idle. */
+.map-hint { position: absolute; top: 60px; left: 0; right: calc(min(600px, 42vw)); margin: 0 auto; width: max-content; max-width: calc(100% - 32px);
+  z-index: 25; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; padding: 5px 12px;
+  border-radius: 99px; background: rgba(20, 16, 12, .72); border: 1px solid rgba(210, 169, 78, .45); color: #f4ead8;
+  font-size: .78rem; line-height: 1.3; letter-spacing: .01em; backdrop-filter: blur(4px); transition: opacity .6s ease;
+  animation: hint-in .5s ease .3s both; pointer-events: none; }
+.map-hint.quiet { opacity: .45; }
+.map-hint:hover { opacity: 1; }
+.map-hint i { font-style: normal; color: var(--brass); margin-right: 6px; }
+.map-hint-ico { font-size: .9rem; margin-right: 2px; }
+.map-hint-zoom { font-variant-numeric: tabular-nums; color: var(--brass); font-weight: 600; }
+.map-hint-reset { pointer-events: auto; background: none; border: 0; padding: 0 2px; color: #fff; font-size: inherit; text-decoration: underline;
+  text-decoration-color: rgba(210, 169, 78, .8); text-underline-offset: 3px; }
+.map-hint-reset:hover { color: var(--brass); }
+.map-hint kbd, .map-hint-keys kbd { font-family: var(--mono); font-size: .68rem; padding: 0 4px; margin-left: 4px; border-radius: 4px;
+  border: 1px solid rgba(244, 234, 216, .35); color: #f4ead8; }
+.map-hint-keys { color: #cbbd9f; }
+@keyframes hint-in { from { opacity: 0; transform: translateY(-6px); } }
+@media (max-width: 640px), (min-width: 641px) and (max-width: 1100px) and (orientation: portrait) { .map-hint { right: 0; top: 52px; } }
+@media (orientation: landscape) and (max-height: 500px) { .map-hint { right: 50vw; top: 46px; font-size: .7rem; } }
+@media (prefers-reduced-motion: reduce) { .map-hint { animation: none; } }
+
+/* Flood cases: the day's rain over the region */
+.rain-days { margin: 6px 0 10px; }
+.rain-bars { display: flex; align-items: flex-end; gap: 1px; height: 46px; padding: 2px 0; border-bottom: 1px solid var(--line); }
+.rain-bars button { flex: 1; min-width: 1px; padding: 0; border: 0; border-radius: 1px 1px 0 0; background: #8fb3c9; }
+.rain-bars button.top { background: var(--teal); }
+.rain-bars button.now { background: var(--red); }
+.rain-today { margin: 6px 0 4px; }
+button.linkish { background: none; border: 0; padding: 0; color: var(--teal); text-decoration: underline; font-size: inherit; }
+.k-rain { background: linear-gradient(180deg, #4b5560, #6b8a9c 60%, #5a6b5f); border-radius: 2px; }
+/* lite mode: cloud, rain and water inside the yellow box, strengths set by code from the day's rain */
+.region-box .wx { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(0deg, rgba(60, 96, 104, calc(var(--water) * .65)) 0, rgba(60, 96, 104, 0) calc(30% + var(--water) * 55%)),
+    radial-gradient(120% 80% at 50% 0, rgba(40, 46, 54, calc(var(--cloud) * .7)), rgba(40, 46, 54, 0) 75%); }
+.region-box .wx::before { content: ""; position: absolute; inset: -40% -10%; opacity: calc(var(--rain) * .85);
+  background: repeating-linear-gradient(105deg, rgba(220, 232, 255, .55) 0 1px, transparent 1px 9px);
+  animation: rain-fall .5s linear infinite; }
+@keyframes rain-fall { to { transform: translate(-6px, 28px); } }
+@media (prefers-reduced-motion: reduce) { .region-box .wx::before { animation: none; } }
+.tip-form { margin: 8px 0 12px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 10px; background: var(--card); }
+.tip-form summary { cursor: pointer; font-weight: 600; }
+.tip-form form { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: end; }
+/* 2D fires: one dot per detection, from the cleaned point list (no hot spots on the sea) */
+.map .fire-dot { position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: #ff5a1f;
+  box-shadow: 0 0 4px 1px rgba(255, 140, 40, .8); pointer-events: none; }
+/* a pin on the water */
+.pin-card.sea { border-color: #7fb0c9; background: #f1f7fa; }
+.pin-sea { margin: 6px 0 4px; color: #1f5f7a; }

@@ -1,15 +1,20 @@
 // The 3D map table: Sarawak relief (SRTM-derived heights) draped with NASA GIBS imagery,
 // VIIRS fire detections as rising embers for the chosen day, the case region and clue pins.
+// Flood cases get weather instead: rain, cloud, lightning and rising water from the day's NASA rain (Storm).
 // All files were saved at build time (rule 7); nothing is fetched from NASA here.
 // AI-assisted: written with Claude Code.
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BoxGeometry, BufferAttribute, CanvasTexture, Color, InstancedMesh, Object3D, PlaneGeometry, SRGBColorSpace, TextureLoader, type Texture } from 'three'
-import type { SceneManifest } from '../api/types'
+import type { CaseType, SceneManifest } from '../api/types'
 import { TOWNS } from '../beats/PinReport'
 import { loadManifest, placePin } from '../beats/pins'
+import { fiveDay, useRain } from '../beats/RainScene'
+import { sceneLayer, useSeaMask } from '../beats/scenekit'
 import { useSession } from '../state/session'
+import { justGestured } from './MapControls'
 import { Spot } from './Spot'
+import { Storm } from './Storm'
 import { useUI } from './ui'
 
 export const TABLE_W = 2.4
@@ -43,18 +48,19 @@ export function Tag({ text, at, h = 0.045, bg = 'rgba(20,16,12,.82)', fg = '#fff
   )
 }
 
-export function useScene(caseId: string | undefined) {
+export function useScene(caseId: string | undefined, type?: CaseType) {
   const [m, setM] = useState<SceneManifest | null>(null)
   const [heights, setHeights] = useState<Uint16Array | null>(null)
   const [fires, setFires] = useState<[number, number, number][]>([])
   const [base, setBase] = useState<Texture | null>(null)
+  const [dir, setDir] = useState<string>()
   useEffect(() => {
     if (!caseId) return
     let live = true
     setM(null); setHeights(null); setFires([])
     loadManifest(caseId).then(async ({ dir, m: mm }) => {
       if (!live) return
-      setM(mm)
+      setM(mm); setDir(dir)
       const t = await new TextureLoader().loadAsync(`${dir}/${mm.base}`)
       t.colorSpace = SRGBColorSpace
       if (live) setBase(t)
@@ -63,11 +69,13 @@ export function useScene(caseId: string | undefined) {
     }).catch(() => setM(null))
     return () => { live = false }
   }, [caseId])
-  return { m, heights, fires, base }
+  const rain = useRain(caseId, type)
+  const sea = useSeaMask(dir, m)
+  return { m, heights, fires, base, rain, sea }
 }
 
 export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
-  const { m, heights, fires, base } = scene
+  const { m, heights, fires, base, rain } = scene
   const { activeCase: c, sceneDay, cluePins, movingPin } = useSession()
   const win = useUI((u) => u.win)
   const D = m ? TABLE_W * (m.bbox[3] - m.bbox[1]) / (m.bbox[2] - m.bbox[0]) : TABLE_W * 0.7
@@ -102,8 +110,9 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
 
   // embers for the chosen day plus a fading tail of the two days before
   const embers = useRef<InstancedMesh>(null)
-  const today = useMemo(() => fires.filter((f) => f[0] <= sceneDay && f[0] >= sceneDay - 2)
-    .map((f) => ({ age: sceneDay - f[0], at: toLocal(f[1], f[2]), seed: (f[1] * 97 + f[2] * 31) % 1 })), [fires, sceneDay, toLocal])
+  const showFires = sceneLayer(c?.type) === 'fires'   // only fire and haze cases show the fire detections
+  const today = useMemo(() => (showFires ? fires : []).filter((f) => f[0] <= sceneDay && f[0] >= sceneDay - 2)
+    .map((f) => ({ age: sceneDay - f[0], at: toLocal(f[1], f[2]), seed: (f[1] * 97 + f[2] * 31) % 1 })), [fires, sceneDay, toLocal, showFires])
   const dummy = useMemo(() => new Object3D(), [])
   const hot = useMemo(() => new Color('#ffb02e'), [])
   const cool = useMemo(() => new Color('#a1281c'), [])
@@ -128,7 +137,7 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
   })
 
   function drop(e: ThreeEvent<MouseEvent>) {
-    if (win !== 'scene' || !m || !e.uv || (cluePins.length >= 3 && movingPin == null)) return
+    if (win !== 'scene' || !m || !e.uv || justGestured() || (cluePins.length >= 3 && movingPin == null)) return
     e.stopPropagation()
     const [W, S, E, N] = m.bbox
     const p: [number, number] = [+(W + e.uv.x * (E - W)).toFixed(3), +(S + e.uv.y * (N - S)).toFixed(3)]
@@ -140,6 +149,18 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
     const a = toLocal(w, n), b = toLocal(e, s)
     return { x: (a[0] + b[0]) / 2, z: (a[2] + b[2]) / 2, w: b[0] - a[0], d: b[2] - a[2] }
   })() : null
+
+  // the day's rain over the region (flood cases): sceneDay walks the rain days
+  const wetDay = rain && rain.days.length ? Math.min(sceneDay, rain.days.length - 1) : -1
+  const mm = wetDay >= 0 ? rain!.days[wetDay].mm : 0
+  const five = wetDay >= 0 ? fiveDay(rain!.days, wetDay) : 0
+  // table-local x, z → ground height, for raindrops and lightning to land on the relief
+  const groundAt = useMemo(() => (x: number, z: number) => {
+    if (!heights) return 0
+    const j = Math.min(size - 1, Math.max(0, Math.round((x / TABLE_W + 0.5) * (size - 1))))
+    const i = Math.min(size - 1, Math.max(0, Math.round((z / D + 0.5) * (size - 1))))
+    return (heights[i * size + j] / maxM) * RELIEF
+  }, [heights, size, maxM, D])
 
   return (
     <Spot id="scene" at={[0, 1.02, 1.1]} clickThrough>
@@ -155,7 +176,7 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
           <meshStandardMaterial color="#5a3d26" />
         </mesh>
       ))}
-      <spotLight position={[0, 2.6, 0.4]} angle={0.75} penumbra={0.6} intensity={2.5} distance={4} color="#fff1dc" />
+      <spotLight position={[0, 2.6, 0.4]} angle={0.75} penumbra={0.6} intensity={2.5 * (1 - 0.4 * Math.min(1, mm / 80))} distance={4} color={mm >= 30 ? '#dfe6ee' : '#fff1dc'} />
       <group position={[0, LIFT, 0]}>
         <mesh geometry={geom} onClick={drop} receiveShadow
           onPointerMove={() => { if (win === 'scene') document.body.style.cursor = 'crosshair' }}>
@@ -180,6 +201,8 @@ export function MapTable({ scene }: { scene: ReturnType<typeof useScene> }) {
         )}
         {m && win === 'scene' && TOWNS.filter((t) => t.lon > m.bbox[0] && t.lon < m.bbox[2] && t.lat > m.bbox[1] && t.lat < m.bbox[3])
           .map((t) => <Tag key={t.name} text={t.name} at={toLocal(t.lon, t.lat)} h={t.major ? 0.05 : 0.036} />)}
+        {region && wetDay >= 0 && <Storm box={region} mm={mm} five={five} groundAt={groundAt} />}
+        {region && wetDay >= 0 && win === 'scene' && <Tag text="Illustration, not a flood map" at={[region.x, RELIEF * 1.2, region.z + region.d / 2 - 0.02]} bg="rgba(20,30,40,.85)" lift={0.02} h={0.032} />}
         {region && win === 'scene' && <Tag text="Case region" at={[region.x - region.w / 2 + 0.02, RELIEF * 1.2, region.z - region.d / 2 + 0.02]} bg="#f6c700" fg="#1a1a1a" lift={0.02} h={0.04} />}
         {cluePins.map(([lon, lat], i) => {
           const [x, y, z] = toLocal(lon, lat)

@@ -35,6 +35,23 @@ def _complete_years(daily: pd.DataFrame, months: list[int]) -> set[int]:
     return out
 
 
+def _complete_wrap(daily: pd.DataFrame, months: list[int]) -> set[int]:
+    """Season-years of a season that wraps the new year, fully covered (allowing 3 missing days)."""
+    sub = daily[daily.index.month.isin(months)]
+    have = pd.Series(1, index=sub.index).groupby(_season_year(sub.index, months)).size()
+    out = set()
+    for y, n in have.items():
+        days = pd.date_range(f"{y - 1}-01-01", f"{y}-12-31")
+        expected = int(sum(1 for t, sy in zip(days, _season_year(days, months)) if t.month in months and sy == y))
+        if n >= expected - 3:
+            out.add(int(y))
+    return out
+
+
+def _season_year(index: pd.DatetimeIndex, months: list[int]) -> list[int]:
+    return [t.year + 1 if t.month >= months[0] else t.year for t in index]
+
+
 @dataclass(frozen=True)
 class CardDef:
     id: str
@@ -51,10 +68,11 @@ class CardDef:
     yearly_fn: Callable[[pd.DataFrame, list[int]], pd.Series] | None = None
     monthly_fn: Callable[[pd.DataFrame], pd.Series] | None = None
     provisional: str | None = None  # why this card can't yet enter an answer key
+    wraps: bool = False  # the season crosses the new year (Nov-Feb); named by the year it ends in
 
     def yearly(self, daily: pd.DataFrame) -> pd.Series:
         s = self.yearly_fn(daily, self.months)
-        keep = _complete_years(daily, self.months)
+        keep = _complete_wrap(daily, self.months) if self.wraps else _complete_years(daily, self.months)
         s = s[s.index.isin(keep)]
         s.index = s.index.astype(int)
         return s.astype(float)
@@ -105,6 +123,38 @@ def _hot_monthly(var):
     return f
 
 
+def _wrap_sum(var):
+    def f(d, months):
+        x = d[d.index.month.isin(months)][var]
+        return x.groupby(_season_year(x.index, months)).sum(min_count=1)
+    return f
+
+
+def _wettest3_mean(var):
+    def f(d, months):
+        m = d[var].resample("MS").mean()
+        return m.groupby(m.index.year).apply(lambda s: s.nlargest(3).mean())
+    return f
+
+
+def _heavy_days(d, months):
+    p95 = d.loc["1991":"2020", "PRECTOTCORR"].quantile(0.95)
+    return (d.PRECTOTCORR > p95).groupby(d.index.year).sum()
+
+
+def _m_heavy_days(d):
+    p95 = d.loc["1991":"2020", "PRECTOTCORR"].quantile(0.95)
+    return (d.PRECTOTCORR > p95).resample("MS").sum()
+
+
+def _wettest_5day(d, months):
+    return d.PRECTOTCORR.rolling(5).sum().groupby(d.index.year).max()
+
+
+def _m_wettest_5day(d):
+    return d.PRECTOTCORR.rolling(5).sum().resample("MS").max()
+
+
 def _m_sum(var):
     return lambda d: d[var].resample("MS").sum(min_count=1)
 
@@ -117,8 +167,24 @@ def _m_dry_spell(d):
     return d.PRECTOTCORR.resample("MS").apply(lambda s: _longest_run(s < 1.0))
 
 
-RAIN_PROVISIONAL = ("POWER rain is MERRA-2 bias-corrected; trend not yet cross-checked "
-                    "against GPM IMERG (EXP-11)")
+RAIN_PROVISIONAL = ("POWER rain is MERRA-2 bias-corrected; for this region its trend has not passed a "
+                    "cross-check against an independent rain record (EXP-11)")
+DAILY_RAIN_PROVISIONAL = ("Built from daily POWER rain (MERRA-2 bias-corrected); daily rain has not been "
+                          "cross-checked against an independent record yet (EXP-11 checked monthly totals only)")
+
+# EXP-11, run 2026-11-22: seasonal rain totals from POWER against GPCP v2.3 monthly (NASA GSFC / NOAA,
+# satellites + rain gauges), 1981-2025. A record passes in a region when r > 0.8 and both give the same
+# stamp. Northern Sarawak passed every record (r 0.91-0.96); southern Sarawak failed (r 0.68-0.89: POWER
+# shows a rise GPCP does not). Only these region/record pairs may decide a verdict.
+RAIN_CHECKED: dict[str, set[str]] = {"north-peat": {"rain_feb_apr", "rain_jun_sep", "rain_nov_feb"}}
+RAIN_CHECK_NOTE = "Cross-checked against GPCP v2.3 rain gauges and satellites, 1981-2025 (EXP-11)"
+
+
+def provisional_for(card: CardDef, region_id: str | None) -> str | None:
+    """Why this card can't decide a verdict in this region, or None when it can."""
+    if card.provisional == RAIN_PROVISIONAL and region_id and card.id in RAIN_CHECKED.get(region_id, set()):
+        return None
+    return card.provisional
 
 CARDS: dict[str, CardDef] = {c.id: c for c in [
     CardDef("soil_dry3", "Soil wetness (driest months)",
@@ -164,6 +230,29 @@ CARDS: dict[str, CardDef] = {c.id: c for c in [
             "%", "Feb-Apr mean", POWER_MISSION, 1981, 50,
             worse_when="falling", band=0.5, months=[2, 3, 4],
             yearly_fn=_season_mean("RH2M"), monthly_fn=_m_mean("RH2M")),
+    CardDef("rain_nov_feb", "Wet-season rain (Nov-Feb)",
+            "Total rain from November to February, the wet monsoon season when most of Sarawak's floods happen. "
+            "Each season is named by the year it ends in.",
+            "mm", "Nov-Feb total", POWER_MISSION, 1982, 50,
+            worse_when="rising", band=10.0, months=[11, 12, 1, 2], wraps=True,
+            yearly_fn=_wrap_sum("PRECTOTCORR"), monthly_fn=_m_sum("PRECTOTCORR"),
+            provisional=RAIN_PROVISIONAL),
+    CardDef("soil_wet3", "Soil wetness (wettest months)",
+            "How wet the ground is where roots reach, in the three wettest months of each year. "
+            "Soaked ground cannot take in more rain, so the rest runs off. 0 is bone dry, 1 is soaked.",
+            "0-1", "mean of the 3 wettest months", POWER_MISSION, 1981, 50,
+            worse_when="rising", band=0.005,
+            yearly_fn=_wettest3_mean("GWETROOT"), monthly_fn=_m_mean("GWETROOT")),
+    CardDef("heavy_rain_days", "Heavy-rain days",
+            "Days wetter than 19 in 20 days of 1991-2020, averaged over the region.",
+            "days", "count in the year", POWER_MISSION, 1981, 50,
+            worse_when="rising", band=0.5,
+            yearly_fn=_heavy_days, monthly_fn=_m_heavy_days, provisional=DAILY_RAIN_PROVISIONAL),
+    CardDef("wettest_5day", "Wettest five days",
+            "The most rain that fell in any five days in a row that year.",
+            "mm", "largest 5-day total", POWER_MISSION, 1981, 50,
+            worse_when="rising", band=5.0,
+            yearly_fn=_wettest_5day, monthly_fn=_m_wettest_5day, provisional=DAILY_RAIN_PROVISIONAL),
     CardDef("wind", "Wind speed",
             "How fast the wind blows 2 m above the ground, averaged over the year.",
             "m/s", "yearly mean", POWER_MISSION, 1981, 50,
