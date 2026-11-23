@@ -11,6 +11,34 @@ import re
 
 CONCEPTS: dict[str, tuple[str, str]] = {
     # key: (pattern that spots the question, explanation). Checked in this order.
+    # Added 2026-11-23 from docs/SED-Statistics-Reference.md; the specific ones come first.
+    "sen": (r"\bsen\b|sen'?s|theil",
+        "Sen's slope draws a little line between every pair of years and takes the middle tilt. "
+        "A few wild years cannot move it much, so the scales use it as a direction check: it must point the same way as the ruler. "
+        "If it doesn't, a few extreme years are doing the work."),
+    "hac": (r"\bhac\b|newey|autocorrel|hamed|rao|memory",
+        "A wet year is often followed by another wet year, so the years are not independent. "
+        "Ordinary formulas would then be too sure of themselves, so the scales use corrections (HAC for the ruler, Hamed-Rao for Mann-Kendall) "
+        "that make the range honestly wider."),
+    "band": (r"too small|small to matter|\bband\b|equivalen",
+        "Each card has a 'too small to matter' band. Significant only says a change is not luck; the band asks whether it is big enough to care about. "
+        "If even the whole 95% range sits inside the band, the change is real but too small to matter, or, without both tests, confidently near flat."),
+    "shuffle": (r"shuffl|permutation",
+        "The shuffle test mixes up the years 1,000 times and fits a line each time. "
+        "If almost no shuffled record tilts as steeply as the real one, the order of the years matters, so there is a trend. "
+        "It is a picture of what a p-value means, but the scales stay the official judge."),
+    "my_line": (r"my line|by hand|by eye|lay.*line|score",
+        "My line lets you lay the line by eye, then scores how close it is to the best line, measured against how much the dots wobble. "
+        "It is for practice and never changes your verdict."),
+    "null": (r"null|hypothes",
+        "The null hypothesis is the 'nothing is happening' idea a test tries to knock down. "
+        "Each test asks how surprising your record would be if nothing were really changing."),
+    "stamp": (r"stamp|not clear yet|record too short",
+        "The scales give one of four stamps. Under 20 years: record too short. Both tests below 0.05 with Sen's slope agreeing: significant. "
+        "The whole 95% range inside the 'too small to matter' band: not significant. Anything else: not clear yet."),
+    "grade": (r"grade|marks?\b|points?\b|how.*scor",
+        "The grade is out of 100: evidence 25, method 25, verdict 30 and explanation 20. "
+        "Method points come from using the season filter before the scales, the scales on every main card and the El Nino lamp."),
     "disagree": (r"disagree|don'?t agree|differ|both tests|two tests",
         "The ruler's t-test trusts the size of every year, so one extreme year can swing it. "
         "Mann-Kendall only counts ups and downs, so it shrugs off wild years. "

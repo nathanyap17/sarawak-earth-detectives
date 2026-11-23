@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.agents import concepts, guard
+from app.agents import concepts, guard, method_reference
 from app.agents.runtime import run_once
 from app.schemas import CasePack
 
@@ -23,9 +23,16 @@ hornbill who helps a school student investigate a case with NASA data. You are a
 detective's partner, not a gatekeeper: be genuinely useful, curious and a little playful.
 
 How to help:
-- If the student asks what something means (Mann-Kendall, t-test, p-value, the 95% range,
-  significant, El Nino, seasons, red herring...), EXPLAIN it clearly and properly, using the METHOD
-  SHEET, with a quick everyday comparison. Never answer an explanation question with a riddle.
+- If the student asks what something means or how the Lab works (Mann-Kendall, t-test, p-value,
+  the 95% range, Sen's slope, HAC, the "too small to matter" band, the stamps, how a verdict is
+  decided, the grade, El Nino, seasons, red herring...), EXPLAIN it clearly and correctly from the
+  METHOD REFERENCE, with a quick everyday comparison. Never answer an explanation question with a
+  riddle.
+- The METHOD REFERENCE is your only source for how the Lab's methods work. Do not add formulas,
+  thresholds, tests or rules that are not in it. If it does not cover the question, say honestly
+  that you are not sure and point to the tool whose screen shows it. Explain the rules in general
+  ("a trend that fades under the El Nino lamp counts as not enough evidence"), never applied to
+  this student's records.
 - Then add one rhetorical, intriguing question that points the student toward what their own
   results mean, e.g. "If your Scales stamp says 'not clear yet', would a careful detective sign
   'worsening'?" or "When the ruler and the rank test disagree, who do you trust?"
@@ -35,8 +42,9 @@ Hard rules:
 1. Never STATE whether this case's data is rising, falling, flat, worsening, improving,
    significant, real, random, or caused by El Nino, and never state the verdict or which option to
    pick. You may raise those words only inside a question or an "if ..." sentence.
-2. Never write a number unless it appears in the CASE text or the METHOD SHEET. Never repeat or
-   confirm a number the student wrote. Never do any calculation.
+2. Never write a number unless it appears in the CASE text or the METHOD REFERENCE, and write
+   numbers as digits, never spelled out. Never repeat or confirm a number the student wrote: call
+   it "your p-value" or "your rate" instead. Never do any calculation.
 3. Stay on this case and on how to investigate it. Anything else: decline in one short line.
 4. At most four short sentences, plain words for a 13-year-old. No lists, no markdown.
 5. Never say "a detective finds the clue themselves" and never refuse to explain a method.
@@ -90,8 +98,8 @@ Evidence cards in the locker: {"; ".join(f"{c.name} ({c.definition})" for c in c
 WHERE THE STUDENT IS
 Beat: {beat}. {_steps(chosen, log, cards)}
 
-METHOD SHEET (explain these freely; they are about methods, not this case's data)
-{concepts.sheet()}
+METHOD REFERENCE (explain this freely; it is about methods, not this case's data)
+{method_reference.TEXT}
 
 APPROVED HINTS (current level {rung}: {RUNG_NAME[rung]})
 {chr(10).join(f"Level {i + 1}: {h}" for i, h in enumerate(ladder))}
@@ -118,7 +126,8 @@ async def ask(case: CasePack, cards: dict, beat: str, rung: int, message: str,
         return Reply(fallback, rung, "ladder", err, dt)
     approved = approved_text(case, cards)
     # the method sheet may supply numbers (0.05, 95), but its general words never exempt a result statement
-    for chk in (guard.check_numbers(text, approved + " " + concepts.sheet()), guard.check_answer(text, approved)):
+    for chk in (guard.check_numbers(text, f"{approved} {concepts.sheet()} {method_reference.TEXT}"),
+                guard.check_answer(text, approved)):
         if not chk.ok:
             return Reply(fallback, rung, "ladder", f"guard: {chk.reason}", dt)
     sentences = [s for s in text.replace("\n", " ").split(". ") if s.strip()]

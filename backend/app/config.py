@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     google_cloud_project: str | None = None
     google_cloud_location: str = "global"  # model endpoint (EXP-6); Cloud Run itself is asia-southeast1
     model_name: str = "gemini-3.5-flash-lite"
+    thinking_level: str = "MINIMAL"  # MINIMAL | LOW | MEDIUM | HIGH; thinking tokens count toward the output cap
+    # Kenyalang (the Partner) runs on its own model, chosen 2026-11-23 for accuracy on method
+    # questions at about 1.6 s a reply (BUILD_LOG). gemini-3.8-flash answered best but took 6-15 s
+    # and timed out on up to 3 in 10 replies; it does not accept MINIMAL thinking (LOW is its floor).
+    partner_model_name: str = "gemini-3.6-flash"
+    partner_thinking_level: str = "MINIMAL"
+    partner_timeout_s: float = 15.0  # the browser waits 25 s for the Partner
     model_timeout_s: float = 12.0  # the guide shows "thinking" meanwhile; the browser gives up at 20 s
     mock_agents: bool = False
     session_backend: Literal["memory", "firestore"] = "memory"
@@ -41,7 +48,7 @@ class Settings(BaseSettings):
 
     # Cost guard
     partner_max_turns_per_session: int = 30
-    partner_max_output_tokens: int = 200
+    partner_max_output_tokens: int = 1024  # includes thinking tokens; replies are still cut to four sentences
 
     @property
     def origins(self) -> list[str]:

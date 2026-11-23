@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import casework
-from app.agents import chief, guard, partner
+from app.agents import chief, concepts, guard, method_reference, partner
 from app.main import app
 from app.schemas import Grade, GradeParts, Verdict
 from app.sessions import store
@@ -179,3 +179,63 @@ def test_chief_good_note(monkeypatch):
     monkeypatch.setattr(chief, "run_once", good)
     text, _ = asyncio.run(chief.note(_grade(), _verdict(), "chose soil"))
     assert text and "soil" in text
+
+
+# ------------------------------------------------------------------ 2026-11-23: method reference and tighter guard
+
+
+def test_method_reference_holds_no_real_case_figures():
+    # The doc's running example is a real result (wet-season rain); Kenyalang's copy must not carry it,
+    # or the number guard would let him quote or confirm it.
+    for real in ("93.5", "32.4", "154.6", "91.3", "0.003", "0.002"):
+        assert real not in method_reference.TEXT
+    assert guard.numbers(method_reference.TEXT) <= {
+        "-1", "0", "0.05", "1", "1.5", "1.96", "2", "3", "5", "6", "10", "15", "20", "25", "29", "30", "50", "95", "100",
+        "1991", "2020"}   # "1,000" reads as 1: the guard treats the comma as a decimal mark
+
+
+@pytest.mark.parametrize("text", [
+    "The Ruler shows the rate per decade on its screen.",
+    "If both p-values fall below 0.05, the Scales call it significant.",
+    "A p-value above 0.05 does not prove there is no trend.",
+])
+def test_answer_guard_lets_method_talk_through(text):
+    assert guard.check_answer(text, APPROVED).ok
+
+
+@pytest.mark.parametrize("text", [
+    "Both p-values sit below 0.05 here.",
+    "Your p-value is 0.2.",
+    "A p-value is the chance that the trend is due to luck.",
+    "A p-value above 0.05 means no trend.",
+    "Significant means it is big.",
+    "The trend proves the cause is logging.",
+])
+def test_answer_guard_blocks_stated_p_values_and_misconceptions(text):
+    assert not guard.check_answer(text, APPROVED).ok
+
+
+@pytest.mark.parametrize("text", ["about sixty-seven years of records", "zero point two", "twenty-three more years"])
+def test_number_guard_reads_spelled_out_figures(text):
+    assert not guard.check_numbers(text, APPROVED + method_reference.TEXT).ok
+
+
+def test_number_guard_allows_spelled_method_numbers():
+    assert guard.check_numbers("the ninety-five percent range, out of one hundred, each ten years",
+                               APPROVED + method_reference.TEXT).ok
+
+
+def test_decimal_point_does_not_split_a_hypothetical_sentence():
+    assert guard.check_answer("When both p-values are below 0.05 the stamp says significant.", APPROVED).ok
+
+
+@pytest.mark.parametrize("q,key", [("what is sens slope", "Sen's slope"), ("why HAC?", "wet year"),
+                                   ("what is the shuffle test", "1,000"), ("how is my grade worked out", "out of 100"),
+                                   ("what does too small to matter mean", "too small to matter")])
+def test_fallback_explains_new_reference_topics(q, key):
+    assert key in (concepts.match(q) or "")
+
+
+def test_partner_prompt_carries_the_method_reference():
+    p = partner.build_prompt(CASE, CARDS1, "lab", 1, "what is Sen's slope?", [], [], [])
+    assert "SEN'S SLOPE" in p and "THE STAMP FOR ONE RECORD" in p

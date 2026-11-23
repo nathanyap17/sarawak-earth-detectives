@@ -1,6 +1,18 @@
 # BUILD_LOG.md
 
-## [2026-11-23] "Needs more years" reads as "Not clear yet"; years estimate only when it means something; "too small to matter" (read this first)
+## [2026-11-23, later] Kenyalang learns the statistics reference, moves to Gemini 3.6 Flash, tighter guard (read this first)
+
+**Asked (Nathan):** Kenyalang must know `docs/SED-Statistics-Reference.md` and answer from it without giving answers; its answers had been less accurate; check whether a newer Gemini model is better; keep the guardrails and cut hallucination.
+
+**Reference:** `backend/app/agents/method_reference.py` is Kenyalang's condensed copy (a `.py`, because `.gcloudignore` drops every `*.md`). The doc's running example is a real result (wet-season rain: 93.5 per decade, p 0.003...), so it is replaced by a made-up record; otherwise the number guard would let Kenyalang quote or confirm a real case's figures. A test fails if those figures reappear. The prompt now tells Kenyalang the reference is his only source on methods, to say when it doesn't cover a question, to explain the verdict rules in general and never applied to the student's records, and to write numbers as digits. Eight new fallback explanations (Sen, HAC, band, shuffle, my line, null hypothesis, stamps, grade) answer when the model is slow or blocked.
+
+**Model:** probed Vertex (global) on 2026-11-23: gemini-3.8-flash, 3.7-flash, 3.6-flash and 3.5-flash-lite answer; the 3.6/3.7/3.8 flash-lite IDs return 404. Same 10 questions through `partner.ask` (method questions, answer bait, an off-reference question): 3.5-flash-lite was fast (~1.4 s) but less precise and spelled numbers out ("zero point zero five"); 3.8-flash (LOW thinking, its floor; MINIMAL is rejected) answered best but took 6-15 s with up to 3 timeouts in 10; 3.6-flash with MINIMAL thinking answered correctly in about 1.6 s (max 2.1 s). **The Partner now runs on gemini-3.6-flash, MINIMAL**, via new settings `PARTNER_MODEL_NAME`, `PARTNER_THINKING_LEVEL`, `PARTNER_TIMEOUT_S` (15 s; the browser waits 25 s). The other agents stay on `MODEL_NAME` (3.5-flash-lite). `PARTNER_MAX_OUTPUT_TOKENS` 200 -> 1024: thinking tokens count against it, and 3.6 with LOW thinking cut replies mid-sentence; replies are still trimmed to four sentences.
+
+**Guard (`guard.py`):** "rate per decade" with no figure, and "if p < 0.05" / "a p-value above 0.05 does not prove...", are method talk and now pass; a figure per decade or any other p-value still blocks (also "both p-values sit below 0.05 here"). Spelled-out figures are read ("forty-five" -> 45, "zero point two" blocked). Replies teaching a misconception from the reference's right/wrong table are blocked ("p is the chance the trend is luck", "above 0.05 means no trend", "significant means big", "the trend proves the cause"). Fixed: a decimal point (0.05) used to end a sentence, so "When both p-values are below 0.05 the stamp says significant" lost its "When" and was blocked.
+
+**Verified:** 139 tests pass (21 new). Two real questions through the local `/sessions/{id}/partner` route: both answered by 3.6-flash in 3-5 s, passed both guards; "just say yes or no" was deflected to the Scales. Not committed or deployed. Deploying needs `--update-env-vars` only if the defaults should be overridden; the new defaults ship in code.
+
+## [2026-11-23] "Needs more years" reads as "Not clear yet"; years estimate only when it means something; "too small to matter"
 
 **Asked (Nathan):** the minimum record is 30 years and ours are 45, so what does "needs more N years" mean, and is it a flaw?
 

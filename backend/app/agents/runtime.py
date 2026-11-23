@@ -1,4 +1,5 @@
-"""Run an ADK LlmAgent once, with a hard timeout (EXP-6: gemini-3.5-flash-lite @ global).
+"""Run an ADK LlmAgent once, with a hard timeout (EXP-6: gemini-3.5-flash-lite @ global; the Partner
+runs on its own model, settings.partner_model_name).
 Each call gets a fresh ADK session; the caller passes all context in the prompt, so the agent
 never holds state the code didn't give it.
 AI-assisted: written with Claude Code."""
@@ -31,12 +32,14 @@ def _runner(name: str, instruction: str, max_tokens: int | None = None, as_json:
         from google.genai import types
 
         s = get_settings()
+        partner = name == "partner"
         agent = LlmAgent(
-            name=name, model=s.model_name, instruction=instruction,
+            name=name, model=s.partner_model_name if partner else s.model_name, instruction=instruction,
             generate_content_config=types.GenerateContentConfig(
                 max_output_tokens=max_tokens or s.partner_max_output_tokens, temperature=0.4,
                 response_mime_type="application/json" if as_json else None,
-                thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")))
+                thinking_config=types.ThinkingConfig(
+                    thinking_level=s.partner_thinking_level if partner else s.thinking_level)))
         _runners[name] = InMemoryRunner(agent=agent, app_name=f"sed-{name}")
     return _runners[name]
 
@@ -62,7 +65,8 @@ async def run_once(name: str, instruction: str, prompt: str, timeout: float | No
         return None, 0.0, "mock"
     t0 = time.perf_counter()
     try:
-        text = await asyncio.wait_for(_run(name, instruction, prompt, max_tokens, as_json), timeout or s.model_timeout_s)
+        default = s.partner_timeout_s if name == "partner" else s.model_timeout_s
+        text = await asyncio.wait_for(_run(name, instruction, prompt, max_tokens, as_json), timeout or default)
         dt = time.perf_counter() - t0
         log.info("agent=%s ok %.2fs chars=%d", name, dt, len(text))
         _last_ok[name] = time.monotonic()

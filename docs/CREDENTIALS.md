@@ -11,6 +11,10 @@
 | GOOGLE_CLOUD_PROJECT | ADK, Firestore | `.env` / Cloud Run env | GCP project id |
 | GOOGLE_CLOUD_LOCATION | ADK | `.env` / Cloud Run env | `global` (model endpoint; EXP-6). Cloud Run, Firestore stay in asia-southeast1 |
 | MODEL_NAME | agents | `.env` / Cloud Run env | `gemini-3.5-flash-lite` (EXP-6). Fallback `gemini-3.5-flash` |
+| PARTNER_MODEL_NAME | Partner (Kenyalang) | `.env` / Cloud Run env | default `gemini-3.6-flash` (2026-11-23, BUILD_LOG); other agents use MODEL_NAME |
+| PARTNER_THINKING_LEVEL | Partner | `.env` / Cloud Run env | default `MINIMAL` (3.8-flash needs `LOW`) |
+| PARTNER_TIMEOUT_S | Partner | `.env` / Cloud Run env | default 15; the browser waits 25 s |
+| THINKING_LEVEL | other agents | `.env` / Cloud Run env | default `MINIMAL` |
 | MOCK_AGENTS | agents | `.env` | 1 = canned replies, no Vertex calls (tests force 1) |
 | SESSION_BACKEND | backend | `.env` / Cloud Run env | `memory` locally, `firestore` in the cloud (image default) |
 | MODEL_TIMEOUT_S | agents | optional | Partner timeout, default 8 s; then the ladder hint is used |
