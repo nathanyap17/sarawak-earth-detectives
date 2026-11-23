@@ -71,6 +71,7 @@ cd frontend && npm run build
 The seven beats for case 001, real statistics in code, the student-written verdict, the Partner's "no answers" rule, lite mode.
 
 ## Shipping status
+2026-11-23 later, DEPLOYED backend only (commit 4936874, Cloud Run sed-api-00011-zz2, ADMIN_TOKEN kept; Firebase Hosting unchanged): Kenyalang answers from the statistics reference (`agents/method_reference.py`), runs on gemini-3.6-flash (`PARTNER_MODEL_NAME`; other agents stay on 3.5-flash-lite, which `/health` reports), tighter guard (spelled-out figures, misconceptions, stated p-values).
 2026-11-23, DEPLOYED (commit a1fa0a4, Cloud Run sed-api-00010-flh plus Firebase Hosting, ADMIN_TOKEN kept): "Not clear yet" stamp wording, years estimate only when the tilt matters, "too small to matter" flag (`AnalysisResult.small`). Case 004 (Bintulu flood) is open in the cloud.
 2026-11-22, DEPLOYED (commit 8eeb939, Cloud Run sed-api-00009-88v plus Firebase Hosting, ADMIN_TOKEN kept via --update-env-vars): flood and rain cases, weather on the map table, zoomable map, sea-aware fire layer, refresh keeps the case; data audit passed (`sandbox/audit_data_sources.py`). Local draft 004 (flood) is local only; cloud drafts still wait at `/#/review`.
 2026-11-20, DEPLOYED frontend only (commit df795cc, Firebase Hosting; backend unchanged at sed-api-00008-5bk): phones held sideways (Kenyalang's bird fits its disc, speech stays in view, fewer labels, "3D view paused" recovery, lighter effects on phones and tablets).
