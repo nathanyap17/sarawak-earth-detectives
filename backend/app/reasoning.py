@@ -38,7 +38,7 @@ DOUBT = re.compile(
     r"can'?t (tell|say|be sure|settle)|cannot (tell|say|be sure|settle)|not enough|too (short|few|little)|short record|"
     r"(only|just) \d+ years|few years|more (years|data|time)|needs? (more|longer)|el ?ni[nñ]o|enso|disagree|"
     r"(do|did)n'?t agree|mixed|unclear|not clear|uncertain|inconclusive|not (statistically )?significant|"
-    r"needs more years|noise|noisy|natural (variation|variability|swings?|ups)|ups and downs|"
+    r"needs more years|not clear yet|noise|noisy|natural (variation|variability|swings?|ups)|ups and downs|"
     r"one (bad|unusual|extreme|odd) year|single year|by chance|could be chance|varies|variab|stamps? (changed|differ)|"
     r"changed? the stamps?|lamp (changed|turned)|disappear", re.I)
 STRONG_DOUBT = re.compile(r"can'?t tell|cannot tell|not enough (evidence|data|years)|inconclusive|too short", re.I)

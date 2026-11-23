@@ -30,7 +30,7 @@ from app.vault.cards import CARDS
 EXTEND = 5   # years the significant trend line is drawn past the record (illustration only)
 MAX = 6
 STAMP = {"significant": "Significant", "not_significant": "Not significant",
-         "needs_more_years": "Needs more years", "record_too_short": "Record too short"}
+         "needs_more_years": "Not clear yet", "record_too_short": "Record too short"}
 
 
 def _cards(c: CasePack) -> list[str]:
@@ -75,6 +75,9 @@ def caption(name: str, unit: str, t: trend.TrendTest, lamp: trend.TrendTest | No
                     if lamp.stamp == "significant" else
                     f" But with the El Niño effect removed it no longer passes ({STAMP[lamp.stamp].lower()}): "
                     "El Niño years may be doing much of the work.")
+        if t.small:
+            out += (f" But the whole 95% range sits inside the 'too small to matter' band of plus or minus {band:g}: "
+                    "the change is real, yet too small to matter.")
         return out
     lo, hi = (fmt(t.range[0]), fmt(t.range[1])) if t.range else ("?", "?")
     if t.stamp == "not_significant":
@@ -82,10 +85,15 @@ def caption(name: str, unit: str, t: trend.TrendTest, lamp: trend.TrendTest | No
                 f"(t-test p {pt}, Mann-Kendall p {pmk}) and the whole 95% range ({lo} to {hi}) sits inside the "
                 f"'too small to matter' band of plus or minus {band:g}. Read: no meaningful change; the year-to-year "
                 f"noise is bigger than any trend.{fit}")
-    need = "more than 50" if (t.years_needed or 0) > 50 else str(t.years_needed)
-    return (f"{name} tilts {fmt(t.rate_per_decade)} {per}, but the tests stay above the 0.05 line "
-            f"(t-test p {pt}, Mann-Kendall p {pmk}) and the 95% range ({lo} to {hi}) includes zero, so the tilt "
-            f"could be chance. At this level of noise about {need} years of records would be needed to settle it.{fit}")
+    head = (f"{name} tilts {fmt(t.rate_per_decade)} {per}, but the two tests do not both clear the 0.05 line "
+            f"(t-test p {pt}, Mann-Kendall p {pmk}), and the 95% range ({lo} to {hi}) is too wide to rule out a change "
+            f"bigger than the 'too small to matter' band of plus or minus {band:g}. Read: not clear yet. The "
+            f"{t.n}-year record is long enough to test; the year-to-year wobble hides the answer.")
+    if t.years_needed is None:
+        return (head + " The tilt so far is smaller than what matters, so no count of extra years is given: "
+                f"more years would show whether a change that matters is hiding in the wobble.{fit}")
+    need = "more than 50" if t.years_needed > 50 else f"about {t.years_needed}"
+    return head + f" If the tilt and the wobble stay the same, {need} more years would settle it.{fit}"
 
 
 def build(c: CasePack) -> list[dict]:

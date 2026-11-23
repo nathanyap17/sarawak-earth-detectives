@@ -31,7 +31,7 @@ export interface AnalysisResult {
   n_years: number | null; elnino_r: number | null; opposite_trends: boolean | null; twin: AnalysisResult | null
   rate_per_decade: number | null; range: [number, number] | null; unit: string
   t_test_p: number | null; mann_kendall_p: number | null; sen_per_decade: number | null
-  stamp: Stamp | null; years_needed: number | null; direction: Direction | null
+  stamp: Stamp | null; years_needed: number | null; small?: boolean; direction: Direction | null
   series_out: { y: number; v: number | null }[]
   monthly_out: { t: string; v: number | null }[]
   /** elnino tool: the El Niño index for each year, for the scatter chart */
@@ -114,7 +114,7 @@ export interface CaseFileTest {
   card: string; tool: string; mission: string | null; data_as_of: string | null; n_years: number | null
   rate: string | null; unit: string | null; range: [string, string] | null
   t_test_p: string | null; mann_kendall_p: string | null; stamp: string | null; direction: string | null
-  years_needed: number | string | null; elnino_r: string | null
+  years_needed: number | string | null; elnino_r: string | null; small?: boolean
 }
 export interface Insight {
   card_id: string; name: string; definition: string; unit: string; yearly_label: string; mission: string; data_as_of: string

@@ -81,7 +81,7 @@ A case takes 15 to 20 minutes. It has seven beats. Each beat happens at a differ
 | **El Niño lamp** | Dims the El Niño years and re-tests | One strong year can fake a trend |
 | **Twin map** | Puts two regions side by side | The same cause can give opposite trends |
 
-**Result stamps.** *Significant*, *Not significant*, or *Needs more years* (with an estimate of how many).
+**Result stamps.** *Significant* (flagged "too small to matter" when the whole range sits inside the card's band), *Not significant*, or *Not clear yet* (internally `needs_more_years`; with an estimate of how many more years, when the tilt so far is big enough to matter).
 
 **How a case can end.**
 
@@ -611,7 +611,7 @@ Both tracks build against these. Change them only by agreement.
   "rate_per_decade": 0.0, "range": [0.0, 0.0], "unit": "per decade",
   "t_test_p": 0.0, "mann_kendall_p": 0.0, "sen_per_decade": 0.0,
   "stamp": "significant",                                             // significant | not_significant | needs_more_years
-  "years_needed": null, "direction": "falling",                       // rising | falling | flat
+  "years_needed": null, "small": false, "direction": "falling",       // rising | falling | flat; small: significant but too small to matter
   "series_out": [{ "y": 1981, "v": 0.0 }] }
 
 // AnswerKey: computed by code when the case is built. Never sent to the browser or the Partner.
@@ -642,8 +642,8 @@ Both tracks build against these. Change them only by agreement.
 | Range | 95% confidence interval, widened when each year resembles the last |
 | Test 1 | t-test on the slope |
 | Test 2 | Mann-Kendall (Hamed-Rao variant), with Sen's slope as a cross-check |
-| **Significant** | Both tests give p below 0.05 |
-| **Needs more years** | Not significant, and the range is wide. Report an estimate of extra years needed, capped at "more than 50" |
+| **Significant** | Both tests give p below 0.05 and agree on direction. Flagged `small` ("too small to matter") when the whole range sits inside the band (corrected 2026-11-23) |
+| **Not clear yet** (`needs_more_years`) | The record is long enough (20+ years) but the tests don't both pass and the range reaches past the band. Report an estimate of extra years needed (same tilt and wobble), capped at "more than 50", only when the tilt so far is at least the band; otherwise none (corrected 2026-11-23: shown as "Not clear yet" so it is not read as a record-length rule) |
 | **Not significant** | Not significant, and the range sits close to zero (inside a per-card "too small to matter" band) |
 | El Niño lamp | Fit the yearly values to the El Niño index, subtract that part, test again. Time is never an input to this fit |
 | Twin map | Run the same test on two regions. Flag "opposite trends" only if both are significant with opposite signs |

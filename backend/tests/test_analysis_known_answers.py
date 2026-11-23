@@ -43,6 +43,24 @@ def test_noisy_small_trend_needs_more_years():
     assert 1 <= r.years_needed <= trend.YEARS_NEEDED_CAP
 
 
+def test_no_tilt_but_too_wobbly_gives_no_years_count():
+    # About zero tilt, big wobble: the range spills past the band, but projecting years is meaningless.
+    noise = np.random.default_rng(11).normal(0, 1.5, len(YEARS))
+    x = YEARS - YEARS.mean()
+    noise -= x * (x @ noise) / (x @ x)          # remove its own tilt exactly: the slope is zero
+    r = trend.scales(yearly(10 + noise), band=0.2)
+    assert r.stamp == "needs_more_years" and abs(r.rate_per_decade) < 1e-9
+    assert r.years_needed is None
+
+
+def test_real_but_tiny_trend_is_flagged_small():
+    s = yearly(10 + 0.002 * (YEARS - 1981) + RNG.normal(0, 0.002, len(YEARS)))
+    r = trend.scales(s, band=0.1)
+    assert r.stamp == "significant" and r.small
+    big = trend.scales(yearly(10 + 0.05 * (YEARS - 1981) + RNG.normal(0, 0.2, len(YEARS))), band=0.1)
+    assert big.stamp == "significant" and not big.small
+
+
 def test_elnino_only_trend_is_removed_by_lamp():
     # The index itself trends (strong late El Ninos); the record only follows the index.
     enso = yearly(np.linspace(-1, 1, len(YEARS)) + RNG.normal(0, 0.3, len(YEARS)))

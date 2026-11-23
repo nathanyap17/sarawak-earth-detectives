@@ -23,9 +23,9 @@ export const TOOL_INFO: ToolInfo[] = [
 ]
 
 const STAMP_MEANS: Record<string, string> = {
-  significant: 'Both tests agree the tilt is very unlikely to be luck. Scientists call that "significant". It tells you a change is probably real. It does not tell you why.',
+  significant: 'Both tests agree the tilt is very unlikely to be luck. Scientists call that "significant". It tells you a change is probably real. It does not tell you why, or that it is big: if the stamp adds "too small to matter", the change is real but tiny.',
   not_significant: 'The tilt is tiny compared with the wobble, and even the biggest tilt that fits the dots is too small to matter. So: no real change here.',
-  needs_more_years: 'There might be a tilt, but the wobble is too big to be sure yet. More years of measurements would settle it. Saying "we can\'t tell yet" is honest science.',
+  needs_more_years: 'The record is long enough to test (20 years or more), but the year-to-year wobble is too big to be sure. There might be a tilt that matters hiding in it. More years of measurements would settle it. Saying "we can\'t tell yet" is honest science.',
   record_too_short: 'There are not enough years to test. A trend needs at least 20 years of dots.',
 }
 

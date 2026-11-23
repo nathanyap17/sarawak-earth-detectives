@@ -148,7 +148,7 @@ def test_captions_explain_significant_and_not():
     flat = TrendTest(30, 0.01, (-0.1, 0.1), 0.8, 0.7, 0.0, "not_significant", "flat", None)
     assert "too small to matter" in caption("Rain", "mm", flat, None, 1995, 2024, 0.01, 0.5)
     more = TrendTest(30, 1.0, (-0.5, 2.5), 0.2, 0.3, 0.9, "needs_more_years", "rising", 60)
-    assert "more than 50 years" in caption("Rain", "mm", more, None, 1995, 2024, 0.05, 0.5)
+    assert "more than 50 more years" in caption("Rain", "mm", more, None, 1995, 2024, 0.05, 0.5)
 
 
 def test_teacher_desk_shows_every_case_with_its_configuration():

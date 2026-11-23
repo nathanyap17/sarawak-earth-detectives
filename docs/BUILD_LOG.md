@@ -1,6 +1,16 @@
 # BUILD_LOG.md
 
-## [2026-11-22, release] Data audit before deploy: every source used, every number traced (read this first)
+## [2026-11-23] "Needs more years" reads as "Not clear yet"; years estimate only when it means something; "too small to matter" (read this first)
+
+**Asked (Nathan):** the minimum record is 30 years and ours are 45, so what does "needs more N years" mean, and is it a flaw?
+
+**Finding:** not a statistical flaw. The minimum record is 20 years (`MIN_YEARS`; "Record too short" below it); 30 years (1991-2020) is the season filter's normal, not a minimum. `needs_more_years` is a verdict on noise: the tests don't both pass and the 95% range reaches past the card's "too small to matter" band. Three things misled: (1) the label read like a record-length rule; (2) the years estimate was given even for a tilt of about zero (heavy-rain days, -0.03 days per decade: "more than 50"); (3) a significant but tiny trend (wind, -0.003 m/s per decade, whole range inside +-0.05) carried no "too small to matter" note. The case report caption also said the range "includes zero", which is false when only one of the two tests fails.
+
+**Changes:** `trend.scales` gives `years_needed` only when |tilt| >= band, and flags `small` on a significant result whose whole range is inside the band. **Contract:** `AnalysisResult.small: bool = False` (schemas.py, types.ts). Shown as "Not clear yet · about N more years would settle it", "Not clear yet · the tilt so far is too small to matter, but the wobble leaves room for one that does", "Significant · but too small to matter". Same wording in the case report, executive-report captions, the Partner's concept sheet, explain texts, samples and landing. Internal stamp names, grading and answer keys are unchanged.
+
+**Verified:** 118 tests pass (new: no years count for a zero tilt; `small` on a real but tiny trend). Local Lab, case 004: heavy-rain days and soil wetness "Not clear yet" with the no-count note, wettest five days "about 23 more years", wind "Significant · but too small to matter", Nov-Feb rain "Significant". Not deployed yet.
+
+## [2026-11-22, release] Data audit before deploy: every source used, every number traced
 
 **Asked (Nathan):** check one last time that every data source is used and every number is real, then commit, push and deploy.
 

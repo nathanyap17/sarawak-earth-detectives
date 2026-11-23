@@ -70,9 +70,9 @@ function Result({ r, card, s, region, twinName, before }: { r: AnalysisResult; c
   return (
     <div className="result">
       {chart}
-      {r.stamp && <p><Stamp stamp={r.stamp} yearsNeeded={r.years_needed} />{r.tool === 'twin' && ` ${region}`}</p>}
+      {r.stamp && <p><Stamp stamp={r.stamp} yearsNeeded={r.years_needed} small={r.small} />{r.tool === 'twin' && ` ${region}`}</p>}
       {r.tool === 'twin' && r.twin?.stamp && (
-        <p><Stamp stamp={r.twin.stamp} yearsNeeded={r.twin.years_needed} /> {twinName}
+        <p><Stamp stamp={r.twin.stamp} yearsNeeded={r.twin.years_needed} small={r.twin.small} /> {twinName}
           {r.opposite_trends ? ' — opposite trends!' : ''}</p>
       )}
       {r.tool !== 'magnifier' && r.tool !== 'season' && nums}

@@ -30,7 +30,8 @@ class TrendTest:
     sen_per_decade: float | None
     stamp: str  # significant | not_significant | needs_more_years | record_too_short
     direction: str | None  # rising | falling | flat
-    years_needed: int | None
+    years_needed: int | None  # needs_more_years only; None when the tilt so far is too small to matter
+    small: bool = False  # significant, yet the whole 95% range is inside the "too small to matter" band
 
 
 def _clean(yearly: pd.Series) -> pd.Series:
@@ -92,7 +93,11 @@ def scales(yearly: pd.Series, band: float) -> TrendTest:
     """Weigh the trend against the noise with two tests. A trend counts only if both agree.
 
     band: per-card "too small to matter" rate per decade. A non-significant result whose
-    whole range sits inside +-band is "not significant"; otherwise "needs more years".
+    whole range sits inside +-band is "not significant"; otherwise "needs more years" (shown to
+    students as "Not clear yet": the record is long enough, the wobble hides the answer).
+    The years estimate is given only when the tilt so far is at least band: projecting how long it
+    takes to confirm a tilt smaller than what matters (or about zero) would be meaningless.
+    A significant trend whose whole range sits inside +-band is flagged small: real, too small to matter.
     """
     s = _clean(yearly)
     n = len(s)
@@ -102,13 +107,15 @@ def scales(yearly: pd.Series, band: float) -> TrendTest:
         return TrendTest(n, 0.0, (0.0, 0.0), 1.0, 1.0, 0.0, "not_significant", "flat", None)
     rate, rng, p_t = ruler(s)
     p_mk, sen = mann_kendall(s)
+    inside = -band <= rng[0] and rng[1] <= band
     if p_t < ALPHA and p_mk < ALPHA and np.sign(rate) == np.sign(sen):
         return TrendTest(n, rate, rng, p_t, p_mk, sen, "significant",
-                         "rising" if rate > 0 else "falling", None)
-    if -band <= rng[0] and rng[1] <= band:
+                         "rising" if rate > 0 else "falling", None, small=inside)
+    if inside:
         return TrendTest(n, rate, rng, p_t, p_mk, sen, "not_significant", "flat", None)
     return TrendTest(n, rate, rng, p_t, p_mk, sen, "needs_more_years",
-                     "rising" if rate > 0 else "falling", years_needed(rate, rng, n))
+                     "rising" if rate > 0 else "falling",
+                     years_needed(rate, rng, n) if abs(rate) >= band else None)
 
 
 # ---------------------------------------------------------------- workbench (learning tools)

@@ -36,9 +36,10 @@ CONCEPTS: dict[str, tuple[str, str]] = {
         "It does not mean big or scary; a small change can be significant over a long record. "
         "When the tests disagree, a careful detective says so."),
     "years": (r"more years|years needed|too short|long enough|needs more",
-        "'Needs more years' means the record is too short or too wobbly to separate a real change from natural ups and downs. "
-        "It is an honest result, not a failure. "
-        "Detectives write it down and say how many more years would settle it."),
+        "'Not clear yet' (the needs-more-years stamp) means the record is long enough to test, but the year-to-year wobble "
+        "is too big to separate a real change from natural ups and downs. It is not about a short record: that stamp is "
+        "'Record too short', under 20 years. It is an honest result, not a failure. "
+        "Detectives write it down and, when the stamp gives one, say about how many more years would settle it."),
     "season": (r"season|monsoon|month|normal",
         "Some months are always wetter or hotter than others. "
         "The season filter compares each month with its own 1991-2020 normal, so the ruler measures real change, not the calendar."),
@@ -56,7 +57,7 @@ CONCEPTS: dict[str, tuple[str, str]] = {
     "verdict": (r"verdict|not enough evidence|can'?t tell|which answer|what do i (write|pick|choose)",
         "Your verdict should follow your stamps. "
         "If the main cards are significant and agree, the record supports a change. "
-        "If the scales keep saying 'needs more years', not enough evidence is the honest answer, and it can win the case."),
+        "If the scales keep saying 'not clear yet', not enough evidence is the honest answer, and it can win the case."),
 }
 
 

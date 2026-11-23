@@ -147,7 +147,8 @@ class AnalysisResult(BaseModel):
     mann_kendall_p: float | None = None
     sen_per_decade: float | None = None
     stamp: Stamp | None = None
-    years_needed: int | None = None  # capped: 51 means "more than 50"
+    years_needed: int | None = None  # capped: 51 means "more than 50"; None when the tilt is too small to matter
+    small: bool = False  # significant but the whole range is inside the "too small to matter" band
     direction: Direction | None = None
     series_out: list[YearlyPoint] = Field(default_factory=list)
     monthly_out: list[MonthlyPoint] = Field(default_factory=list)  # season tool

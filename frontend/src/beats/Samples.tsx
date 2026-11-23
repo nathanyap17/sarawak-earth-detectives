@@ -17,7 +17,7 @@ const mk = (seed: number, f: (i: number, w: number) => number) => wobble(seed, N
 
 const SCALES: Sample[] = [
   { key: 'significant', title: 'Significant', note: 'The climb is much bigger than the wobble.', ys: mk(11, (i, w) => i * 0.045 + w * 0.22), line: [0, 0.045 * (N - 1)] },
-  { key: 'needs_more_years', title: 'Needs more years', note: 'Maybe a climb, but the wobble hides it.', ys: mk(23, (i, w) => i * 0.012 + w * 0.6), line: [0.1, 0.012 * (N - 1)] },
+  { key: 'needs_more_years', title: 'Not clear yet', note: 'Maybe a climb, but the wobble hides it.', ys: mk(23, (i, w) => i * 0.012 + w * 0.6), line: [0.1, 0.012 * (N - 1)] },
   { key: 'not_significant', title: 'Not significant', note: 'Flat. Just wobble around a level line.', ys: mk(37, (_i, w) => w * 0.35), line: [0, 0] },
 ]
 const SEASON: Sample[] = [

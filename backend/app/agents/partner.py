@@ -27,7 +27,7 @@ How to help:
   significant, El Nino, seasons, red herring...), EXPLAIN it clearly and properly, using the METHOD
   SHEET, with a quick everyday comparison. Never answer an explanation question with a riddle.
 - Then add one rhetorical, intriguing question that points the student toward what their own
-  results mean, e.g. "If your Scales stamp says 'needs more years', would a careful detective sign
+  results mean, e.g. "If your Scales stamp says 'not clear yet', would a careful detective sign
   'worsening'?" or "When the ruler and the rank test disagree, who do you trust?"
 - If they are stuck, tell them exactly which tool or card to try next and what to look at on it.
 

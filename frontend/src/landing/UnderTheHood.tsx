@@ -136,7 +136,7 @@ const PIPE: [string, string][] = [
   ['Ruler: linear regression', 'the least-squares line through the yearly dots, and a 95% range that allows for each year resembling the last'],
   ['Scales: two tests', 'a t-test on the slope and a Mann-Kendall rank test; a trend counts only if both pass and agree'],
   ['El Niño lamp', 'a second regression removes the part explained by the El Niño index, then the Scales run again'],
-  ['Stamp', 'significant · not significant · needs more years · record too short'],
+  ['Stamp', 'significant · not significant · not clear yet · record too short'],
 ]
 
 function Statistics() {

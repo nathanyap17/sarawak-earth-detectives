@@ -59,7 +59,7 @@ function Study({ f }: { f: CaseFile }) {
                 <td className="mono">{t.rate ? `${t.rate} ${t.unit ?? ''}` : '—'}</td>
                 <td className="mono">{t.range ? `${t.range[0]} to ${t.range[1]}` : '—'}</td>
                 <td className="mono">{t.t_test_p ?? '—'}</td><td className="mono">{t.mann_kendall_p ?? '—'}</td>
-                <td>{t.stamp ?? (t.elnino_r ? `El Niño r ${t.elnino_r}` : '—')}{t.years_needed ? ` (needs ${t.years_needed} years)` : ''}</td></tr>
+                <td>{t.stamp ?? (t.elnino_r ? `El Niño r ${t.elnino_r}` : '—')}{t.years_needed ? ` (${t.years_needed === 'more than 50' ? 'more than 50' : `about ${t.years_needed}`} more years)` : ''}{t.small ? ' (too small to matter)' : ''}</td></tr>
             ))}</tbody></table>
         )}
         <p className="doc-small">Every number was computed by the statistics code from {[...new Set(f.tests.map((t) => t.mission).filter(Boolean))].join(', ') || 'NASA records'}{f.tests[0]?.data_as_of ? `, data to ${f.tests[0].data_as_of}` : ''}. AI did no maths.</p>

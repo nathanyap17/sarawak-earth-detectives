@@ -39,13 +39,17 @@ export function MissionBadge({ mission, asOf, definition }: { mission: string; a
 const STAMP_TEXT: Record<StampT, string> = {
   significant: 'Significant',
   not_significant: 'Not significant',
-  needs_more_years: 'Needs more years',
+  needs_more_years: 'Not clear yet',
   record_too_short: 'Record too short',
 }
 
-export function Stamp({ stamp, yearsNeeded }: { stamp: StampT; yearsNeeded?: number | null }) {
-  const extra = stamp === 'needs_more_years' && yearsNeeded
-    ? ` (about ${yearsNeeded >= 51 ? 'more than 50' : yearsNeeded} more)` : ''
+/** The stamp, plus what it means here: for "Not clear yet", about how many more years would settle it
+ *  (only when the tilt so far is big enough to matter); for "Significant", whether it is too small to matter. */
+export function Stamp({ stamp, yearsNeeded, small }: { stamp: StampT; yearsNeeded?: number | null; small?: boolean }) {
+  const extra = stamp === 'needs_more_years'
+    ? (yearsNeeded ? ` · ${yearsNeeded >= 51 ? 'more than 50' : `about ${yearsNeeded}`} more years would settle it`
+      : ' · the tilt so far is too small to matter, but the wobble leaves room for one that does')
+    : stamp === 'significant' && small ? ' · but too small to matter' : ''
   return <span className={`stamp stamp-${stamp}`} role="status">{STAMP_TEXT[stamp]}{extra}</span>
 }
 

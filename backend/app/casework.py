@@ -100,7 +100,7 @@ def _from_test(base: dict, t: trend.TrendTest) -> dict:
             "range": None if t.range is None else (_r(t.range[0]), _r(t.range[1])),
             "t_test_p": _r(t.t_test_p), "mann_kendall_p": _r(t.mann_kendall_p),
             "sen_per_decade": _r(t.sen_per_decade), "stamp": t.stamp,
-            "direction": t.direction, "years_needed": t.years_needed}
+            "direction": t.direction, "years_needed": t.years_needed, "small": t.small}
 
 
 def enso_for(card: CardDef) -> pd.Series:

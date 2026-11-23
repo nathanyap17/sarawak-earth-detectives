@@ -13,7 +13,7 @@ from app.vault.cards import CARDS
 TOOL = {"magnifier": "Magnifier", "season": "Season filter", "ruler": "Ruler (trend line, t-test)",
         "scales": "Scales (t-test and Mann-Kendall)", "elnino": "El Niño lamp", "twin": "Twin map"}
 STAMP = {"significant": "Significant", "not_significant": "Not significant",
-         "needs_more_years": "Needs more years", "record_too_short": "Record too short"}
+         "needs_more_years": "Not clear yet", "record_too_short": "Record too short"}
 ENDING = {"solved": "Solved", "solved_not_enough": "Solved: not enough evidence (honest doubt)",
           "sent_back": "Sent back"}
 
@@ -68,7 +68,7 @@ def build(s, c: CasePack) -> dict:
             "t_test_p": fmt(a.get("t_test_p"), p=True), "mann_kendall_p": fmt(a.get("mann_kendall_p"), p=True),
             "stamp": STAMP.get(a.get("stamp") or "", None), "direction": a.get("direction"),
             "years_needed": ("more than 50" if (a.get("years_needed") or 0) > 50 else a.get("years_needed")),
-            "elnino_r": fmt(a.get("elnino_r")),
+            "elnino_r": fmt(a.get("elnino_r")), "small": bool(a.get("small")),
         })
     v = s.verdicts[-1] if s.verdicts else None
     g = s.grade or {}
